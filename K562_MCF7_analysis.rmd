@@ -7,7 +7,7 @@ date: "2024-08-26"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-```{r}
+
 ```{bash}
 #find the longgf results
 #grep SumGF /bioinformatics/ryley/LongGF.run.MCF7_PacBio_SRX905986.log > /bioinformatics/ryley/LongGF.MCF7_PacBio_SRX905986.tsv
@@ -25,6 +25,7 @@ library(tidyverse)
 library(dplyr)
 library(biomaRt)
 library(ggplot2)
+library(ggforce)
 ```
 
 
@@ -61,13 +62,13 @@ Genion<- do.call(rbind, lapply(file_list, function(filename) {
 
 myfiles<- list.files(path = "/bioinformatics/ryley/fusion_calling", pattern = "K562.*_genion\\.tsv$", full.names = TRUE)
 file_list <- myfiles[!grepl("PacBio", myfiles)]
-genion_K652_Nanopore <- do.call(rbind, lapply(file_list, function(filename) {
+genion_K562_Nanopore <- do.call(rbind, lapply(file_list, function(filename) {
   read.table(filename) %>%
     mutate(Source = basename(filename))
 }))
 
 file_list <- myfiles[!grepl("SGNex", myfiles)]
-genion_K652_PacBio <-  do.call(rbind, lapply(file_list, function(filename) {
+genion_K562_PacBio <-  do.call(rbind, lapply(file_list, function(filename) {
   read.table(filename) %>%
     mutate(Source = basename(filename))
 }))
@@ -128,7 +129,7 @@ mito_chimeras_FusionSeekerMCF7 <- rbind(mutate(subset(FusionSeeker_MCF7_PacBio, 
 mito_chimeras_LongGFK562 <- rbind(mutate(filter(LongGF.K562.PacBio, (grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)) | (!grepl("chrM:", V4, ignore.case = TRUE) & grepl("chrM:", V5, ignore.case = TRUE))), platform = "PacBio", cell = "K562" ), mutate(filter(LongGF.K562.Nanopore, (grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)) | (!grepl("chrM:", V4, ignore.case = TRUE) & grepl("chrM:", V5, ignore.case = TRUE))) , platform = "Nanopore", cell = "K562" ))
 mito_chimeras_LongGFMCF7 <- rbind(mutate(filter(LongGF.MCF7.PacBio, (grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)) | (!grepl("chrM:", V4, ignore.case = TRUE) & grepl("chrM:", V5, ignore.case = TRUE))), platform = "PacBio", cell = "MCF7" ), mutate(filter(LongGF.MCF7.Nanopore, (grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)) | (!grepl("chrM:", V4, ignore.case = TRUE) & grepl("chrM:", V5, ignore.case = TRUE))) , platform = "Nanopore", cell = "MCF7" ))
 
-mito_chimeras_GENIONK562 <- rbind(filter(genion_K652_PacBio, grepl("M:", V8, ignore.case = TRUE)), filter(genion_K652_Nanopore, grepl("M:", V8, ignore.case = TRUE)))
+mito_chimeras_GENIONK562 <- rbind(filter(genion_K562_PacBio, grepl("M:", V8, ignore.case = TRUE)), filter(genion_K562_Nanopore, grepl("M:", V8, ignore.case = TRUE)))
 mito_chimeras_GENIONMCF7 <- rbind(filter(genion_MCF7_PacBio, grepl("M:", V8, ignore.case = TRUE)), filter(genion_MCF7_Nanopore, grepl("M:", V8, ignore.case = TRUE)))
 
 mito_chimeras_JAFFALK562 <- rbind(mutate(subset(JAFFAL_K562_PacBio, (chrom1 == "chrM" & chrom2 != "chrM") | (chrom1 != "chrM" & chrom2 == "chrM")), platform = "PacBio", cell = "K562" ), mutate(subset(JAFFAL_K562_Nanopore, (chrom1 == "chrM" & chrom2 != "chrM") | (chrom1 != "chrM" & chrom2 == "chrM")), platform = "Nanopore", cell = "K562" ))
@@ -146,7 +147,6 @@ ggplot(mito_chimeras, aes(x = NumSupp, fill = Algorithm)) + #, linetype = platfo
  #scale_x_log10()+
   facet_zoom(xlim = c(1, 25))
 
-
 ggplot(mito_chimeras, aes(x = NumSupp, fill = Algorithm)) + #, linetype = platform
   geom_density(alpha = 0.5) +
   theme_minimal() +
@@ -156,6 +156,87 @@ ggplot(mito_chimeras, aes(x = NumSupp, fill = Algorithm)) + #, linetype = platfo
   scale_fill_brewer(palette = "Set1")+  # Optional: Customize color palette
  scale_x_log10()+
   facet_zoom(xlim = c(100, 300), ylim = c(0,0.5))
+
+ggplot(mito_chimeras, aes(x = NumSupp))+
+  geom_histogram(data = subset(mito_chimeras, Algorithm == "LongGF"), fill = 'red', alpha=0.5)+
+  geom_histogram(data = subset(mito_chimeras, Algorithm == "FusionSeeker"), fill = 'blue', alpha=0.2)+
+  scale_x_log10()
+
+frequency_mito_chimeras <-  mito_chimeras %>%
+  group_by_all %>%
+  mutate(Frequency = n()) %>% unique()
+
+ggplot((frequency_mito_chimeras), aes(x = NumSupp, y= Frequency, colour = Algorithm, shape = factor(platform)))+
+  geom_jitter(alpha = 0.5)+
+  labs(title = "Frequency of impossible fusions detected",
+    x = "Read Support")
+
+ggplot((frequency_mito_chimeras), aes(x = NumSupp, y= Frequency, colour = Algorithm, shape = factor(platform)))+
+  geom_jitter(alpha = 0.5)+
+  labs(title = "Frequency of impossible fusions detected",
+    x = "Read Support")+
+  scale_y_log10()
+
+ggplot((frequency_mito_chimeras), aes(x = NumSupp, y= Frequency, colour = Algorithm, shape = factor(cell)))+
+  geom_jitter(alpha = 0.5)+
+  labs(title = "Frequency of impossible fusions detected",
+    x = "Read Support")+
+  facet_zoom(xlim = c(1, 100), ylim = c(0, 30))
+
+
+```
+
+```{r}
+# removing impossible fusions from results
+
+nomito_FusionSeekerK562 <- rbind(mutate(subset(FusionSeeker_K562_PacBio, (Chrom1 != "chrM" & Chrom2 != "chrM")), platform = "PacBio", cell = "K562" ), mutate(subset(FusionSeeker_K562_Nanopore, (Chrom1 != "chrM" & Chrom2 != "chrM")), platform = "Nanopore", cell = "K562" ))
+nomito_FusionSeekerMCF7 <- rbind(mutate(subset(FusionSeeker_MCF7_PacBio, (Chrom1 != "chrM" & Chrom2 != "chrM")), platform = "PacBio", cell = "MCF7" ), mutate(subset(FusionSeeker_MCF7_Nanopore, (Chrom1 != "chrM" & Chrom2 != "chrM")), platform = "Nanopore", cell = "MCF7" ))
+
+nomito_LongGFK562 <- rbind(mutate(filter(LongGF.K562.PacBio, (!grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)) ), platform = "PacBio", cell = "K562" ), mutate(filter(LongGF.K562.Nanopore, (!grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE))) , platform = "Nanopore", cell = "K562" ))
+nomito_LongGFMCF7 <- rbind(mutate(filter(LongGF.MCF7.PacBio, (!grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)) ), platform = "PacBio", cell = "MCF7" ), mutate(filter(LongGF.MCF7.Nanopore, (!grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE))) , platform = "Nanopore", cell = "MCF7" ))
+
+nomito_GENIONK562 <- rbind(mutate(filter(genion_K562_PacBio, !grepl("M:", V8, ignore.case = TRUE)), platform = "PacBio", cell = "K562"), mutate(filter(genion_K562_Nanopore, !grepl("M:", V8, ignore.case = TRUE)), platform = "Nanopore", cell = "K562"))
+nomito_GENIONMCF7 <- rbind(mutate(filter(genion_MCF7_PacBio, !grepl("M:", V8, ignore.case = TRUE)), platform = "PacBio", cell = "MCF7"), filter(genion_MCF7_Nanopore, !grepl("M:", V8, ignore.case = TRUE)))
+
+nomito_JAFFALK562 <- rbind(mutate(subset(JAFFAL_K562_PacBio, (chrom1 != "chrM" & chrom2 != "chrM")), platform = "PacBio", cell = "K562" ), mutate(subset(JAFFAL_K562_Nanopore, (chrom1 != "chrM" & chrom2 != "chrM")), platform = "Nanopore", cell = "K562" ))
+nomito_JAFFALMCF7 <- rbind(mutate(subset(JAFFAL_MCF7_PacBio , (chrom1 != "chrM" & chrom2 != "chrM")), platform = "PacBio", cell = "MCF7" ), mutate(subset(JAFFAL_MCF7_Nanopore, (chrom1 != "chrM" & chrom2 != "chrM")), platform = "Nanopore", cell = "MCF7" ))
+
+```
+
+```{r}
+#filter self-fusions
+self_LongGFK562 <- nomito_LongGFK562 %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 == V2.2)
+self_LongGFMCF7 <- nomito_LongGFMCF7 %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 == V2.2)
+
+self_FusionSeekerK562 <- nomito_FusionSeekerK562 %>% subset(Gene1 == Gene2)
+self_FusionSeekerMCF7 <- nomito_FusionSeekerMCF7 %>% subset(Gene1 == Gene2)
+
+self_GENIONK562 <- nomito_GENIONK562 %>% separate(V1, into = c("V1.1","V1.2"), sep="::", remove = FALSE) %>%  subset(V1.1 == V1.2)
+self_GENIONKMCF7 <- nomito_GENIONMCF7 %>% separate(V1, into = c("V1.1","V1.2"), sep="::", remove = FALSE) %>%  subset(V1.1 == V1.2)
+
+self_JAFFALK562 <- nomito_JAFFALK562 %>% separate(fusion.genes, into = c("V1.1","V1.2"), sep=":", remove = FALSE) %>%  subset(V1.1 == V1.2)
+self_JAFFALMCF7 <- nomito_JAFFALMCF7 %>% separate(fusion.genes, into = c("V1.1","V1.2"), sep=":", remove = FALSE) %>%  subset(V1.1 == V1.2)
+
+selfish <- rbind(self_LongGFK562, self_LongGFMCF7)[c(5, (ncol(self_LongGFK562)-1), ncol(self_LongGFK562))] %>% 
+  group_by_all %>%
+  mutate(Frequency = n(), Algorithm = "LongGF") %>% unique()
+
+ggplot((selfish), aes(x = V3, y= Frequency, colour = Algorithm, shape = factor(cell)))+
+  geom_point(alpha = 0.5)+
+  labs(title = "Frequency of self fusions",
+    x = "Read Support")+
+  facet_zoom(xlim = c(1, 25), ylim = c(0, 25))
+```
+
+```{r}
+selfless_LongGFK562 <- nomito_LongGFK562 %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 != V2.2)
+selfless_LongGFMCF7 <- nomito_LongGFMCF7 %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 != V2.2)
+
+selfless <- rbind(mutate(rename(rbind(selfless_LongGFMCF7[c(5,(ncol(selfless_LongGFMCF7)-1) ,ncol(selfless_LongGFMCF7))], selfless_LongGFK562[c(5,(ncol(selfless_LongGFK562)-1) ,ncol(selfless_LongGFK562))]), "NumSupp"="V3"), Algorithm = "LongGF"),
+                  
+                  mutate(rbind(nomito_FusionSeekerK562[c(4, (ncol(nomito_FusionSeekerK562)-1), ncol(nomito_FusionSeekerK562))], nomito_FusionSeekerMCF7[c(4, (ncol(nomito_FusionSeekerMCF7)-1), ncol(nomito_FusionSeekerMCF7))]) , Algorithm = "FusionSeeker"),
+                  mutate(rename(rbind(mutate(nomito_GENIONK562[5], ), nomito_GENIONK562[5]), "NumSupp"="V5"), Algorithm = "Genion"),
+                  mutate(rename(rbind(nomito_JAFFALK562[11], nomito_JAFFALMCF7[11]), "NumSupp"="spanning.reads"), Algorithm = "JAFFAL"))
 
 ```
 
