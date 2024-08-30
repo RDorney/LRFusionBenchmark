@@ -196,7 +196,7 @@ nomito_LongGFK562 <- rbind(mutate(filter(LongGF.K562.PacBio, (!grepl("chrM:", V4
 nomito_LongGFMCF7 <- rbind(mutate(filter(LongGF.MCF7.PacBio, (!grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)) ), platform = "PacBio", cell = "MCF7" ), mutate(filter(LongGF.MCF7.Nanopore, (!grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE))) , platform = "Nanopore", cell = "MCF7" ))
 
 nomito_GENIONK562 <- rbind(mutate(filter(genion_K562_PacBio, !grepl("M:", V8, ignore.case = TRUE)), platform = "PacBio", cell = "K562"), mutate(filter(genion_K562_Nanopore, !grepl("M:", V8, ignore.case = TRUE)), platform = "Nanopore", cell = "K562"))
-nomito_GENIONMCF7 <- rbind(mutate(filter(genion_MCF7_PacBio, !grepl("M:", V8, ignore.case = TRUE)), platform = "PacBio", cell = "MCF7"), filter(genion_MCF7_Nanopore, !grepl("M:", V8, ignore.case = TRUE)))
+nomito_GENIONMCF7 <- rbind(mutate(filter(genion_MCF7_PacBio, !grepl("M:", V8, ignore.case = TRUE)), platform = "PacBio", cell = "MCF7"), mutate(filter(genion_MCF7_Nanopore, !grepl("M:", V8, ignore.case = TRUE)), platform = "Nanopore", cell = "MCF7"))
 
 nomito_JAFFALK562 <- rbind(mutate(subset(JAFFAL_K562_PacBio, (chrom1 != "chrM" & chrom2 != "chrM")), platform = "PacBio", cell = "K562" ), mutate(subset(JAFFAL_K562_Nanopore, (chrom1 != "chrM" & chrom2 != "chrM")), platform = "Nanopore", cell = "K562" ))
 nomito_JAFFALMCF7 <- rbind(mutate(subset(JAFFAL_MCF7_PacBio , (chrom1 != "chrM" & chrom2 != "chrM")), platform = "PacBio", cell = "MCF7" ), mutate(subset(JAFFAL_MCF7_Nanopore, (chrom1 != "chrM" & chrom2 != "chrM")), platform = "Nanopore", cell = "MCF7" ))
@@ -208,35 +208,141 @@ nomito_JAFFALMCF7 <- rbind(mutate(subset(JAFFAL_MCF7_PacBio , (chrom1 != "chrM" 
 self_LongGFK562 <- nomito_LongGFK562 %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 == V2.2)
 self_LongGFMCF7 <- nomito_LongGFMCF7 %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 == V2.2)
 
-self_FusionSeekerK562 <- nomito_FusionSeekerK562 %>% subset(Gene1 == Gene2)
-self_FusionSeekerMCF7 <- nomito_FusionSeekerMCF7 %>% subset(Gene1 == Gene2)
+self_FusionSeekerK562 <- nomito_FusionSeekerK562 %>%
+  subset((Gene1 == Gene2) | 
+         mapply(grepl, pattern = paste0(Gene1, "_PAR_Y"), x = Gene2) | 
+         mapply(grepl, pattern = paste0(Gene2, "_PAR_Y"), x = Gene1))
+self_FusionSeekerMCF7 <- nomito_FusionSeekerMCF7 %>% subset((Gene1 == Gene2) | 
+         mapply(grepl, pattern = paste0(Gene1, "_PAR_Y"), x = Gene2) | 
+         mapply(grepl, pattern = paste0(Gene2, "_PAR_Y"), x = Gene1))
 
-self_GENIONK562 <- nomito_GENIONK562 %>% separate(V1, into = c("V1.1","V1.2"), sep="::", remove = FALSE) %>%  subset(V1.1 == V1.2)
-self_GENIONKMCF7 <- nomito_GENIONMCF7 %>% separate(V1, into = c("V1.1","V1.2"), sep="::", remove = FALSE) %>%  subset(V1.1 == V1.2)
+self_GENIONK562 <- nomito_GENIONK562 %>% separate(V1, into = c("V1.1","V1.2"), sep="::", remove = FALSE) %>%  subset((V1.1 == V1.2) | mapply(grepl, pattern = paste0(V1.1, "_PAR_Y"), x = V1.2) | 
+         mapply(grepl, pattern = paste0(V1.2, "_PAR_Y"), x = V1.1))
+self_GENIONKMCF7 <- nomito_GENIONMCF7 %>% separate(V1, into = c("V1.1","V1.2"), sep="::", remove = FALSE) %>%  subset((V1.1 == V1.2) | mapply(grepl, pattern = paste0(V1.1, "_PAR_Y"), x = V1.2) | 
+         mapply(grepl, pattern = paste0(V1.2, "_PAR_Y"), x = V1.1))
 
-self_JAFFALK562 <- nomito_JAFFALK562 %>% separate(fusion.genes, into = c("V1.1","V1.2"), sep=":", remove = FALSE) %>%  subset(V1.1 == V1.2)
+self_JAFFALK562 <- nomito_JAFFALK562 %>% separate(fusion.genes, into = c("V1.1","V1.2"), sep=":", remove = FALSE) %>% subset(V1.1 == V1.2)
 self_JAFFALMCF7 <- nomito_JAFFALMCF7 %>% separate(fusion.genes, into = c("V1.1","V1.2"), sep=":", remove = FALSE) %>%  subset(V1.1 == V1.2)
 
-selfish <- rbind(self_LongGFK562, self_LongGFMCF7)[c(5, (ncol(self_LongGFK562)-1), ncol(self_LongGFK562))] %>% 
+selfish <- rbind(mutate(rbind(self_LongGFK562, self_LongGFMCF7)[c(5, (ncol(self_LongGFK562)-1), ncol(self_LongGFK562))], Algorithm = "LongGF") , mutate(rename(rbind(self_FusionSeekerK562, self_FusionSeekerMCF7)[c(4, (ncol(self_FusionSeekerMCF7)-1), ncol(self_FusionSeekerMCF7))], "V3"="NumSupp"), Algorithm = "FusionSeeker")) %>%
   group_by_all %>%
-  mutate(Frequency = n(), Algorithm = "LongGF") %>% unique()
+  mutate(Frequency = n()) %>% unique()
 
 ggplot((selfish), aes(x = V3, y= Frequency, colour = Algorithm, shape = factor(cell)))+
   geom_point(alpha = 0.5)+
   labs(title = "Frequency of self fusions",
     x = "Read Support")+
   facet_zoom(xlim = c(1, 25), ylim = c(0, 25))
+
+
 ```
 
 ```{r}
 selfless_LongGFK562 <- nomito_LongGFK562 %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 != V2.2)
 selfless_LongGFMCF7 <- nomito_LongGFMCF7 %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 != V2.2)
 
+selfless_FusionSeekerK562 <- nomito_FusionSeekerK562 %>%
+  subset((Gene1 != Gene2) &
+         !mapply(grepl, pattern = paste0(Gene1, "_PAR_Y"), x = Gene2) & 
+         !mapply(grepl, pattern = paste0(Gene2, "_PAR_Y"), x = Gene1))
+
+selfless_FusionSeekerMCF7 <- nomito_FusionSeekerMCF7 %>% subset((Gene1 != Gene2) & 
+         !mapply(grepl, pattern = paste0(Gene1, "_PAR_Y"), x = Gene2) & 
+         !mapply(grepl, pattern = paste0(Gene2, "_PAR_Y"), x = Gene1))
+
 selfless <- rbind(mutate(rename(rbind(selfless_LongGFMCF7[c(5,(ncol(selfless_LongGFMCF7)-1) ,ncol(selfless_LongGFMCF7))], selfless_LongGFK562[c(5,(ncol(selfless_LongGFK562)-1) ,ncol(selfless_LongGFK562))]), "NumSupp"="V3"), Algorithm = "LongGF"),
-                  
-                  mutate(rbind(nomito_FusionSeekerK562[c(4, (ncol(nomito_FusionSeekerK562)-1), ncol(nomito_FusionSeekerK562))], nomito_FusionSeekerMCF7[c(4, (ncol(nomito_FusionSeekerMCF7)-1), ncol(nomito_FusionSeekerMCF7))]) , Algorithm = "FusionSeeker"),
-                  mutate(rename(rbind(mutate(nomito_GENIONK562[5], ), nomito_GENIONK562[5]), "NumSupp"="V5"), Algorithm = "Genion"),
-                  mutate(rename(rbind(nomito_JAFFALK562[11], nomito_JAFFALMCF7[11]), "NumSupp"="spanning.reads"), Algorithm = "JAFFAL"))
+                  mutate(rbind(selfless_FusionSeekerK562[c(4, (ncol(selfless_FusionSeekerK562)-1), ncol(selfless_FusionSeekerK562))], selfless_FusionSeekerMCF7[c(4, (ncol(selfless_FusionSeekerMCF7)-1), ncol(selfless_FusionSeekerMCF7))]) , Algorithm = "FusionSeeker"),
+                  rename(mutate(rbind(nomito_GENIONK562[c(5, (ncol(nomito_GENIONK562)-1), ncol(nomito_GENIONK562))], nomito_GENIONMCF7[c(5, (ncol(nomito_GENIONMCF7)-1), ncol(nomito_GENIONMCF7))]), Algorithm = "Genion"), "NumSupp"="V5"), 
+                  mutate(rename(rbind(nomito_JAFFALK562[c(11, (ncol(nomito_JAFFALK562)-1), ncol(nomito_JAFFALK562))], nomito_JAFFALMCF7[c(11, (ncol(nomito_JAFFALMCF7)-1), ncol(nomito_JAFFALMCF7))]), "NumSupp"="spanning.reads"), Algorithm = "JAFFAL"))
+
+frequency_selfless <- selfless %>%
+  group_by_all %>%
+  mutate(Frequency = n()) %>% unique()
+
+ggplot(frequency_selfless, aes(x = NumSupp, y= Frequency, colour = Algorithm, shape = factor(cell)))+
+  geom_jitter(alpha = 0.5)+
+  labs(title = "Read Support of putative fusions",
+    x = "Read Support",
+    y= "count")+ 
+  scale_y_log10()+
+  scale_x_log10()
+
+
+ggplot((subset(frequency_selfless, cell == "K562")), aes(x = NumSupp, y= Frequency, colour = Algorithm, shape = factor(platform)))+
+  geom_jitter(alpha = 0.5)+
+  labs(title = "Read Support of putative fusions in K562",
+    x = "Read Support",
+    y = "count")+ 
+  scale_y_log10()+
+  scale_x_log10()
+
+ggplot((subset(frequency_selfless, cell == "MCF7")), aes(x = NumSupp, y= Frequency, colour = Algorithm, shape = factor(platform)))+
+  geom_jitter(alpha = 0.5)+
+  labs(title = "Read Support of putative fusions in MCF7",
+    x = "Read Support")+ 
+  scale_y_log10()+
+  scale_x_log10()
+
+ggplot((subset(selfless, cell == "MCF7")), aes(x = NumSupp, fill = Algorithm))+
+  geom_density(alpha = 0.5)+
+  labs(title = "Read Support of putative fusions in MCF7",
+    x = "Read Support")+
+  scale_x_log10()
+
+ggplot((subset(selfless, cell == "MCF7")), aes(x = NumSupp, fill = Algorithm, after_stat(count)))+
+  geom_density(alpha = 0.5 )+
+  labs(title = "Read Support of putative fusions in MCF7",
+    x = "Read Support")+
+  scale_x_log10()+
+  facet_zoom(xlim = c(1, 30), ylim = c(0,500))
+```
+
+```{r}
+head(selfless_FusionSeekerK562[c(1:8, 10:12)])
+
+consolidate_FusionSeekerK562<-selfless_FusionSeekerK562 %>%
+  group_by(Gene1, Gene2, Chrom1, Chrom2, Source, platform, cell) %>%
+  summarize(Total_NumSupp = sum(NumSupp))
+consolidate_FusionSeekerMCF7<-selfless_FusionSeekerMCF7 %>%
+  group_by(Gene1, Gene2, Chrom1, Chrom2, Source, platform, cell, ) %>%
+  summarize(Total_NumSupp = sum(NumSupp))
+
+consolidate_LongGFK562 <- selfless_LongGFK562 %>%
+  group_by(V1,V2, V2.1, V2.2,  V4, V5, platform, cell) %>%
+  summarize(Total_NumSupp = sum(V3))
+consolidate_LongGFMCF7 <- selfless_LongGFMCF7 %>%
+  group_by(V1,V2, V2.1, V2.2,  V4, V5, platform, cell) %>%
+  summarize(Total_NumSupp = sum(V3))
+
+consolidate_GENIONK562<- nomito_GENIONK562 %>%
+  group_by(V1,V2, V3,  V4, V6, V7, Source, platform, cell) %>%
+  summarize(Total_NumSupp = sum(V5))
+consolidate_GENIONMCF7<- nomito_GENIONMCF7 %>%
+  group_by(V1,V2, V3,  V4, V6, V7, Source, platform, cell) %>%
+  summarize(Total_NumSupp = sum(V5))
+
+consolidate_JAFFALK562<- nomito_JAFFALK562 %>%
+  group_by(sample, fusion.genes, chrom1,  strand1, chrom2, strand2, Source, platform, cell) %>%
+  summarize(Total_NumSupp = sum(spanning.reads))
+
+consolidate_JAFFALMCF7 <- nomito_JAFFALMCF7 %>%
+  group_by(sample, fusion.genes, chrom1,  strand1, chrom2, strand2, Source, platform, cell) %>%
+  summarize(Total_NumSupp = sum(spanning.reads))
+
+consolidated <- rbind(mutate(rbind(consolidate_LongGFK562, consolidate_LongGFMCF7)[c((ncol(consolidate_LongGFK562)-2): ncol(consolidate_LongGFK562))], Algorithm = "LongGF") , mutate(rbind(consolidate_FusionSeekerK562, consolidate_FusionSeekerMCF7)[c((ncol(consolidate_FusionSeekerMCF7)-2): ncol(consolidate_FusionSeekerMCF7))], Algorithm = "FusionSeeker"), mutate(rbind(consolidate_GENIONK562, consolidate_GENIONMCF7)[c((ncol(consolidate_GENIONK562)-2): ncol(consolidate_GENIONMCF7))], Algorithm = "Genion"), mutate(rbind(consolidate_JAFFALK562, consolidate_JAFFALMCF7)[c((ncol(consolidate_JAFFALK562)-2): ncol(consolidate_JAFFALK562))], Algorithm = "JAFFAL")) 
+
+frequency_consolidated <- consolidated %>%
+  group_by_all %>%
+  mutate(Frequency = n()) %>% unique()
+
+ggplot(frequency_consolidated, aes(x = Total_NumSupp, y= Frequency, colour = Algorithm, shape = factor(cell)))+
+  geom_jitter(alpha = 0.5)+
+  labs(title = "Read Support of putative fusions",
+    x = "Read Support",
+    y= "count")+ 
+  scale_y_log10()+
+  scale_x_log10()
+
 
 ```
 
