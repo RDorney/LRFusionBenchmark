@@ -26,8 +26,13 @@ library(dplyr)
 library(biomaRt)
 library(ggplot2)
 library(ggforce)
+library(UpSetR)
+library(ComplexUpset)
 ```
-
+```{r}
+known_fusions <- read.table("~/benchmark_data_analysis/real_gene_fusions.tsv", header=TRUE)
+ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+```
 
 ```{r}
 ####Read in Data
@@ -337,7 +342,7 @@ frequency_consolidated <- consolidated %>%
 
 ggplot(frequency_consolidated, aes(x = Total_NumSupp, y= Frequency, colour = Algorithm, shape = factor(cell)))+
   geom_jitter(alpha = 0.5)+
-  labs(title = "Read Support of putative fusions",
+  labs(title = "Read Support of putative fusions with consolidated breakpoints",
     x = "Read Support",
     y= "count")+ 
   scale_y_log10()+
@@ -345,4 +350,171 @@ ggplot(frequency_consolidated, aes(x = Total_NumSupp, y= Frequency, colour = Alg
 
 
 ```
+```{r}
+# Found Fusions overlap, ignoring source file and read support, only looking at cell lines
+
+set1_JAFFALK562 <- gsub( ":", "::", c(consolidate_JAFFALK562$fusion.genes))
+set2_GenionK562 <- c(consolidate_GENIONK562$V2)
+set3_LongGFK562 <- gsub( ":", "::", c(consolidate_LongGFK562$V2))
+
+#Adjust FusionSeeker dataset
+set4_FusionSeekerK562 <- consolidate_FusionSeekerK562
+set4_FusionSeekerK562$Gene1 <- gsub("\\..*", "", set4_FusionSeekerK562$Gene1)
+set4_FusionSeekerK562$Gene2 <- gsub("\\..*", "", set4_FusionSeekerK562$Gene2)
+ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+gene_info_1 <- getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "ensembl_gene_id",
+                             values = unique(set4_FusionSeekerK562$Gene1),
+                             mart = ensembl)
+gene_info_2 <- getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "ensembl_gene_id",
+                             values = unique(set4_FusionSeekerK562$Gene2),
+                             mart = ensembl)
+
+set4_FusionSeekerK562 <- left_join(set4_FusionSeekerK562, gene_info_1, by=c("Gene1"="ensembl_gene_id")) %>%
+  left_join(gene_info_2, by=c("Gene2"="ensembl_gene_id")) %>% 
+  mutate( #Some gene IDs (often belonging to antisense genes) do not have an external name. so we replace the empty string with the gene id
+    external_gene_name.x = coalesce(na_if(external_gene_name.x, ""), Gene1),
+    external_gene_name.y = coalesce(na_if(external_gene_name.y, ""), Gene2)
+  ) %>%
+  unite(fusion.gene, c(external_gene_name.x, external_gene_name.y), sep = "::", remove = FALSE) %>%
+  unite(fusion.gene.id, c(Gene1, Gene2), sep = "::", remove = FALSE)
+
+length(unique(set1_JAFFALK562))
+length(unique(set2_GenionK562))
+length(unique(set3_LongGFK562))
+length(unique(set4_FusionSeekerK562$fusion.gene))
+
+Fusion_Gene_sets_K562 <- list(
+  JAFFAL = unique(set1_JAFFALK562),
+  Genion = unique(set2_GenionK562),
+  LongGF = unique(set3_LongGFK562),
+  FusionSeeker = unique(set4_FusionSeekerK562$fusion.gene),
+  Known = subset(known_fusions, Cell_Line=="K562" , select=Known_Fusion)$Known_Fusion 
+)
+
+Tools <- colnames(fromList(Fusion_Gene_sets_K562)[1:4])
+upset(fromList(Fusion_Gene_sets), sets = Tools, order.by = "degree") 
+upset_fusion_results <- fromList(Fusion_Gene_sets_K562)
+
+complex_upset_data <- fromList(Fusion_Gene_sets_K562)
+complex_upset_data$Known <- complex_upset_data$Known %>% as.logical() #%>% factor(levels = c(TRUE, FALSE))
+ComplexUpset::upset(complex_upset_data, 
+      Tools, 
+      #sort_intersections_by='degree',
+      base_annotations=list('Found Fusions'=intersection_size(counts = TRUE, mapping = aes(fill=Known), ))
+      ) 
+```
+```{r}
+#Overall ReadSupport
+Overall_JAFFALK562 <- consolidate_JAFFALK562 %>%
+  group_by(fusion.genes, chrom1, chrom2, cell) %>%
+  summarize(Overall_NumSupp = sum(Total_NumSupp)) %>% mutate(Algorithm = "JAFFAL")
+Overall_FusionSeekerK562 <- consolidate_FusionSeekerK562 %>%
+  group_by(Gene1, Gene2, Chrom1, Chrom2, cell) %>%
+  summarize(Overall_NumSupp = sum(Total_NumSupp))%>% mutate(Algorithm = "FusionSeeker")
+Overall_GENIONK562 <- consolidate_GENIONK562 %>%
+  group_by(V2,  cell) %>%
+  summarize(Overall_NumSupp = sum(Total_NumSupp))%>% mutate(Algorithm = "Genion")
+Overall_LongGFK562 <- consolidate_LongGFK562 %>%
+  group_by(V2, cell) %>%
+  summarize(Overall_NumSupp = sum(Total_NumSupp))%>% mutate(Algorithm = "LongGF")
+
+Overall_JAFFALMCF7 <- consolidate_JAFFALMCF7 %>%
+  group_by(fusion.genes, chrom1, chrom2, platform, cell) %>%
+  summarize(Overall_NumSupp = sum(Total_NumSupp)) %>% mutate(Algorithm = "JAFFAL")
+Overall_FusionSeekerMCF7 <- consolidate_FusionSeekerMCF7 %>%
+  group_by(Gene1, Gene2, Chrom1, Chrom2, platform, cell) %>%
+  summarize(Overall_NumSupp = sum(Total_NumSupp))%>% mutate(Algorithm = "FusionSeeker")
+Overall_GENIONMCF7 <- consolidate_GENIONMCF7 %>%
+  group_by(V2, platform, cell) %>%
+  summarize(Overall_NumSupp = sum(Total_NumSupp))%>% mutate(Algorithm = "Genion")
+Overall_LongGFMCF7 <- consolidate_LongGFMCF7 %>%
+  group_by(V2, platform, cell) %>%
+  summarize(Overall_NumSupp = sum(Total_NumSupp))%>% mutate(Algorithm = "LongGF")
+
+Overall_K562 <- rbind(Overall_JAFFALK562[c("cell","Overall_NumSupp","Algorithm")], Overall_FusionSeekerK562[c("cell","Overall_NumSupp","Algorithm")], Overall_GENIONK562[c("cell","Overall_NumSupp","Algorithm")], Overall_LongGFK562[c("cell","Overall_NumSupp","Algorithm")]) 
+
+
+frequency_Overall_K562 <- Overall_K562 %>%
+  group_by_all %>%
+  mutate(Frequency = n()) %>% unique()
+
+ggplot(frequency_Overall_K562, aes(x = Overall_NumSupp, y= Frequency, colour = Algorithm))+
+  geom_jitter(alpha = 0.5)+
+  labs(title = "Read Support of putative fusions with consolidated breakpoints",
+    x = "Read Support",
+    y= "frequency")+ 
+  scale_y_log10()+
+  scale_x_log10()
+
+ggplot((subset(Overall_K562, cell == "K562")), aes(x = Overall_NumSupp, fill = Algorithm))+
+  geom_density(alpha = 0.5)+
+  labs(title = "Read Support of putative fusions in K562",
+    x = "Read Support")+
+  scale_x_log10()
+
+ggplot((subset(Overall_K562, cell == "K562")), aes(x = Overall_NumSupp, fill = Algorithm, after_stat(count)))+
+  geom_density(alpha = 0.5)+
+  labs(title = "Read Support of putative fusions in K562",
+    x = "Read Support")+
+  scale_x_log10()+
+  facet_zoom(xlim=c(1,100), ylim=c(0,1500))
+
+```
+```{r}
+#filter out overall = 1
+Filt_Overall_JAFFALK562 <- Overall_JAFFALK562  %>% subset(Overall_NumSupp >1) 
+Filt_Overall_GENIONK562 <- Overall_GENIONK562 %>% subset(Overall_NumSupp >1) 
+Filt_Overall_LongGFK562 <- Overall_LongGFK562 %>% subset(Overall_NumSupp >1)
+Filt_Overall_FusionSeekerK562 <- Overall_FusionSeekerK562  %>% subset(Overall_NumSupp >1)
+
+
+#Adjust FusionSeeker dataset
+Filt_Overall_FusionSeekerK562$Gene1 <- gsub("\\..*", "", Filt_Overall_FusionSeekerK562$Gene1)
+Filt_Overall_FusionSeekerK562$Gene2 <- gsub("\\..*", "", Filt_Overall_FusionSeekerK562$Gene2)
+ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+gene_info_1 <- getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "ensembl_gene_id",
+                             values = unique(Filt_Overall_FusionSeekerK562$Gene1),
+                             mart = ensembl)
+gene_info_2 <- getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "ensembl_gene_id",
+                             values = unique(Filt_Overall_FusionSeekerK562$Gene2),
+                             mart = ensembl)
+
+Filt_Overall_FusionSeekerK562 <- left_join(Filt_Overall_FusionSeekerK562, gene_info_1, by=c("Gene1"="ensembl_gene_id")) %>%
+  left_join(gene_info_2, by=c("Gene2"="ensembl_gene_id")) %>% 
+  mutate( #Some gene IDs (often belonging to antisense genes) do not have an external name. so we replace the empty string with the gene id
+    external_gene_name.x = coalesce(na_if(external_gene_name.x, ""), Gene1),
+    external_gene_name.y = coalesce(na_if(external_gene_name.y, ""), Gene2)
+  ) %>%
+  unite(fusion.gene, c(external_gene_name.x, external_gene_name.y), sep = "::", remove = FALSE) %>%
+  unite(fusion.gene.id, c(Gene1, Gene2), sep = "::", remove = FALSE)
+
+Filt_Overall_FusionSeekerK562[c("cell", "Overall_NumSupp", "fusion.gene", "Algorithm")]
+
+
+Fusion_Gene_sets_K562 <- list(
+  JAFFAL = Filt_Overall_JAFFALK562$fusion.genes, #need to gsub the ::
+  Genion = Filt_Overall_GENIONK562$V2,
+  LongGF = Filt_Overall_LongGFK562$V2,
+  FusionSeeker = Filt_Overall_FusionSeekerK562$fusion.gene,
+  Known = subset(known_fusions, Cell_Line=="K562" , select=Known_Fusion)$Known_Fusion 
+)
+
+Tools <- colnames(fromList(Fusion_Gene_sets_K562)[1:4])
+upset(fromList(Fusion_Gene_sets), sets = Tools, order.by = "degree") 
+upset_fusion_results <- fromList(Fusion_Gene_sets_K562)
+
+complex_upset_data <- fromList(Fusion_Gene_sets_K562)
+complex_upset_data$Known <- complex_upset_data$Known %>% as.logical() #%>% factor(levels = c(TRUE, FALSE))
+ComplexUpset::upset(complex_upset_data, 
+      Tools, 
+      #sort_intersections_by='degree',
+      base_annotations=list('Found Fusions'=intersection_size(counts = TRUE, mapping = aes(fill=Known), ))
+      ) 
+
+```
+
 
