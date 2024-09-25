@@ -254,9 +254,11 @@ Annot_JAFFAL_3Gene_Sim$fusionType <- mapply(function(g1, g2, g3, current_type) {
                 str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g3, ":", g1))| 
                 str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g1, ":", g3, ":", g2))| 
                 str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1, ":", g3)))) {
-            return("wrong_order:tri_fusion")}
-     }
-  
+            return("wrong_order:tri_fusion")
+          }else {
+          return("false_fusion")
+        }
+   }
   return(current_type)}, Annot_JAFFAL_3Gene_Sim$Gene1, Annot_JAFFAL_3Gene_Sim$Gene2, Annot_JAFFAL_3Gene_Sim$Gene3, Annot_JAFFAL_3Gene_Sim$fusionType)
 
 
@@ -453,11 +455,232 @@ Annot_FusionSeeker_Sim <- Annot_FusionSeeker_Sim %>%
   ))
 ```
 ```{r}
-Annot_LongGF_Sim[c(2,5,9, 14, 30,34)]
-Annot_JAFFAL_Sim[c(2, 13, 22, 27, 43, 47)]
-Annot_JAFFAL_3Gene_Sim [c(1, 5, 10, 11, 28, 32)]
-Annot_Genion_Sim[c(1, 11, 19, 33, 37)]
-Annot_FusionSeeker_Sim[c(4,11, 14, 35,40)]
+Annot_LongGF_Sim$Algorithm <- "LongGF"
+Annot_JAFFAL_Sim$Algorithm <- "JAFFAL"
+Annot_JAFFAL_3Gene_Sim$Algorithm <- "JAFFAL"
+Annot_Genion_Sim$Algorithm <- "Genion"
+Annot_FusionSeeker_Sim$Algorithm <- "FusionSeeker"
+
+Annot_LongGF_Sim[c(2,5,9, 14, 30,34, 35)]
+Annot_JAFFAL_Sim[c(2, 13, 22, 27, 43, 47, 48)]
+Annot_JAFFAL_3Gene_Sim[c(1, 5, 10, 11, 28, 32, 33)]
+Annot_Genion_Sim[c(1, 5, 11, 19, 33, 37, 38)]
+Annot_FusionSeeker_Sim[c(4,11, 14, 19,35,40, 41)]
+
+dLGF<- Annot_LongGF_Sim[c(2,5,9, 14, 30,34, 35)] %>%
+  rename(read_supp = V3.x,
+         fusion.genes = V2)
+dJF <- Annot_JAFFAL_Sim[c(2, 13, 22, 27, 43, 47, 48)] %>%
+  rename(read_supp = spanning.reads)
+dJF3 <- Annot_JAFFAL_3Gene_Sim[c(1, 5, 10, 11, 28, 32, 33)]%>%
+  rename(read_supp = Reads,
+         fusion.genes = Fusion)
+dGen <- Annot_Genion_Sim[c(1, 5, 11, 19, 33, 37, 38)]%>%
+  rename(read_supp = V5,
+         fusion.genes = V2,
+         fusion.gene.id = V1)
+dFS <- Annot_FusionSeeker_Sim[c(4,11, 14, 19,35,40, 41)]%>%
+  rename(read_supp = NumSupp,
+         fusion.genes = fusion.gene)
+combined_data <- rbind(dLGF, dJF, dJF3, dGen, dFS)
+combined_data$read_supp <- as.numeric(combined_data$read_supp)
+
+library(ggplot2)
+False_total <- ggplot(filter(combined_data, control == "negative", 
+         read_supp > 2), aes(x = fusionType, fill = fusionType)) +
+  geom_bar(position = "dodge") +
+  facet_wrap(~ Algorithm) +
+  theme_minimal() +
+  labs(title = "False calls in the Negative Control, minimum read support of 2", x = "Fusion Type", y = "Count")+
+  scale_y_log10()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("False_total_in_Neg_Cont.png", plot = False_total, width = 10, height = 6, dpi = 600) 
+
+# Summarize the data
+summary_df <- combined_data %>%
+  group_by(fusionType, read_supp, control, Algorithm) %>%   # Group by fusionType and read_supp
+  summarise(
+    count = n()                        # Count the number of occurrences
+  ) %>%
+  ungroup()                             # Remove grouping to avoid issues with further operations
+
+# View the summarized data
+summary_df$read_supp <- as.numeric(summary_df$read_supp)
+
+ggplot(filter(summary_df, control == 'negative'), aes(x = read_supp, y = count, color = fusionType)) +
+  geom_point() +  # Add jitter for visibility
+  facet_wrap(~ Algorithm) +
+  theme_minimal() +
+  labs(title = "Count of Fusion Types by Read Support and Algorithm", 
+       x = "Read Support", 
+       y = "Count")+
+  scale_y_log10()
+
+ggplot(filter(summary_df, control == 'negative'), aes(x = count, fill = fusionType)) +
+  geom_density(alpha = 0.6, adjust = 1.5) +  # Adjust bandwidth for smoothing if needed
+  facet_wrap(~ Algorithm) +  # Facet by Algorithm
+  theme_minimal() +
+  labs(title = "Density Plot of Fusion Types by Algorithm", 
+       x = "Count", 
+       y = "Density") +
+  scale_fill_brewer(palette = "Set1")+  # Optional: Use a color palette for better visuals
+  scale_x_log10()
+
+ggplot(filter(summary_df, control == 'negative'), aes(x = read_supp, y = count, color = Algorithm, shape = fusionType)) +
+  geom_point(size = 2) + # Use geom_point for a scatter plot
+  labs(title = "Counts by Read Support and Algorithm",
+       x = "Read Support",
+       y = "Count",
+       color = "Algorithm") + # Modify color legend title
+  theme_minimal() + # Use a minimal theme
+  scale_color_brewer(palette = "Set1")+ # Optional: Adjust color palette
+  scale_y_log10()+
+  scale_x_log10()
+
+Read_Supp_Neg <- ggplot(filter(combined_data, control == 'negative', 
+         read_supp > 2), aes(x = Algorithm, y = read_supp)) +
+  geom_boxplot(aes(fill = Algorithm)) +
+  labs(title = "Distribution of Read Support for False Fusions",
+       x = "Fusion Type",
+       y = "Read Support") +
+  theme_minimal() +
+  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
+  scale_y_log10()+  # Optional: Use log scale if appropriate
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("Read_supp_False_in_Neg_Cont.png", plot = Read_Supp_Neg, width = 10, height = 6, dpi = 600) 
+```
+
+```{r}
+#Positive Control
+ggplot(filter(combined_data, control == 'positive'), aes(x = Algorithm, y = read_supp)) +
+  geom_boxplot(aes(fill = Algorithm)) +
+  labs(title = "Distribution of Read Support",
+       x = "Fusion Type",
+       y = "Read Support") +
+  theme_minimal() +
+  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
+  scale_y_log10()+  # Optional: Use log scale if appropriate
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(filter(combined_data, control == 'positive', 
+     mapply(function(x) grepl("false", x) , fusionType)), aes(x = Algorithm, y = read_supp)) +
+  geom_boxplot(aes(fill = Algorithm)) +
+  labs(title = "Distribution of Read Support",
+       x = "Fusion Type",
+       y = "Read Support") +
+  theme_minimal() +
+  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
+  scale_y_log10()+  # Optional: Use log scale if appropriate
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(filter(summary_df, control == 'positive', 
+     mapply(function(x) grepl("reverse|truncate", x) , fusionType)), aes(x = read_supp, y = count)) +
+  geom_line(aes(colour = Algorithm)) +
+  labs(title = "Distribution of Read Support",
+       x = "Fusion Type",
+       y = "Read Support") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  facet_wrap(~ fusionType)
+
+ggplot(filter(combined_data, control == 'positive', 
+     mapply(function(x) grepl("reverse|truncate", x) , fusionType)), aes(x = Algorithm, y = read_supp)) +
+  geom_boxplot(aes(fill = Algorithm)) +
+  labs(title = "Distribution of Read Support",
+       x = "Fusion Type",
+       y = "Read Support") +
+  theme_minimal() +
+  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
+  scale_y_log10()+  # Optional: Use log scale if appropriate
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(filter(summary_df, control == 'positive', 
+     mapply(function(x) grepl("reverse|truncate", x) , fusionType)), aes(x = read_supp, y = count)) +
+  geom_line(aes(colour = Algorithm)) +
+  labs(title = "Distribution of Read Support",
+       x = "Fusion Type",
+       y = "Read Support") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  facet_wrap(~ fusionType)
+
+ggplot(filter(summary_df, control == 'positive', 
+         read_supp > 2, 
+         grepl("false", fusionType)), aes(x = read_supp, y = count)) +
+  geom_line(aes(colour = fusionType)) +
+  labs(title = "Distribution of Read Support",
+       x = "Read Support",
+       y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  facet_wrap(~ Algorithm)+
+  scale_x_log10()
+
+Read_Supp_Pos_false <-ggplot(filter(combined_data, control == 'positive', 
+         read_supp > 2, 
+         grepl("false", fusionType)), aes(x = Algorithm)) +
+  geom_bar(aes(fill = fusionType)) +
+  labs(title = "Distribution of Read Support",
+       x = "Fusion Type",
+       y = "Count") +
+  theme_minimal() +
+  #facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
+  scale_y_log10()+  # Optional: Use log scale if appropriate
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("Read_Supp_Pos_false.png", plot = Read_Supp_Pos_false, width = 10, height = 6, dpi = 600)
+
+Count_Supp_Pos_truncrev <-ggplot(filter(combined_data, control == 'positive', 
+         read_supp > 2, 
+         grepl("wrong|reverse|trunc", fusionType)), aes(x = Algorithm)) +
+  geom_bar(aes(fill = fusionType)) +
+  labs(title = "Counts of Fusion Types",
+       x = "fusionType",
+       y = "Number of fusion calls") +
+  theme_minimal() +
+  #facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
+  scale_y_log10()+  # Optional: Use log scale if appropriate
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("Count_Supp_Pos_truncrev.png", plot = Count_Supp_Pos_truncrev, width = 10, height = 6, dpi = 600) 
+
+Read_Supp_Pos_truncrev <-ggplot(filter(combined_data, control == 'positive', 
+         read_supp > 2, 
+         grepl("wrong|reverse|trunc", fusionType)), aes(x = Algorithm, y = read_supp)) +
+  geom_boxplot(aes(fill = Algorithm)) +
+  labs(title = "Read Support of Fusion Types",
+       x = "Fusion Type",
+       y = "Read Support") +
+  theme_minimal() +
+  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
+  scale_y_log10()+  # Optional: Use log scale if appropriate
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("Read_Supp_Pos_truncrev.png", plot = Read_Supp_Pos_truncrev, width = 10, height = 6, dpi = 600) 
+
+Count_Supp_Pos_true <-ggplot(filter(combined_data, control == 'positive', 
+         read_supp > 2, 
+         !grepl("wrong|false|reverse|trunc", fusionType)), aes(x = Algorithm)) +
+  geom_bar(aes(fill = fusionType)) +
+  labs(title = "Counts of Fusion Types",
+       x = "fusionType",
+       y = "Number of fusion calls") +
+  theme_minimal() +
+  #facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
+  scale_y_log10()+  # Optional: Use log scale if appropriate
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("Count_Supp_Pos_true.png", plot = Count_Supp_Pos_true, width = 10, height = 6, dpi = 600) 
+
+Read_Supp_Pos_true <-ggplot(filter(combined_data, control == 'positive', 
+         read_supp > 2, 
+         !grepl("wrong|false|reverse|trunc", fusionType)), aes(x = Algorithm, y = read_supp)) +
+  geom_boxplot(aes(fill = Algorithm)) +
+  labs(title = "Read Support of Fusion Types",
+       x = "Fusion Type",
+       y = "Read Support") +
+  theme_minimal() +
+  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
+  scale_y_log10()+  # Optional: Use log scale if appropriate
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("Read_Supp_Pos_true.png", plot = Read_Supp_Pos_true, width = 10, height = 6, dpi = 600) 
+
 
 ```
 
