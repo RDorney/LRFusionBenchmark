@@ -2,22 +2,112 @@
 title: "simulated_data_analysis"
 author: "Ryley Dorney"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-```{bash}
-pwd
-#find the longgf results
-grep SumGF /bioinformatics/ryley/Simulated_Reads_June_2024/LongGF*Spiked*.log > /home/ryleyd/LongReadFusionCallerBenchmark/LongGF_Spiked.tsv
-grep SumGF /bioinformatics/ryley/Simulated_Reads_June_2024/LongGF*corrected_Simulated*.log > /home/ryleyd/LongReadFusionCallerBenchmark/LongGF_Negative_Control.tsv
-
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(ggh4x)
+library(biomaRt)
+library(UpSetR)
+library(ComplexUpset)
 ```
 
 ```{r}
-####Read in Data
+#Load biomaRt
+ensembl_current <-  useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl")
+ensemblv80 <- useEnsembl(biomart = 'genes', dataset = 'hsapiens_gene_ensembl', version = 80)
+ensemblv109 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 109)
+ensemblv110 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 110)
+ensembljul2023 <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://jul2023.archive.ensembl.org")
+#read simulated fusions
+simulated_fusions <- read.table(file = "~/benchmark_data_analysis/Jul23_benchmark_fusions.txt", header=TRUE, sep= "\t")
+write_tsv(simulated_fusions, file="~/simulated_fusion_info.tsv")
+
+Simulated_Fusion_Info <- simulated_fusions %>% separate(fusionGene, into= c('V1','V2','V3'), sep = "-", remove = FALSE) %>% mutate(across(fusionGene, ~ gsub("-", "::", .))) %>% mutate(geneName_ID = geneName) %>% mutate(across(c(V1, V2, V3, geneName), ~ gsub("\\..*","", .)))%>% separate(fusionGene, into= c('Gene1_vID','Gene2_vID','Gene3_vID'), sep = "::", remove = FALSE)
+
+Gene1_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+                             filters = "ensembl_gene_id",
+                             values = (Simulated_Fusion_Info$geneName),
+                             mart = ensembljul2023),
+                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+                             filters = "ensembl_gene_id",
+                             values = (Simulated_Fusion_Info$geneName),
+                             mart = ensemblv109),
+                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+                             filters = "ensembl_gene_id",
+                             values = (Simulated_Fusion_Info$geneName),
+                             mart = ensemblv110)) %>% unique()
+External_Gene_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = unique(Gene1_Name$external_gene_name),
+                             mart = ensembljul2023), 
+                          getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = unique(Gene1_Name$external_gene_name),
+                             mart = ensemblv109), 
+                          getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = unique(Gene1_Name$external_gene_name),
+                             mart = ensemblv110)) %>% unique()
+External_Gene_Name$chromosome_name <- paste0("chr",External_Gene_Name$chromosome_name)
+
+Alternative_Names_Gene_Fusion <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = (External_Gene_Name$external_gene_name),
+                             mart = ensembljul2023),
+                      getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = (External_Gene_Name$external_gene_name),
+                             mart = ensemblv109),
+                      getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = (External_Gene_Name$external_gene_name),
+                             mart = ensemblv110)) %>% unique()
+Alternative_Names_Gene_Fusion$chromosome_name <- paste0("chr", Alternative_Names_Gene_Fusion$chromosome_name)
+
+Sim_Info_Names <- left_join(Simulated_Fusion_Info, Alternative_Names_Gene_Fusion[c(1,2)], by = c("geneName"="ensembl_gene_id"))%>% 
+  left_join(Alternative_Names_Gene_Fusion, by = c("external_gene_name", "chrom" = "chromosome_name")) %>% mutate(
+    alternative_ID = coalesce(ensembl_gene_id, geneName)) %>% select(-c(ensembl_gene_id))
+  
+Simulated_Fusion_Info_2<-Sim_Info_Names %>%
+  mutate(Gene1_alternative_ID = map(Gene1_vID, ~ alternative_ID[which(geneName_ID == .x)]),
+    Gene2_alternative_ID = map(Gene2_vID, ~ alternative_ID[which(geneName_ID == .x)]),
+    Gene3_alternative_ID = map(Gene3_vID, ~ if (!is.na(.x)) alternative_ID[which(geneName_ID == .x)] else NA_character_)) %>%
+  unnest_longer(Gene1_alternative_ID) %>%
+  unnest_longer(Gene2_alternative_ID) %>%
+  unnest_longer(Gene3_alternative_ID, keep_empty = TRUE)%>%
+  unite("fusion.gene.id" , c(Gene1_alternative_ID, Gene2_alternative_ID, Gene3_alternative_ID), sep = ":", remove= FALSE, na.rm = TRUE) %>%
+   select(-c(alternative_ID)) %>% unique() %>%
+  unite("original.fusion.gene.id", c(V1, V2), sep=":", remove= FALSE, na.rm = TRUE)
+
+length(unique(Simulated_Fusion_Info_2$fusionGene))
+
+Simulated_Fusion_Info_3<-Sim_Info_Names %>%
+  mutate(Gene1_alternative_ID = map(Gene1_vID, ~ alternative_ID[which(geneName_ID == .x)]),
+    Gene2_alternative_ID = map(Gene2_vID, ~ alternative_ID[which(geneName_ID == .x)]),
+    Gene3_alternative_ID = map(Gene3_vID, ~ if (!is.na(.x)) alternative_ID[which(geneName_ID == .x)] else NA_character_)) %>%
+  unnest_longer(Gene1_alternative_ID) %>%
+  unnest_longer(Gene2_alternative_ID) %>%
+  unnest_longer(Gene3_alternative_ID, keep_empty = TRUE)%>%
+  unite("fusion.gene.id" , c(Gene1_alternative_ID, Gene2_alternative_ID, Gene3_alternative_ID), sep = ":", remove= FALSE, na.rm = TRUE) %>%
+  unique() %>%
+  unite("original.fusion.gene.id", c(V1, V2), sep=":", remove= FALSE, na.rm = TRUE)
+```
+
+```{bash}
+pwd
+#find the longgf results
+grep SumGF /bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/LongGF/LongGF*Spiked*.log > /home/ryleyd/LongReadFusionCallerBenchmark/LongGF_Spiked.tsv
+grep SumGF /bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/LongGF/*Adapter_Simulated*.log > /home/ryleyd/LongReadFusionCallerBenchmark/LongGF_Negative_Control.tsv
+```
+
+```{r}
 #LongGF
 my_files <- list.files(path = "/home/ryleyd/LongReadFusionCallerBenchmark", pattern = "LongGF", full.names=TRUE)
 all_tsv <-lapply(my_files, read.table)
@@ -27,22 +117,101 @@ for(i in names){
 }
 
 LongGF_Sim <- rbind(LongGF_Negative_Control, LongGF_Spiked)%>%
-      mutate(Source = basename(V1)) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
-ogLongGF <- rbind(LongGF_Negative_Control, LongGF_Spiked)%>%
-      mutate(Source = basename(V1)) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
-#Genion
-myfiles<- list.files(path = "/bioinformatics/ryley/Simulated_Reads_June_2024", pattern = "*_genion\\.tsv$", full.names = TRUE)
-Genion_Sim<- do.call(rbind, lapply(myfiles, function(filename) {
-  if (file.info(filename)$size > 0) {
-    read.table(filename) %>%
-      mutate(Source = basename(filename)) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
-  } else {
-    NULL
-  }
-}))
+      mutate(Source = basename(V1)) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))%>% 
+  separate(V2, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) %>% 
+  separate(V4, into = c("chromosome1", "breakpoint1"), sep = ":", remove = FALSE) %>% 
+  separate(V5, into = c("chromosome2", "breakpoint2"), sep = ":", remove = FALSE) #V2 = fusion gene name :
+ogLongGF <- LongGF_Sim
 
-#FusionSeeker
-myfiles<-list.files(path = "/bioinformatics/ryley/Simulated_Reads_June_2024", pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
+Gene_Name<-rbind (getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = unique(c(LongGF_Sim$Gene1, LongGF_Sim$Gene2)),
+                             mart = ensembljul2023),
+                  getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = unique(c(LongGF_Sim$Gene1, LongGF_Sim$Gene2)),
+                             mart = ensemblv109)) %>% unique()
+Gene_Name$chromosome_name <- paste0("chr", Gene_Name$chromosome_name)
+
+  
+  LongGF_Sim_ensembl <- LongGF_Sim %>%
+  left_join(Gene_Name, by = c('Gene1' = 'external_gene_name')) %>%
+  left_join(Gene_Name, by = c('Gene2' = 'external_gene_name')) %>%
+  mutate(
+    ensembl_gene1 = ifelse(is.na(ensembl_gene_id.x) | nchar(ensembl_gene_id.x) == 0, Gene1, ensembl_gene_id.x),
+    ensembl_gene2 = ifelse(is.na(ensembl_gene_id.y) | nchar(ensembl_gene_id.y) == 0, Gene2, ensembl_gene_id.y)
+  ) %>%
+  unite("fusion.gene.id", c(ensembl_gene1, ensembl_gene2), sep = ":", remove = FALSE, na.rm = TRUE) %>%
+  # Create a filtering condition using case_when
+  filter(case_when(
+      is.na(chromosome_name.x) ~ TRUE, # Keep if chromosome_name.x is NA
+      chromosome_name.x == chromosome1 ~ TRUE, # Keep if chromosome names match
+      chromosome_name.x == "chrMT" & chromosome1 == "chrM" ~ TRUE, # Allow chrMT/chrM equivalence
+      grepl("PATCH|HSCHR", chromosome_name.x) & !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y|M)$", chromosome1) ~ TRUE, 
+      TRUE ~ FALSE # Remove rows that don't meet the above conditions
+    )) %>%
+  filter(case_when(
+      is.na(chromosome_name.y) ~ TRUE,
+      chromosome_name.y == chromosome2 ~ TRUE,
+      chromosome_name.y == "chrMT" & chromosome2 == "chrM" ~ TRUE,
+      grepl("PATCH|HSCHR", chromosome_name.y) & !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y|M)$", chromosome2) ~ TRUE,
+      TRUE ~ FALSE # Remove rows that don't meet the above conditions
+    )) %>%  
+    select(-c("ensembl_gene_id.x", "chromosome_name.x", "ensembl_gene_id.y", "chromosome_name.y")) %>% unique()
+
+  
+#check if LongGF called any fusions from the spiked in
+Annot_LongGF_Sim <- LongGF_Sim_ensembl %>% left_join(Simulated_Fusion_Info_2, by = c("fusion.gene.id"), relationship = "many-to-many")  
+Annot_LongGF_Sim <- Annot_LongGF_Sim %>%
+  group_by(V2.x) %>%
+  mutate(fusionType = case_when(
+    is.na(fusionType) ~ paste0("chromosomal_misalignment:",first(na.omit(fusionType))),  # Only update NA values
+    .default = fusionType  # Keep existing values unchanged
+  ))%>% ungroup()%>%
+  replace_with_na(replace = list(fusionType = "chromosomal_misalignment:NA")) 
+
+Annot_LongGF_Sim <- LongGF_Sim_ensembl %>% left_join(Simulated_Fusion_Info_2, by = c("fusion.gene.id"), relationship = "many-to-many") %>%
+  group_by(V2.x) %>%
+  mutate(fusionType = case_when(
+    is.na(fusionType) ~ paste0("chromosomal_misalignment:",first(na.omit(fusionType))),  # Only update NA values
+    .default = fusionType  # Keep existing values unchanged
+  ))%>% ungroup()%>%
+  replace_with_na(replace = list(fusionType = "chromosomal_misalignment:NA"))  
+Annot_LongGF_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2, gene_name1, gene_name2) {
+   # Check if the current fusionType is empty
+  if (current_type == "" || is.na(current_type)) {
+    #check for truncated_tri_fusions
+    if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g1, ":", g2)) |
+            str_detect(paste(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V1, subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V3, sep = ":"), paste0(g1, ":", g2)))) {
+      return("truncated_tri_fusion")
+    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1))|
+                  str_detect(paste(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V1, subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V3, sep = ":"), paste0(g2, ":", g1)))){
+      return("reverse_order:truncated_tri_fusion") 
+    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
+       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))]
+      return(paste("reverse_order:", matching_row[1])) 
+    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))){
+       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))]
+      return(paste("chromosomal_misalignment:", matching_row[1])) 
+    } else if ((grepl("chrM:", chr1, ignore.case = TRUE) & !grepl("chrM:", chr2, ignore.case = TRUE)) | (!grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE))){
+      return("false_fusion:mitochondrial_genomic") 
+    }else if (grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE)){
+      return("false_fusion:mitochondrial") 
+    }else if ((gene_name1 == gene_name2) & (chr1 != chr2)){
+      return("false_fusion:self_misalignment") 
+    }else {
+      return("false_fusion")
+    }
+  }
+  return(current_type)
+}, Annot_LongGF_Sim$ensembl_gene1, Annot_LongGF_Sim$ensembl_gene2, Annot_LongGF_Sim$fusionType, Annot_LongGF_Sim$chromosome1, Annot_LongGF_Sim$chromosome2, Annot_LongGF_Sim$Gene1, Annot_LongGF_Sim$Gene2)
+
+
+setdiff(ogLongGF$V2, Annot_LongGF_Sim$V2.x)
+```
+```{r}
+#FusionSeeker_Sim # Gene1 = Gene ID 1, Gene2 = Gene ID 2
+myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/FusionSeeker", pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
 FusionSeeker_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE) %>%
     mutate(Source = basename(dirname(filename)))%>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
@@ -51,197 +220,213 @@ ogFusionSeeker <- do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE) %>%
     mutate(Source = basename(dirname(filename)))%>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
 }))
-#JAFFAL
-myfiles<-list.files(path = "/bioinformatics/ryley/Simulated_Reads_June_2024", pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
-JAFFAL_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
-  read.table(filename, header = TRUE, sep = ",") %>%
-    mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", sample), "positive", "negative"))
-}))
-ogJAFFAL <-  do.call(rbind, lapply(myfiles, function(filename) {
-  read.table(filename, header = TRUE, sep = ",") %>%
-    mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", sample), "positive", "negative"))
-}))
 
-myfiles<-list.files(path = "/bioinformatics/ryley/Simulated_Reads_June_2024", pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE)
-JAFFAL_3Gene_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
-  read.table(filename, header = TRUE, sep = "\t") %>%
-    mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
-}))
+FusionSeeker_Sim <- FusionSeeker_Sim %>%
+  unite("fusionGene", c(Gene1, Gene2), sep="::", remove= FALSE, na.rm = TRUE)%>%
+  mutate(across(c(Gene1, Gene2), ~ gsub("\\..*","", .)))%>%
+  separate(fusionGene, into= c('Gene1_vID','Gene2_vID'), sep = "::", remove = FALSE) %>%
+  unite("original.fusion.gene.id", c(Gene1, Gene2), sep=":", remove= FALSE, na.rm = TRUE)
+PAR_Y_problem1 <- FusionSeeker_Sim %>%
+  filter(grepl("PAR_Y", Gene1_vID, ignore.case = TRUE)) %>% select(Gene1) 
+PAR_Y_problem2 <-  FusionSeeker_Sim %>%
+  filter(grepl("PAR_Y", Gene2_vID, ignore.case = TRUE)) %>% select(Gene2)
 
-#read simulated fusions
-#simulated_fusions <- read.table(file = "/home/jc462828/benchmark_fusion_results/Jul23_benchmark_fusions.txt", header=TRUE, sep= "\t")
-Simulated_Fusion_Info <- simulated_fusions %>% separate(fusionGene, into= c('V1','V2','V3'), sep = "-", remove = FALSE) %>% mutate(across(fusionGene, ~ gsub("-", "::", .))) %>% mutate(across(c(V1, V2, V3, geneName), ~ gsub("\\..*","", .)))
-#listEnsemblArchives()
-#listAttributes(mart = ensembl)
-#listDatasets(mart = ensembl)
-
-ensembl_current <-  useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl")
-#ensembl <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 109)
-#ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://jul2023.archive.ensembl.org")
-
-gene_info_1 <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+Gene_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
                              filters = "ensembl_gene_id",
-                             values = c(Simulated_Fusion_Info$geneName),
-                             mart = ensembl)
-Ensemblv80ID_genes1 <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                                             filters = "ensembl_gene_id", 
-                             values = Simulated_Fusion_Info$geneName,  
-                             mart = ensemblv80)
-Simulated_Fusion_Info <- Simulated_Fusion_Info %>% left_join(gene_info_1, by = c("geneName"="ensembl_gene_id")) %>% left_join(Ensemblv80ID_genes1, by = c("geneName"="ensembl_gene_id")) %>% rename("external_gene_name" = external_gene_name.x, "external_gene_name_Ensembl_v80" = external_gene_name.y)
-
-```
-
-```{r}
-#ensembl <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 109)
-#ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://feb2023.archive.ensembl.org")
-
-ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://jul2023.archive.ensembl.org")
-LongGF_Sim <- LongGF_Sim %>% separate(V2, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) #V2 = fusion gene name :
-Gene1_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                             filters = "external_gene_name",
-                             values = unique(LongGF_Sim$Gene1),
-                             mart = ensembl) 
-Gene2_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                             filters = "external_gene_name",
-                             values = unique(LongGF_Sim$Gene2),
-                             mart = ensembl)
-LongGF_Sim <- left_join(LongGF_Sim, Gene1_Name, by= c('Gene1'='external_gene_name')) %>% left_join(Gene2_Name, by= c('Gene2'='external_gene_name')) %>% unique() %>%
-          mutate(ensembl_gene1 = ifelse(is.na(ensembl_gene_id.x) |nchar(ensembl_gene_id.x) == 0, Gene1, ensembl_gene_id.x), ensembl_gene2 = ifelse(is.na(ensembl_gene_id.y) |nchar(ensembl_gene_id.y) == 0, Gene2, ensembl_gene_id.y)) %>% unite("fusion.gene.id", c(ensembl_gene1, ensembl_gene2), sep=":", remove= FALSE, na.rm = TRUE)
-```
-
-```{r}
-#Genion_Sim #V1 = fusion gene id, V2 = fusion gene name ::
-#FusionSeeker_Sim # Gene1 = Gene ID 1, Gene2 = Gene ID 2
-
-getBM(attributes = c("external_gene_name", "ensembl_gene_id_version", "chromosome_name", "ensembl_gene_id"),
-                             filters = "ensembl_gene_id_version",
-                             values = 'ENSG00000283228.1',
-                             mart = ensembl)
-#ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://jul2023.archive.ensembl.org")
-#ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://feb2023.archive.ensembl.org")
-ensembl <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 109)
-
-Gene1_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id_version", "chromosome_name", "ensembl_gene_id"),
-                             filters = "ensembl_gene_id_version",
-                             values = unique(FusionSeeker_Sim$Gene1),
-                             mart = ensembl) 
-Gene2_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id_version", "chromosome_name", "ensembl_gene_id"),
-                             filters = "ensembl_gene_id_version",
-                             values = unique(FusionSeeker_Sim$Gene2),
-                             mart = ensembl)
-FusionSeeker_Sim <- left_join(FusionSeeker_Sim, Gene1_Name, by= c('Gene1'='ensembl_gene_id_version')) %>% left_join(Gene2_Name, by= c('Gene2'='ensembl_gene_id_version')) %>% unique() %>%
-          mutate(ensembl_gene1 = ifelse(is.na(external_gene_name.x) |nchar(external_gene_name.x) == 0, Gene1, external_gene_name.x), ensembl_gene2 = ifelse(is.na(external_gene_name.y) |nchar(external_gene_name.y) == 0, Gene2, external_gene_name.y)) %>% unite("fusion.gene", c(ensembl_gene1, ensembl_gene2), sep=":", remove= FALSE, na.rm = TRUE)
-```
-
-```{r}
-JAFFAL_Sim
-# fusion.genes = fusion gene name : 
-getBM(attributes = c("external_gene_name", "ensembl_gene_id_version", "chromosome_name", "ensembl_gene_id"),
-                             filters = "external_gene_name",
-                             values = 'ENSG00000283228.1',
-                             mart = ensembl)
-#ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://jul2023.archive.ensembl.org")
-ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://feb2023.archive.ensembl.org")
-ensembl <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 109)
-
-JAFFAL_Sim <- JAFFAL_Sim %>% separate(fusion.genes, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE)
-Gene1_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                             filters = "external_gene_name",
-                             values = unique(JAFFAL_Sim$Gene1),
-                             mart = ensembl) 
-Gene2_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                             filters = "external_gene_name",
-                             values = unique(JAFFAL_Sim$Gene2),
-                             mart = ensembl)
-
-JAFFAL_Sim <- left_join(JAFFAL_Sim, Gene1_Name, by= c('Gene1'='external_gene_name')) %>% left_join(Gene2_Name, by= c('Gene2'='external_gene_name')) %>% unique() %>%
-          mutate(ensembl_gene1 = ifelse(is.na(ensembl_gene_id.x) |nchar(ensembl_gene_id.x) == 0, Gene1, ensembl_gene_id.x), ensembl_gene2 = ifelse(is.na(ensembl_gene_id.y) |nchar(ensembl_gene_id.y) == 0, Gene2, ensembl_gene_id.y)) %>% unite("fusion.gene.id", c(ensembl_gene1, ensembl_gene2), sep=":", remove= FALSE, na.rm = TRUE)
-
-
-JAFFAL_3Gene_Sim <- JAFFAL_3Gene_Sim %>% separate(Fusion, into = c("Gene1", "Gene2", "Gene3"), sep = ":", remove = FALSE)
-Gene1_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                             filters = "external_gene_name",
-                             values = unique(JAFFAL_3Gene_Sim$Gene1),
-                             mart = ensembl) 
-Gene2_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                             filters = "external_gene_name",
-                             values = unique(JAFFAL_3Gene_Sim$Gene2),
-                             mart = ensembl)
-Gene3_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                             filters = "external_gene_name",
-                             values = unique(JAFFAL_3Gene_Sim$Gene3),
-                             mart = ensembl)
-JAFFAL_3Gene_Sim <- left_join(JAFFAL_3Gene_Sim, Gene1_Name, by= c('Gene1'='external_gene_name')) %>%
-  left_join(Gene2_Name, by= c('Gene2'='external_gene_name')) %>%
-  left_join(Gene3_Name, by= c('Gene3'='external_gene_name')) %>% unique() %>%
-          mutate(ensembl_gene1 = ifelse(is.na(ensembl_gene_id.x) |nchar(ensembl_gene_id.x) == 0, Gene1, ensembl_gene_id.x), 
-                 ensembl_gene2 = ifelse(is.na(ensembl_gene_id.y) |nchar(ensembl_gene_id.y) == 0, Gene2, ensembl_gene_id.y), 
-                 ensembl_gene3 = ifelse(is.na(ensembl_gene_id) |nchar(ensembl_gene_id) == 0, Gene3, ensembl_gene_id)) %>%
-  unite("fusion.gene.id", c(ensembl_gene1, ensembl_gene2, ensembl_gene3), sep=":", remove= FALSE, na.rm = TRUE)
-
-
-```
-
-```{r}
-#Annotate as known or false positive
-ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://jul2023.archive.ensembl.org")
-#ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://feb2023.archive.ensembl.org")
-#ensembl <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 109)
-Gene1_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version"),
+                             values = (unique(c(PAR_Y_problem1$Gene1, PAR_Y_problem2$Gene2))),
+                             mart = ensembljul2023),
+                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
                              filters = "ensembl_gene_id",
-                             values = unique(Simulated_Fusion_Info$geneName),
-                             mart = ensembl) 
+                             values = (unique(c(PAR_Y_problem1$Gene1, PAR_Y_problem2$Gene2))),
+                             mart = ensemblv109),
+                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+                             filters = "ensembl_gene_id",
+                             values = (unique(c(PAR_Y_problem1$Gene1, PAR_Y_problem2$Gene2))),
+                             mart = ensemblv110)) %>% unique()
+External_Gene_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "chromosome_name"),
+                             filters = c("chromosome_name", "external_gene_name"),
+                             values = list("Y", unique(Gene_Name$external_gene_name)),
+                             mart = ensembljul2023), 
+                          getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "chromosome_name"),
+                             filters = c("chromosome_name", "external_gene_name"),
+                             values = list("Y", unique(Gene_Name$external_gene_name)),
+                             mart = ensemblv109), 
+                          getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version",  "chromosome_name"),
+                             filters = c("chromosome_name", "external_gene_name"),
+                             values = list("Y", unique(Gene_Name$external_gene_name)),
+                             mart = ensemblv110)) %>% unique()
+External_Gene_Name$chromosome_name <- paste0("chr", External_Gene_Name$chromosome_name)
+FusionSeeker_Sim_ensembl <- FusionSeeker_Sim %>% left_join(select((right_join(Gene_Name, External_Gene_Name, by= "external_gene_name")), c(ensembl_gene_id.x, ensembl_gene_id.y, ensembl_gene_id_version, chromosome_name)), by= c('Gene1'='ensembl_gene_id.x', 'Chrom1'='chromosome_name')) %>% 
+  mutate(Gene1_alternative_ID= coalesce(ensembl_gene_id.y, Gene1), Gene1_alternative_vID= coalesce(ensembl_gene_id_version, Gene1_vID)) %>%
+  select(-c(ensembl_gene_id.y, ensembl_gene_id_version))%>% 
+  left_join(select((right_join(Gene_Name, External_Gene_Name, by= "external_gene_name")), c(ensembl_gene_id.x, ensembl_gene_id.y, ensembl_gene_id_version, chromosome_name)), by= c('Gene2'='ensembl_gene_id.x', 'Chrom2'='chromosome_name')) %>% 
+  mutate(Gene2_alternative_ID= coalesce(ensembl_gene_id.y, Gene2), Gene2_alternative_vID= coalesce(ensembl_gene_id_version, Gene2_vID)) %>%
+  select(-c(ensembl_gene_id.y, ensembl_gene_id_version)) %>%
+  unite("fusion.gene.id" , c(Gene1_alternative_ID, Gene2_alternative_ID), sep = ":", remove= FALSE, na.rm = TRUE) %>% unique() 
 
-Simulated_Fusion_Info_2 <- (left_join(Simulated_Fusion_Info[1:(ncol(Simulated_Fusion_Info)-2)], Gene1_Name, by = c("V1"="ensembl_gene_id")) %>% 
-                              left_join(Gene1_Name, by = c("V2"="ensembl_gene_id"))%>% left_join(Gene1_Name, by = c("V3"="ensembl_gene_id")) %>% 
-                              mutate(ensembl_gene.x = ifelse(is.na(external_gene_name.x) |nchar(external_gene_name.x) == 0, V1, external_gene_name.x), 
-                                     ensembl_gene.y = ifelse(is.na(external_gene_name.y) |nchar(external_gene_name.y) == 0, V2, external_gene_name.y), 
-                                     ensembl_gene = ifelse(is.na(external_gene_name) |nchar(external_gene_name) == 0, V3, external_gene_name)) %>% 
-                              unite('fusion.gene.name', c("ensembl_gene.x","ensembl_gene.y", "ensembl_gene"), sep = ":", na.rm = TRUE) %>% 
-                              unite('fusion.gene.id_version', c("ensembl_gene_id_version.x","ensembl_gene_id_version.y", "ensembl_gene_id_version"), sep = ":", na.rm = TRUE) %>%
-                              unite('fusion.gene.id', c("V1","V2", "V3"), sep = ":", na.rm = TRUE, remove = FALSE)) %>% 
-                              unite('raw.fusion.gene.name', c("external_gene_name.x","external_gene_name.y", "external_gene_name"), sep = ":", na.rm = TRUE) 
+setdiff(unique(FusionSeeker_Sim_ensembl$fusion.genes), unique(FusionSeeker_Sim$fusion.genes))
 
-Annot_JAFFAL_Sim <- JAFFAL_Sim[c(1:22,27:29)] %>% left_join(Simulated_Fusion_Info_2, by = c('fusion.gene.id', 'fusion.genes'='fusion.gene.name')) 
-Annot_JAFFAL_Sim <- JAFFAL_Sim %>% left_join(Simulated_Fusion_Info_2, by = c('fusion.gene.id', 'fusion.genes'='fusion.gene.name')) %>%
-  filter(# Existing conditions with corrected mapply usage
-    (is.na(chromosome_name.x) | 
-     chromosome_name.x == gsub("chr", "", chrom1) | 
-     mapply(function(x, y) grepl(paste0("chr", x), y), chromosome_name.x, chrom1) |
-     (chromosome_name.x == "X" & chrom1 == "chrY") |
-     (chromosome_name.x == "Y" & chrom1 == "chrX")) &
-    
-    (is.na(chromosome_name.y) | 
-     chromosome_name.y == gsub("chr", "", chrom2) | 
-     mapply(function(x, y) grepl(paste0("chr", x), y), chromosome_name.y, chrom2) |
-     (chromosome_name.y == "X" & chrom2 == "chrY") |
-     (chromosome_name.y == "Y" & chrom2 == "chrX")) )
+Annot_FusionSeeker_Sim <- FusionSeeker_Sim_ensembl%>%
+  left_join(Simulated_Fusion_Info_2, by = 'fusion.gene.id')%>%
+  group_by(fusionGene.x) %>%
+  mutate(fusionType = case_when(
+    is.na(fusionType) ~ paste0("chromosomal_misalignment:",first(na.omit(fusionType))),  # Only update NA values
+    .default = fusionType  # Keep existing values unchanged
+  ))%>% ungroup()%>%
+  replace_with_na(replace = list(fusionType = "chromosomal_misalignment:NA"))
 
-library(stringr)
-
-# Check if ensembl_gene1 and ensembl_gene2 are contained in fusion.gene.id
-Annot_JAFFAL_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2) {
+Annot_FusionSeeker_Sim$fusionType <- mapply(function(g1, g2, Gen1, Gen2, current_type, chr1, chr2) {
    # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
-    if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g1, ":", g2)))) {
+    if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g1, ":", g2)) |
+            str_detect(paste(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V1, subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V3, sep = ":"), paste0(g1, ":", g2)))) {
       return("truncated_tri_fusion")
-    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
-       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))]
-      return(paste("reverse_order:", matching_row[1])) 
-    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
+    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)) |
+            str_detect(paste(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V1, subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V3, sep = ":"), paste0(g2, ":", g1)))){
       return("reverse_order:truncated_tri_fusion") 
-    } else if ((grepl("chrM:", chr1, ignore.case = TRUE) & !grepl("chrM:", chr2, ignore.case = TRUE)) | (!grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE))){
+    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
+       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))]
+      return(paste("reverse_order:", matching_row[1])) 
+    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))){
+       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))]
+      return(paste0("chromosomal_misalignment:", matching_row[1])) 
+    } else if ((grepl("chrM", chr1, ignore.case = TRUE) & !grepl("chrM", chr2, ignore.case = TRUE)) | (!grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE))){
       return("false_fusion:mitochondrial_genomic") 
-    }else if (grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE)){
+    }else if (grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE)){
       return("false_fusion:mitochondrial") 
+    }else if (((g1 == g2)|(Gen1 == Gen2)) & (chr1 != chr2)){
+      return("false_fusion:self_misalignment") 
     }else {
       return("false_fusion")
     }
   }
   return(current_type)
-}, Annot_JAFFAL_Sim$ensembl_gene1, Annot_JAFFAL_Sim$ensembl_gene2, Annot_JAFFAL_Sim$fusionType, Annot_JAFFAL_Sim$chrom1, Annot_JAFFAL_Sim$chrom2)
+}, Annot_FusionSeeker_Sim$Gene1_alternative_ID.x, Annot_FusionSeeker_Sim$Gene2_alternative_ID.x,
+ Annot_FusionSeeker_Sim$Gene1, Annot_FusionSeeker_Sim$Gene2, 
+Annot_FusionSeeker_Sim$fusionType, Annot_FusionSeeker_Sim$Chrom1, Annot_FusionSeeker_Sim$Chrom2)
 
-Annot_JAFFAL_3Gene_Sim <- JAFFAL_3Gene_Sim[c(1:10,17:20)] %>% left_join(Simulated_Fusion_Info_2, by = c('fusion.gene.id', 'Fusion'='fusion.gene.name'))
+setdiff(unique(c(ogFusionSeeker$ID, ogFusionSeeker$Source)), unique(c(Annot_FusionSeeker_Sim$ID, Annot_FusionSeeker_Sim$Source)))
+
+```
+
+```{r}
+#JAFFAL
+myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/JAFFAL/", pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
+JAFFAL_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
+  read.table(filename, header = TRUE, sep = ",") %>%
+    mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", sample), "positive", "negative"))
+})) %>% separate(fusion.genes, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE)
+ogJAFFAL <-  do.call(rbind, lapply(myfiles, function(filename) {
+  read.table(filename, header = TRUE, sep = ",") %>%
+    mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", sample), "positive", "negative"))
+}))
+
+ getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name", "hgnc_symbol"),
+       filters = "external_gene_name",
+       values = "CBY3",
+       mart = ensemblv109) 
+ getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name", "hgnc_symbol"),
+       filters = "external_gene_name",
+       values = "CBY3",
+       mart = ensembljul2023) 
+# fusion.genes = fusion gene name : 
+Gene_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = unique(c(JAFFAL_Sim$Gene1, JAFFAL_Sim$Gene2)),
+                             mart = ensembljul2023) , getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = unique(c(JAFFAL_Sim$Gene1, JAFFAL_Sim$Gene2)),
+                             mart = ensemblv109)) %>% unique()
+Gene_Name$chromosome_name <- paste0("chr", Gene_Name$chromosome_name)
+
+JAFFAL_Sim_ensembl <- left_join(JAFFAL_Sim, Gene_Name, by= c('Gene1'='external_gene_name')) %>% 
+  left_join(Gene_Name, by= c('Gene2'='external_gene_name'))  %>%
+          mutate(ensembl_gene1 = ifelse(is.na(ensembl_gene_id.x) |nchar(ensembl_gene_id.x) == 0, Gene1, ensembl_gene_id.x), 
+                 ensembl_gene2 = ifelse(is.na(ensembl_gene_id.y) |nchar(ensembl_gene_id.y) == 0, Gene2, ensembl_gene_id.y)) %>%
+  unite("fusion.gene.id", c(ensembl_gene1, ensembl_gene2), sep=":", remove= FALSE, na.rm = TRUE) %>%
+  # Create a filtering condition using case_when
+  filter(case_when(
+      is.na(chromosome_name.x) ~ TRUE, # Keep if chromosome_name.x is NA
+      chromosome_name.x == chrom1 ~ TRUE, # Keep if chromosome names match
+      chromosome_name.x == "chrMT" & chrom1 == "chrM" ~ TRUE, # Allow chrMT/chrM equivalence
+      grepl("PATCH|HSCHR", chromosome_name.x) & !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y|M)$", chrom1) ~ TRUE, 
+      TRUE ~ FALSE # Remove rows that don't meet the above conditions
+    )) %>%
+  filter(case_when(
+      is.na(chromosome_name.y) ~ TRUE,
+      chromosome_name.y == chrom2 ~ TRUE,
+      chromosome_name.y == "chrMT" & chrom2 == "chrM" ~ TRUE,
+      grepl("PATCH|HSCHR", chromosome_name.y) & !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y|M)$", chrom2) ~ TRUE,
+      TRUE ~ FALSE # Remove rows that don't meet the above conditions
+    )) %>%  
+    select(-c("ensembl_gene_id.x", "chromosome_name.x", "ensembl_gene_id.y", "chromosome_name.y")) %>% unique()
+
+setdiff(unique(JAFFAL_Sim_ensembl$fusion.genes), unique(ogJAFFAL$fusion.genes))
+
+#Annotate as known or false positive
+Annot_JAFFAL_Sim <- JAFFAL_Sim_ensembl %>% 
+  left_join(Simulated_Fusion_Info_2, by = c('fusion.gene.id')) %>% unique()%>%
+  group_by(fusion.genes) %>%
+  mutate(fusionType = case_when(
+    is.na(fusionType) ~ paste0("chromosomal_misalignment:",first(na.omit(fusionType))),  # Only update NA values
+    .default = fusionType  # Keep existing values unchanged
+  ))%>% ungroup()%>%
+  replace_with_na(replace = list(fusionType = "chromosomal_misalignment:NA")) 
+# Check if ensembl_gene1 and ensembl_gene2 are contained in fusion.gene.id
+Annot_JAFFAL_Sim$fusionType <- mapply(function(g1, g2, Gen1, Gen2, current_type, chr1, chr2) {
+   # Check if the current fusionType is empty
+  if (current_type == "" || is.na(current_type)) {
+    if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g1, ":", g2))|
+            str_detect(paste(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V1, subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V3, sep = ":"), paste0(g1, ":", g2)))) {
+      return("truncated_tri_fusion")
+    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
+       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))]
+      return(paste("reverse_order:", matching_row[1])) 
+    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1))|
+            str_detect(paste(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V1, subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V3, sep = ":"), paste0(g2, ":", g1)))){
+      return("reverse_order:truncated_tri_fusion") 
+    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))){
+       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))]
+      return(paste("chromosomal_misalignment:", matching_row[1])) 
+    }else if ((grepl("chrM:", chr1, ignore.case = TRUE) & !grepl("chrM:", chr2, ignore.case = TRUE)) | (!grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE))){
+      return("false_fusion:mitochondrial_genomic") 
+    }else if (grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE)){
+      return("false_fusion:mitochondrial") 
+    }else if (((g1 == g2)|(Gen1 == Gen2)) & (chr1 != chr2)){
+      return("false_fusion:self_misalignment") 
+    }else {
+      return("false_fusion")
+    }
+  }
+  return(current_type)
+}, Annot_JAFFAL_Sim$ensembl_gene1, Annot_JAFFAL_Sim$ensembl_gene2, Annot_JAFFAL_Sim$Gene1, Annot_JAFFAL_Sim$Gene2, Annot_JAFFAL_Sim$fusionType, Annot_JAFFAL_Sim$chrom1, Annot_JAFFAL_Sim$chrom2)
+```
+
+```{r}
+#JAFFAL_3Gene_Sim 
+myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/JAFFAL/", pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE)
+JAFFAL_3Gene_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
+  read.table(filename, header = TRUE, sep = "\t") %>%
+    mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
+})) %>% separate(Fusion, into = c("Gene1", "Gene2", "Gene3"), sep = ":", remove = FALSE)
+Gene_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = unique(c(JAFFAL_3Gene_Sim$Gene1, JAFFAL_3Gene_Sim$Gene2, JAFFAL_3Gene_Sim$Gene3)),
+                             mart = ensembljul2023) ,
+                 getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+                             filters = "external_gene_name",
+                             values = unique(c(JAFFAL_3Gene_Sim$Gene1, JAFFAL_3Gene_Sim$Gene2, JAFFAL_3Gene_Sim$Gene3)),
+                             mart = ensemblv109))
+
+JAFFAL_3Gene_Sim <- left_join(JAFFAL_3Gene_Sim, Gene_Name, by= c('Gene1'='external_gene_name')) %>%
+  left_join(Gene_Name, by= c('Gene2'='external_gene_name')) %>%
+  left_join(Gene_Name, by= c('Gene3'='external_gene_name')) %>% unique() %>%
+          mutate(ensembl_gene1 = ifelse(is.na(ensembl_gene_id.x) |nchar(ensembl_gene_id.x) == 0, Gene1, ensembl_gene_id.x), 
+                 ensembl_gene2 = ifelse(is.na(ensembl_gene_id.y) |nchar(ensembl_gene_id.y) == 0, Gene2, ensembl_gene_id.y), 
+                 ensembl_gene3 = ifelse(is.na(ensembl_gene_id) |nchar(ensembl_gene_id) == 0, Gene3, ensembl_gene_id)) %>%
+  unite("fusion.gene.id", c(ensembl_gene1, ensembl_gene2, ensembl_gene3), sep=":", remove= FALSE, na.rm = TRUE)
+
+Annot_JAFFAL_3Gene_Sim <- JAFFAL_3Gene_Sim[c(1:10,17:20)] %>% left_join(Simulated_Fusion_Info_2, by = c('fusion.gene.id'))
 Annot_JAFFAL_3Gene_Sim$fusionType <- mapply(function(g1, g2, g3, current_type) {
    if (current_type == "" || is.na(current_type)) {
         
@@ -260,52 +445,27 @@ Annot_JAFFAL_3Gene_Sim$fusionType <- mapply(function(g1, g2, g3, current_type) {
         }
    }
   return(current_type)}, Annot_JAFFAL_3Gene_Sim$Gene1, Annot_JAFFAL_3Gene_Sim$Gene2, Annot_JAFFAL_3Gene_Sim$Gene3, Annot_JAFFAL_3Gene_Sim$fusionType)
+```
 
-
-Annot_LongGF_Sim <- LongGF_Sim %>% left_join(Simulated_Fusion_Info_2, by = c('fusion.gene.id', 'V2'='fusion.gene.name')) %>%
-  filter(
-    # Filter for chromosome_name.x and V4 conditions
-    (mapply(function(x, y) grepl(paste0("chr", x), y), chromosome_name.x, V4) | 
-     is.na(chromosome_name.x) | 
-     mapply(function(x, y) !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y|MT):", x) && grepl("PATCH|HSCHR", y), V4, chromosome_name.x) | 
-     mapply(function(x, y) grepl("chrX", x) && grepl("X", y), V4, chromosome_name.x) | 
-     mapply(function(x, y) grepl("chrY", x) && grepl("Y", y), V4, chromosome_name.x)|
-     mapply(function(x, y) grepl("chrM", x) && grepl("MT", y), V4, chromosome_name.x)) &
-    
-    # Filter for chromosome_name.y and V5 conditions
-    (mapply(function(x, y) grepl(paste0("chr", x), y), chromosome_name.y, V5) | 
-     is.na(chromosome_name.y) | 
-     mapply(function(x, y) !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y|MT):", x) && grepl("PATCH|HSCHR", y), V5, chromosome_name.y) | 
-     mapply(function(x, y) grepl("chrX", x) && grepl("X", y), V5, chromosome_name.y) | 
-     mapply(function(x, y) grepl("chrY", x) && grepl("Y", y), V5, chromosome_name.y)|
-     mapply(function(x, y) grepl("chrM", x) && grepl("MT", y), V5, chromosome_name.y))
-  )
-Annot_LongGF_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2) {
-   # Check if the current fusionType is empty
-  if (current_type == "" || is.na(current_type)) {
-    if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g1, ":", g2)))) {
-      return("truncated_tri_fusion")
-    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
-      return("reverse_order:truncated_tri_fusion") 
-    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
-       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))]
-      return(paste("reverse_order:", matching_row[1])) 
-    } else if ((grepl("chrM:", chr1, ignore.case = TRUE) & !grepl("chrM:", chr2, ignore.case = TRUE)) | (!grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE))){
-      return("false_fusion:mitochondrial_genomic") 
-    }else if (grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE)){
-      return("false_fusion:mitochondrial") 
-    }else {
-      return("false_fusion")
-    }
+```{r}
+####Read in Data
+#Genion
+myfiles<- list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/Genion", pattern = "*_genion$", full.names = TRUE)
+Genion_Sim<- do.call(rbind, lapply(myfiles, function(filename) {
+  if (file.info(filename)$size > 0) {
+    read.table(filename) %>%
+      mutate(Source = basename(filename)) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
+  } else {
+    NULL
   }
-  return(current_type)
-}, Annot_LongGF_Sim$ensembl_gene_id.x, Annot_LongGF_Sim$ensembl_gene_id.y, Annot_LongGF_Sim$fusionType, Annot_LongGF_Sim$V4, Annot_LongGF_Sim$V5)
+}))
+og_Genion <-Genion_Sim
 
-
+# Annotate
 Annot_Genion_Sim <- Genion_Sim %>% separate(V1, into = c("V1.1", "V1.2", "V1.3"), "::", remove=FALSE) %>% separate(V2, into = c("V2.1", "V2.2", "V2.3"), "::", remove=FALSE) %>% separate(V8, into = c("chr1", "chr2", "chr3"), ";", remove=FALSE)
 Annot_Genion_Sim[c("V1", "V2")] <- lapply(Genion_Sim[c("V1", "V2")], function(x) gsub("::", ":", x))
-Annot_Genion_Sim <- Annot_Genion_Sim %>% left_join(Simulated_Fusion_Info_2, by = c('V1'='fusion.gene.id', 'V2'='fusion.gene.name')) 
-Annot_Genion_Sim$fusionType <- mapply(function(g1, g2, g3, current_type, chr1, chr2, chr3) {
+Annot_Genion_Sim <- Annot_Genion_Sim %>% left_join(Simulated_Fusion_Info_2, by = c('V1'='fusion.gene.id')) 
+Annot_Genion_Sim$fusionType <- mapply(function(g1, g2, g3, current_type, chr1, chr2, chr3, gene_name1, gene_name2) {
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
     
@@ -314,16 +474,22 @@ Annot_Genion_Sim$fusionType <- mapply(function(g1, g2, g3, current_type, chr1, c
           
            #check if part of tri fusion
             if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g1, ":", g2)) |
-                    str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g3)))) {
+                str_detect(paste(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V1, subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V3, sep = ":"), paste0(g1, ":", g2)))) {
               return("truncated_tri_fusion")} 
-            else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
+            else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)) |
+            str_detect(paste(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V1, subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V3, sep = ":"), paste0(g2, ":", g1)))){
               return("reverse_order:truncated_tri_fusion")} 
           
           #check for reverse order two part genes
             else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
               matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))]
               return(paste("reverse_order:", matching_row[1]))}
-        }
+        } 
+          #check for chromosomal misalignment
+          else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))){
+               matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))]
+              return(paste("chromosomal_misalignment:", matching_row[1])) 
+            }
       
       #check if this fusion contains mitochondrial genes 
         if ((grepl("chrM:", chr1, ignore.case = TRUE) & (!grepl("chrM:", chr2, ignore.case = TRUE) | !grepl("chrM:", chr3, ignore.case = TRUE))) |
@@ -346,74 +512,15 @@ Annot_Genion_Sim$fusionType <- mapply(function(g1, g2, g3, current_type, chr1, c
             return("reverse_order:tri_fusion")}
     
     #if blank and none of the above, its just a false fusion
-      else {
+      else if (gene_name1 == gene_name2){
+      return("false_fusion:self_misalignment") 
+    } else {
           return("false_fusion")}
-    
     }
   #if it's not blank, its already been labelled
   else {return(current_type)}
-  }, Annot_Genion_Sim$V1.1, Annot_Genion_Sim$V1.2,  Annot_Genion_Sim$V1.3, Annot_Genion_Sim$fusionType, Annot_Genion_Sim$chr1, Annot_Genion_Sim$chr2 , Annot_Genion_Sim$chr3)
+  }, Annot_Genion_Sim$V1.1, Annot_Genion_Sim$V1.2,  Annot_Genion_Sim$V1.3, Annot_Genion_Sim$fusionType, Annot_Genion_Sim$chr1, Annot_Genion_Sim$chr2 , Annot_Genion_Sim$chr3, Annot_Genion_Sim$V2.1, Annot_Genion_Sim$V2.2)
       
-
-Annot_FusionSeeker_Sim <- unite(FusionSeeker_Sim, "fusion.gene.id", c(ensembl_gene_id.x, ensembl_gene_id.y), sep=":", remove= FALSE, na.rm = TRUE) %>% left_join(Simulated_Fusion_Info_2, by = 'fusion.gene.id') 
-
-Annot_FusionSeeker_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2) {
-   # Check if the current fusionType is empty
-  if (current_type == "" || is.na(current_type)) {
-    if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g1, ":", g2)))) {
-      return("truncated_tri_fusion")
-    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
-      return("reverse_order:truncated_tri_fusion") 
-    } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
-       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))]
-      return(paste("reverse_order:", matching_row[1])) 
-    } else if ((grepl("chrM", chr1, ignore.case = TRUE) & !grepl("chrM", chr2, ignore.case = TRUE)) | (!grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE))){
-      return("false_fusion:mitochondrial_genomic") 
-    }else if (grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE)){
-      return("false_fusion:mitochondrial") 
-    }else {
-      return("false_fusion")
-    }
-  }
-  return(current_type)
-}, Annot_FusionSeeker_Sim$ensembl_gene_id.x, Annot_FusionSeeker_Sim$ensembl_gene_id.y, Annot_FusionSeeker_Sim$fusionType, Annot_FusionSeeker_Sim$Chrom1, Annot_FusionSeeker_Sim$Chrom2)
-
-```
-
-```{r}
-Annot_JAFFAL_Sim 
-unique(Annot_JAFFAL_Sim$fusion.genes)%>% length()
-unique(ogJAFFAL$fusion.genes)%>% length()
-
-Annot_LongGF_Sim[c(6,7,11,13)] 
-unique(Annot_LongGF_Sim$V2)%>%length()
-unique(ogLongGF$V2)%>%length()
-(Annot_LongGF_Sim %>%
-  filter(
-    # Filter for chromosome_name.x and V4 conditions
-    (mapply(function(x, y) grepl(paste0("chr", x), y), chromosome_name.x, V4) | 
-     is.na(chromosome_name.x) | 
-     mapply(function(x, y) !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y|MT):", x) && grepl("PATCH|HSCHR", y), V4, chromosome_name.x) | 
-     mapply(function(x, y) grepl("chrX", x) && y %in% c("X", "Y"), V4, chromosome_name.x) | 
-     mapply(function(x, y) grepl("chrY", x) && y %in% c("X", "Y"), V4, chromosome_name.x)|
-     mapply(function(x, y) grepl("chrM", x) && grepl("MT", y), V4, chromosome_name.x)) &
-    
-    # Filter for chromosome_name.y and V5 conditions
-    (mapply(function(x, y) grepl(paste0("chr", x), y), chromosome_name.y, V5) | 
-     is.na(chromosome_name.y) | 
-     mapply(function(x, y) !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y|MT):", x) && grepl("PATCH|HSCHR", y), V5, chromosome_name.y) | 
-     mapply(function(x, y) grepl("chrX", x) && y %in% c("X", "Y"), V5, chromosome_name.y) | 
-     mapply(function(x, y) grepl("chrY", x) && y %in% c("X", "Y"), V5, chromosome_name.y)|
-     mapply(function(x, y) grepl("chrM", x) && grepl("MT", y), V5, chromosome_name.y))
-  ))$V2 %>% unique() %>% length()
-
-setdiff(unique(ogFusionSeeker$ID), unique(Annot_FusionSeeker_Sim$ID))
-
-
-head(Annot_LongGF_Sim[c(2:4,6,7,11,13)]) %>% filter(mapply(function(x, y) !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y|MT):", x) && grepl("PATCH", y), V5, chromosome_name.y))
-
-ogFusionSeeker
-Annot_FusionSeeker_Sim
 ```
 
 ```{r}
@@ -422,265 +529,822 @@ Annot_LongGF_Sim <- Annot_LongGF_Sim %>%
   mutate(depth = case_when(
     grepl("100GB", Source) ~ "100GB",
     grepl("10GB", Source) ~ "10GB",
-    grepl("1GB", Source) ~ "1GB",
-    TRUE ~ depth  # Keep original value if no match
+    grepl("1GB", Source) ~ "1GB" # Keep original value if no match
+  ), Sequence_Identity = case_when(
+    grepl("95", Source) ~ "95%",
+    grepl("90", Source) ~ "90%",
+    grepl("85", Source) ~ "85%" # Keep original value if no match
   ))
 Annot_JAFFAL_Sim <- Annot_JAFFAL_Sim%>%
   mutate(depth = case_when(
     grepl("100GB", sample) ~ "100GB",
     grepl("10GB", sample) ~ "10GB",
-    grepl("1GB", sample) ~ "1GB",
-    TRUE ~ depth  # Keep original value if no match
+    grepl("1GB", sample) ~ "1GB"# Keep original value if no match
+  ), Sequence_Identity = case_when(
+    grepl("95", sample) ~ "95%",
+    grepl("90", sample) ~ "90%",
+    grepl("85", sample) ~ "85%" # Keep original value if no match
   ))
 Annot_JAFFAL_3Gene_Sim <- Annot_JAFFAL_3Gene_Sim%>%
   mutate(depth = case_when(
     grepl("100GB", Source) ~ "100GB",
     grepl("10GB", Source) ~ "10GB",
-    grepl("1GB", Source) ~ "1GB",
-    TRUE ~ depth  # Keep original value if no match
+    grepl("1GB", Source) ~ "1GB"# Keep original value if no match
+  ), Sequence_Identity = case_when(
+    grepl("95", Source) ~ "95%",
+    grepl("90", Source) ~ "90%",
+    grepl("85", Source) ~ "85%" # Keep original value if no match
   ))
 Annot_Genion_Sim <- Annot_Genion_Sim %>%
   mutate(depth = case_when(
     grepl("100GB", Source) ~ "100GB",
     grepl("10GB", Source) ~ "10GB",
-    grepl("1GB", Source) ~ "1GB",
-    TRUE ~ depth  # Keep original value if no match
+    grepl("1GB", Source) ~ "1GB"  # Keep original value if no match
+  ), Sequence_Identity = case_when(
+    grepl("95", Source) ~ "95%",
+    grepl("90", Source) ~ "90%",
+    grepl("85", Source) ~ "85%" # Keep original value if no match
   ))
 Annot_FusionSeeker_Sim <- Annot_FusionSeeker_Sim %>%
   mutate(depth = case_when(
     grepl("100GB", Source) ~ "100GB",
     grepl("10GB", Source) ~ "10GB",
-    grepl("1GB", Source) ~ "1GB",
-    TRUE ~ depth  # Keep original value if no match
+    grepl("1GB", Source) ~ "1GB"  # Keep original value if no match
+  ), Sequence_Identity = case_when(
+    grepl("95", Source) ~ "95%",
+    grepl("90", Source) ~ "90%",
+    grepl("85", Source) ~ "85%" # Keep original value if no match
   ))
-```
-```{r}
+
 Annot_LongGF_Sim$Algorithm <- "LongGF"
 Annot_JAFFAL_Sim$Algorithm <- "JAFFAL"
 Annot_JAFFAL_3Gene_Sim$Algorithm <- "JAFFAL"
 Annot_Genion_Sim$Algorithm <- "Genion"
 Annot_FusionSeeker_Sim$Algorithm <- "FusionSeeker"
-
-Annot_LongGF_Sim[c(2,5,9, 14, 30,34, 35)]
-Annot_JAFFAL_Sim[c(2, 13, 22, 27, 43, 47, 48)]
-Annot_JAFFAL_3Gene_Sim[c(1, 5, 10, 11, 28, 32, 33)]
-Annot_Genion_Sim[c(1, 5, 11, 19, 33, 37, 38)]
-Annot_FusionSeeker_Sim[c(4,11, 14, 19,35,40, 41)]
-
-dLGF<- Annot_LongGF_Sim[c(2,5,9, 14, 30,34, 35)] %>%
-  rename(read_supp = V3.x,
-         fusion.genes = V2)
-dJF <- Annot_JAFFAL_Sim[c(2, 13, 22, 27, 43, 47, 48)] %>%
-  rename(read_supp = spanning.reads)
-dJF3 <- Annot_JAFFAL_3Gene_Sim[c(1, 5, 10, 11, 28, 32, 33)]%>%
-  rename(read_supp = Reads,
-         fusion.genes = Fusion)
-dGen <- Annot_Genion_Sim[c(1, 5, 11, 19, 33, 37, 38)]%>%
-  rename(read_supp = V5,
-         fusion.genes = V2,
-         fusion.gene.id = V1)
-dFS <- Annot_FusionSeeker_Sim[c(4,11, 14, 19,35,40, 41)]%>%
-  rename(read_supp = NumSupp,
-         fusion.genes = fusion.gene)
-combined_data <- rbind(dLGF, dJF, dJF3, dGen, dFS)
-combined_data$read_supp <- as.numeric(combined_data$read_supp)
-
-library(ggplot2)
-False_total <- ggplot(filter(combined_data, control == "negative", 
-         read_supp > 2), aes(x = fusionType, fill = fusionType)) +
-  geom_bar(position = "dodge") +
-  facet_wrap(~ Algorithm) +
-  theme_minimal() +
-  labs(title = "False calls in the Negative Control, minimum read support of 2", x = "Fusion Type", y = "Count")+
-  scale_y_log10()+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave("False_total_in_Neg_Cont.png", plot = False_total, width = 10, height = 6, dpi = 600) 
-
-# Summarize the data
-summary_df <- combined_data %>%
-  group_by(fusionType, read_supp, control, Algorithm) %>%   # Group by fusionType and read_supp
-  summarise(
-    count = n()                        # Count the number of occurrences
-  ) %>%
-  ungroup()                             # Remove grouping to avoid issues with further operations
-
-# View the summarized data
-summary_df$read_supp <- as.numeric(summary_df$read_supp)
-
-ggplot(filter(summary_df, control == 'negative'), aes(x = read_supp, y = count, color = fusionType)) +
-  geom_point() +  # Add jitter for visibility
-  facet_wrap(~ Algorithm) +
-  theme_minimal() +
-  labs(title = "Count of Fusion Types by Read Support and Algorithm", 
-       x = "Read Support", 
-       y = "Count")+
-  scale_y_log10()
-
-ggplot(filter(summary_df, control == 'negative'), aes(x = count, fill = fusionType)) +
-  geom_density(alpha = 0.6, adjust = 1.5) +  # Adjust bandwidth for smoothing if needed
-  facet_wrap(~ Algorithm) +  # Facet by Algorithm
-  theme_minimal() +
-  labs(title = "Density Plot of Fusion Types by Algorithm", 
-       x = "Count", 
-       y = "Density") +
-  scale_fill_brewer(palette = "Set1")+  # Optional: Use a color palette for better visuals
-  scale_x_log10()
-
-ggplot(filter(summary_df, control == 'negative'), aes(x = read_supp, y = count, color = Algorithm, shape = fusionType)) +
-  geom_point(size = 2) + # Use geom_point for a scatter plot
-  labs(title = "Counts by Read Support and Algorithm",
-       x = "Read Support",
-       y = "Count",
-       color = "Algorithm") + # Modify color legend title
-  theme_minimal() + # Use a minimal theme
-  scale_color_brewer(palette = "Set1")+ # Optional: Adjust color palette
-  scale_y_log10()+
-  scale_x_log10()
-
-Read_Supp_Neg <- ggplot(filter(combined_data, control == 'negative', 
-         read_supp > 2), aes(x = Algorithm, y = read_supp)) +
-  geom_boxplot(aes(fill = Algorithm)) +
-  labs(title = "Distribution of Read Support for False Fusions",
-       x = "Fusion Type",
-       y = "Read Support") +
-  theme_minimal() +
-  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
-  scale_y_log10()+  # Optional: Use log scale if appropriate
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave("Read_supp_False_in_Neg_Cont.png", plot = Read_Supp_Neg, width = 10, height = 6, dpi = 600) 
 ```
 
 ```{r}
-#Positive Control
-ggplot(filter(combined_data, control == 'positive'), aes(x = Algorithm, y = read_supp)) +
-  geom_boxplot(aes(fill = Algorithm)) +
-  labs(title = "Distribution of Read Support",
-       x = "Fusion Type",
-       y = "Read Support") +
-  theme_minimal() +
-  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
-  scale_y_log10()+  # Optional: Use log scale if appropriate
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+#combine data to compare quantification
+dLGF<- Annot_LongGF_Sim[c(5, 13, 14, 34, 41:43)] %>%
+  rename(read_supp = V3.x)
+dJF <- Annot_JAFFAL_Sim[c(13, 22, 23, 43, 50:52)] %>%
+  rename(read_supp = spanning.reads)
+dJF3 <- Annot_JAFFAL_3Gene_Sim[c(5, 10, 11, 31, 38:40)]%>%
+  rename(read_supp = Reads)
+dGen <- Annot_Genion_Sim[c(1, 11, 19, 37, 44:46)]%>%
+  rename(read_supp = V5,
+         fusion.gene.id = V1)
+dFS <- Annot_FusionSeeker_Sim[c(8,15, 16, 38, 45:47)]%>%
+  rename(read_supp = NumSupp)
+combined_data <- rbind(dLGF, dJF, dJF3, dGen, dFS)
+combined_data$read_supp <- as.numeric(combined_data$read_supp)
 
-ggplot(filter(combined_data, control == 'positive', 
-     mapply(function(x) grepl("false", x) , fusionType)), aes(x = Algorithm, y = read_supp)) +
-  geom_boxplot(aes(fill = Algorithm)) +
-  labs(title = "Distribution of Read Support",
-       x = "Fusion Type",
-       y = "Read Support") +
-  theme_minimal() +
-  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
-  scale_y_log10()+  # Optional: Use log scale if appropriate
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+write.csv(combined_data,"~/LongReadFusionCallerBenchmark/combined_data_FusionCalls.csv", row.names = FALSE)
+```
 
-ggplot(filter(summary_df, control == 'positive', 
-     mapply(function(x) grepl("reverse|truncate", x) , fusionType)), aes(x = read_supp, y = count)) +
-  geom_line(aes(colour = Algorithm)) +
-  labs(title = "Distribution of Read Support",
-       x = "Fusion Type",
-       y = "Read Support") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  facet_wrap(~ fusionType)
+```{r}
+combined_data_annotation <- filter(combined_data, read_supp > 2) %>%  mutate(recall_category = case_when(
+      grepl("false", fusionType) ~ "False_Call",
+      grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
+      TRUE ~ "True_Recall"))%>%
+  group_by(control, depth, Sequence_Identity, Algorithm, recall_category) %>%
+  summarise(RECALL_COUNT = n()) %>%
+  summarise(False_Call_Number = sum(RECALL_COUNT[recall_category == "False_Call"], na.rm = TRUE),
+            Partial_Call_Number = sum(RECALL_COUNT[recall_category == "Partial_Recall"], na.rm = TRUE),
+            True_Call_Number = sum(RECALL_COUNT[recall_category == "True_Recall"], na.rm = TRUE))%>% 
+  ungroup() %>% 
+  complete(control, depth, Sequence_Identity, Algorithm, fill = list(False_Call_Number = 0, Partial_Call_Number = 0, True_Call_Number = 0))
+combined_data_annotation$depth <- factor(combined_data_annotation$depth, levels = c("1GB", "10GB", "100GB"))
+combined_data_annotation$Sequence_Identity <- factor(combined_data_annotation$Sequence_Identity, levels = c("85%", "90%", "95%"))
 
-ggplot(filter(combined_data, control == 'positive', 
-     mapply(function(x) grepl("reverse|truncate", x) , fusionType)), aes(x = Algorithm, y = read_supp)) +
-  geom_boxplot(aes(fill = Algorithm)) +
-  labs(title = "Distribution of Read Support",
-       x = "Fusion Type",
-       y = "Read Support") +
+false_call_plot <-ggplot(filter(combined_data_annotation), aes(x = depth, y = Sequence_Identity, fill = False_Call_Number)) +
+  geom_tile() +
+  geom_text(aes(label = False_Call_Number), color = "black", size = 3) +
+  facet_grid( control ~ Algorithm) +  # Separate heatmaps for each algorithm
+  scale_fill_gradient(low = "white", high = "red")+  # Adjust color scale
+  labs(x = "",
+       y = "",
+       fill = "False Fusions") +
   theme_minimal() +
-  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
-  scale_y_log10()+  # Optional: Use log scale if appropriate
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="grey85"))
 
-ggplot(filter(summary_df, control == 'positive', 
-     mapply(function(x) grepl("reverse|truncate", x) , fusionType)), aes(x = read_supp, y = count)) +
-  geom_line(aes(colour = Algorithm)) +
-  labs(title = "Distribution of Read Support",
-       x = "Fusion Type",
-       y = "Read Support") +
+partial_call_plot <- ggplot(filter(combined_data_annotation, control =="positive"), aes(x = depth, y = Sequence_Identity, fill = Partial_Call_Number)) +
+  geom_tile() +
+  geom_text(aes(label = Partial_Call_Number), color = "black", size = 3) +
+  facet_grid(control ~ Algorithm)+
+  scale_fill_gradient(low = "white", high = "orange") +  # Adjust color scale
+  labs(x = "",
+       y = "Mean Sequence Identity",
+       fill = "Partially Recalled Fusions") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  facet_wrap(~ fusionType)
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="grey85"))
 
-ggplot(filter(summary_df, control == 'positive', 
-         read_supp > 2, 
-         grepl("false", fusionType)), aes(x = read_supp, y = count)) +
-  geom_line(aes(colour = fusionType)) +
-  labs(title = "Distribution of Read Support",
+true_call_plot <-ggplot(filter(combined_data_annotation, control =="positive"), aes(x = depth, y = Sequence_Identity, fill = True_Call_Number)) +
+  geom_tile() +
+  geom_text(aes(label = True_Call_Number), color = "black", size = 3) +
+  facet_grid(control ~ Algorithm) +  # Separate heatmaps for each algorithm
+  scale_fill_gradient(low = "white", high = "springgreen4") +  # Adjust color scale
+  labs(x = "Sequencing Depth",
+       y = "",
+       fill = "True Fusions") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="grey85"))
+
+library(patchwork)
+final_plot <- (false_call_plot / partial_call_plot / true_call_plot)+ 
+  plot_layout(heights = c(2, 1, 1)) + 
+  plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")))
+
+# Display the combined plot
+final_plot
+
+pdf(file = 'fusion_category_counts.pdf')
+par(mar = c(4.1, 4.4, 4.1, 1.9), xaxs="i", yaxs="i")
+final_plot
+dev.off()
+```
+
+```{r}
+source("~/LongReadFusionCallerBenchmark/Precision_Recall_ReadSupp_stats.R") 
+#Read in fusion calling in summary data
+combined_data <- read_csv("~/LongReadFusionCallerBenchmark/combined_data_FusionCalls.csv")
+#Calculate Recall vs Precision
+stat_summary <- filter(combined_data, read_supp > 2) %>%  
+  mutate(stat_category = case_when(
+    grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType) ~ "FALSE_CALL",
+    TRUE ~ "TRUE_CALL")) %>%
+  
+  # First summarisation: Keep fusion_type_count grouped by stat_category
+  group_by(control, depth, Sequence_Identity, Algorithm, stat_category) %>%
+  summarise(CALL_COUNT = n()) %>%
+  summarise(False_Point = sum(CALL_COUNT[stat_category == "FALSE_CALL"], na.rm = TRUE),
+            True_Point = sum(CALL_COUNT[stat_category == "TRUE_CALL"], na.rm = TRUE)) %>%
+  
+  # Compute final statistics
+  mutate(FDR = False_Point / (False_Point + True_Point),
+         Precision = True_Point / (True_Point + False_Point),
+         Recall = True_Point / 400,  # There are 400 spiked fusions
+         F1 = (2 * (Precision * Recall)) / (Precision + Recall),
+         Sensitivity = True_Point / (True_Point + (400 - True_Point)))
+
+stat_summary$depth <- factor(stat_summary$depth, levels = c("100GB", "10GB", "1GB"))
+stat_summary$Sequence_Identity <- factor(stat_summary$Sequence_Identity, levels = c("85%", "90%", "95%"))
+
+#Calculate the effect of read support on recall/precision
+calculate_read_filt_statistics <- function(data, min_read_supp) {
+  data %>%
+    filter(read_supp > min_read_supp)  %>%  
+    mutate(stat_category = case_when(
+      grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType) ~ "FALSE_CALL",
+      TRUE ~ "TRUE_CALL")) %>% 
+    group_by(control, depth, Sequence_Identity, Algorithm, stat_category) %>%
+    summarise(CALL_COUNT = n()) %>%
+    summarise(False_Point = sum(CALL_COUNT[stat_category == "FALSE_CALL"], na.rm = TRUE),
+              True_Point = sum(CALL_COUNT[stat_category == "TRUE_CALL"], na.rm = TRUE)) %>%
+    mutate(FDR = False_Point / (False_Point + True_Point),
+           Precision = True_Point / (True_Point + False_Point),
+           Recall = True_Point / 400,  # There are 400 spiked fusions
+           F1 = (2 * (Precision * Recall)) / (Precision + Recall),
+           Sensitivity = True_Point / (True_Point + (400 - True_Point)))
+}
+
+readsupp_filtering <- calculate_read_filt_statistics(combined_data, 2) 
+
+for(number in unique(sort(combined_data$read_supp))){
+  result <- calculate_statistics(combined_data, number)
+  readsupp_filtering <- rbind(result, readsupp_filtering) 
+}
+readsupp_filtering$minimum_read_support <- as.numeric(readsupp_filtering$minimum_read_support)
+
+#Generate plots
+Recall_Precision <- ggplot(filter(stat_summary, control == 'positive'))+
+  geom_point(aes(x = Precision, y= Recall, colour = Algorithm))+
+  facet_grid(depth ~ Sequence_Identity)+
+  labs(x = "Precision", y = "Recall")
+ggsave("Recall-Precision.pdf", plot = Recall_Precision, width = 297, height = 210, units = "mm")
+
+ReadSupport_F1Score <- ggplot(filter(readsupp_filtering, control == "positive"))+
+  geom_line(aes(x = minimum_read_support, y = F1, colour = Algorithm))+
+  facet_grid(depth ~ Sequence_Identity)+
+  scale_x_log10()+
+  labs(x = "Read Support",
+       y = "F1 Score") 
+ggsave("ReadSupport-F1Score.pdf", plot = ReadSupport_F1Score, width = 297, height = 210, units = "mm")
+
+ReadSupport_Precision <- ggplot(filter(readsupp_filtering, control == "positive"))+
+  geom_line(aes(x = minimum_read_support, y = Precision, colour = Algorithm))+
+  facet_grid(depth ~ Sequence_Identity)+
+  scale_x_log10()+
+  labs(x = "Read Support",
+       y = "Precision") 
+ggsave("ReadSupport-Precision.pdf", plot = ReadSupport_Precision, width = 297, height = 210, units = "mm")
+```
+
+```{r}
+manual_filtering <- filter(combined_data, read_supp > 2) %>%  
+  mutate(stat_category = case_when(
+      grepl("false_fusion:mitochondrial|false_fusion:self_misalignment", fusionType) ~ "obvious_false",
+      TRUE ~ "other")) %>% filter(stat_category == "other") %>% select(-'stat_category')%>%  
+  mutate(stat_category = case_when(
+      grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType) ~ "FALSE_CALL",
+      TRUE ~ "TRUE_CALL")) %>%
+  
+  # First summarisation: Keep fusion_type_count grouped by stat_category
+  group_by(control, depth, Sequence_Identity, Algorithm, stat_category) %>%
+  summarise(CALL_COUNT = n()) %>%
+  summarise(False_Point = sum(CALL_COUNT[stat_category == "FALSE_CALL"], na.rm = TRUE),
+    True_Point = sum(CALL_COUNT[stat_category == "TRUE_CALL"], na.rm = TRUE)) %>%
+  
+  # Compute final statistics
+  mutate(FDR = False_Point / (False_Point + True_Point),
+    Precision = True_Point / (True_Point + False_Point),
+    Recall = True_Point / 400,  # There are 400 spiked fusions
+    F1 = (2 * (Precision * Recall)) / (Precision + Recall),
+    Sensitivity = True_Point / (True_Point + (400 - True_Point)))
+
+manual_filtering$depth <- factor(manual_filtering$depth, levels = c("100GB", "10GB", "1GB"))
+manual_filtering$Sequence_Identity <- factor(manual_filtering$Sequence_Identity, levels = c("85%", "90%", "95%"))
+
+ggplot(filter(manual_filtering, control == 'positive'))+
+     geom_point(aes(x = Precision, y= Recall, colour = Algorithm))+
+     facet_grid(depth ~ Sequence_Identity)+
+  labs(title = "Recall and Precision", subtitle = "heuristic filtering", x = "Precision", y = "Recall")
+
+calculate_read_filt_statistics <- function(data, min_read_supp) {
+  data %>%
+    filter(read_supp > min_read_supp)  %>%  
+  mutate(stat_category = case_when(
+      grepl("false_fusion:mitochondrial|false_fusion:self_misalignment", fusionType) ~ "obvious_false",
+      TRUE ~ "other")) %>% filter(stat_category == "other") %>% select(-'stat_category') %>%  
+  mutate(stat_category = case_when(
+      grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType) ~ "FALSE_CALL",
+      TRUE ~ "TRUE_CALL")) %>%
+  
+  # First summarisation: Keep fusion_type_count grouped by stat_category
+  group_by(control, depth, Sequence_Identity, Algorithm, stat_category) %>%
+  summarise(CALL_COUNT = n()) %>%
+  summarise(False_Point = sum(CALL_COUNT[stat_category == "FALSE_CALL"], na.rm = TRUE),
+    True_Point = sum(CALL_COUNT[stat_category == "TRUE_CALL"], na.rm = TRUE)) %>%
+  
+  # Compute final statistics
+  mutate(FDR = False_Point / (False_Point + True_Point),
+    Precision = True_Point / (True_Point + False_Point),
+    Recall = True_Point / 400,  # There are 400 spiked fusions
+    F1 = (2 * (Precision * Recall)) / (Precision + Recall),
+    Sensitivity = True_Point / (True_Point + (400 - True_Point)))
+}
+
+manual_readsupp_filtering <- calculate_read_filt_statistics(combined_data, 2) 
+  for(number in unique(sort(combined_data$read_supp))){
+  result <- calculate_statistics(combined_data, number)
+  manual_readsupp_filtering <- rbind(result, manual_readsupp_filtering) 
+  }
+manual_readsupp_filtering$minimum_read_support <- as.numeric(manual_readsupp_filtering$minimum_read_support)
+
+ggplot(filter(manual_readsupp_filtering, control == "positive"))+
+  geom_line(aes(x = minimum_read_support, y = F1, colour = Algorithm))+
+  facet_grid(depth ~ Sequence_Identity)+
+  scale_x_log10()+
+  labs(title = "F1 score in relation to minimum read support", subtitle = "heuristic filtering", 
        x = "Read Support",
-       y = "Count") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  facet_wrap(~ Algorithm)+
-  scale_x_log10()
+       y = "F1 Score") 
 
-Read_Supp_Pos_false <-ggplot(filter(combined_data, control == 'positive', 
-         read_supp > 2, 
-         grepl("false", fusionType)), aes(x = Algorithm)) +
-  geom_bar(aes(fill = fusionType)) +
-  labs(title = "Distribution of Read Support",
-       x = "Fusion Type",
-       y = "Count") +
+ggplot(filter(manual_readsupp_filtering, control == "positive"))+
+  geom_line(aes(x = minimum_read_support, y = Precision, colour = Algorithm))+
+  facet_grid(depth ~ Sequence_Identity)+
+  scale_x_log10()+
+  labs(title = "Precision in relation to minimum read support", subtitle = "heuristic filtering",
+       x = "Read Support",
+       y = "Precision") 
+
+```
+
+```{r}
+fusion_profile_stat_summary <- combined_data %>%  filter(read_supp > 2) %>% group_by(control, depth, Sequence_Identity, Algorithm, fusionType) %>%
+  summarise(fusion_type_count = n(), .groups = 'drop')%>% 
+  ungroup() %>% 
+  complete(control, depth, Sequence_Identity, Algorithm, fusionType, fill = list(fusion_type_count = 0)) %>%
+  group_by(control, depth, Sequence_Identity, Algorithm) %>%
+  mutate(recall_category = case_when(
+      grepl("false", fusionType) ~ "False_Call",
+      grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
+      TRUE ~ "True_Recall"))
+
+fusion_profile_stat_summary$depth <- factor(fusion_profile_stat_summary$depth, levels = c("1GB", "10GB", "100GB"))
+fusion_profile_stat_summary$Sequence_Identity <- factor(fusion_profile_stat_summary$Sequence_Identity, levels = c("85%", "90%", "95%"))
+
+ggplot(filter(fusion_profile_stat_summary, control == "positive"), 
+       aes(x = Algorithm, y = fusionType, fill = Algorithm, alpha = fusion_type_count)) +
+  geom_tile() +
+  geom_text(aes(label = fusion_type_count), color = "black", size = 3, alpha =1) +
+  facet_grid(Sequence_Identity ~ depth) +  # Separate heatmaps for each algorithm
+  scale_fill_manual(values = c(
+    "Genion" = "#7CAE00",     # Green
+    "JAFFAL" = "#00BFC4",     # Blue
+    "LongGF" = "#C77CFF",     # Purple
+    "FusionSeeker" = "#F8766D" # Red
+  )) +  # Use a Brewer palette for distinct algorithm colors
+  scale_alpha_continuous(range = c(0.2, 1)) +  # Adjust transparency based on fusion_type_count
+  labs(title = "Fusion Type Profile",
+       x = "Algorithm",
+       y = "Fusion Type",
+       fill = "Algorithm",
+       alpha = "#Fusions") +
   theme_minimal() +
-  #facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
-  scale_y_log10()+  # Optional: Use log scale if appropriate
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave("Read_Supp_Pos_false.png", plot = Read_Supp_Pos_false, width = 10, height = 6, dpi = 600)
 
-Count_Supp_Pos_truncrev <-ggplot(filter(combined_data, control == 'positive', 
-         read_supp > 2, 
-         grepl("wrong|reverse|trunc", fusionType)), aes(x = Algorithm)) +
-  geom_bar(aes(fill = fusionType)) +
-  labs(title = "Counts of Fusion Types",
-       x = "fusionType",
-       y = "Number of fusion calls") +
+FCC <- ggplot(filter(fusion_profile_stat_summary, recall_category == "False_Call"))+ #, control == "positive"
+       aes(x = depth, y = Sequence_Identity, fill = fusion_type_count) +
+  geom_tile() +
+  geom_text(aes(label = fusion_type_count), color = "black", size = 3, alpha =1) +
+  facet_nested(control + fusionType ~ Algorithm, labeller = as_labeller(c(c("wrong_order:tri_fusion" = "Wrong Order Tri-fusion", 
+                             "false_fusion:self_misalignment" = "Self-Misalignment",
+                             "false_fusion:mitochondrial_genomic" = "Mitochondrial:Genomic",
+                             "false_fusion:mitochondrial" = "Mitochondrial",
+                             "false_fusion" = "Pure False Fusion"), 
+                             c("Genion"="Genion", "JAFFAL" = "JAFFAL", "LongGF" = "LongGF", "FusionSeeker" = "FusionSeeker"),
+                             c("positive"="Postive", "negative" = "Negative"))) ) +  # Separate heatmaps for each algorithm
+  scale_fill_gradient(low = "white", high = "red")+
+  scale_alpha_continuous(range = c(0.2, 1)) +  # Adjust transparency based on fusion_type_count
+  labs(x = "Depth",
+       y = "Mean Sequence Identity",
+       fill =  "#Fusions") +
   theme_minimal() +
-  #facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
-  scale_y_log10()+  # Optional: Use log scale if appropriate
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave("Count_Supp_Pos_truncrev.png", plot = Count_Supp_Pos_truncrev, width = 10, height = 6, dpi = 600) 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="lightgrey")) 
+ggsave("False_fusion_category_counts.pdf", plot = FCC, width = 210, height = 297, units = "mm")
 
-Read_Supp_Pos_truncrev <-ggplot(filter(combined_data, control == 'positive', 
-         read_supp > 2, 
-         grepl("wrong|reverse|trunc", fusionType)), aes(x = Algorithm, y = read_supp)) +
-  geom_boxplot(aes(fill = Algorithm)) +
-  labs(title = "Read Support of Fusion Types",
-       x = "Fusion Type",
-       y = "Read Support") +
+PRC <- ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_category == "Partial_Recall"))+ 
+       aes(x = depth, y = Sequence_Identity, fill = fusion_type_count) +
+  geom_tile() +
+  geom_text(aes(label = fusion_type_count), color = "black", size = 3, alpha =1) +
+  facet_nested(fusionType ~ Algorithm, labeller = as_labeller(c(c("reverse_order: hybrid"="(R) Inter-chromosomal", 
+                             "reverse_order: intra_chromosome"="(R) Intra-chromosomal",
+                             "reverse_order: read_through"="(R) Read-through",
+                             "wrong_order:tri_fusion"="(W) Tri-fusion",
+                             "reverse_order:tri_fusion"="(R) Tri-fusion",
+                             "reverse_order:truncated_tri_fusion"="(R) Truncated Tri-fusion",
+                             "truncated_tri_fusion"="Truncated Tri-fusion" ,
+                             "chromosomal_misalignment:intra_chromosome"="(CM) Intra-chromosomal"), 
+                             c("Genion"="Genion", "JAFFAL" = "JAFFAL", "LongGF" = "LongGF", "FusionSeeker" = "FusionSeeker"),
+                             c("positive"="Postive", "negative" = "Negative"))) ) +  # Separate heatmaps for each algorithm
+  scale_fill_gradient(low = "white", high = "orange") +
+  scale_alpha_continuous(range = c(0.2, 1)) +  # Adjust transparency based on fusion_type_count
+  labs(x = "Depth",
+       y = "Mean Sequence Identity",
+       fill =  "#Fusions") +
   theme_minimal() +
-  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
-  scale_y_log10()+  # Optional: Use log scale if appropriate
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave("Read_Supp_Pos_truncrev.png", plot = Read_Supp_Pos_truncrev, width = 10, height = 6, dpi = 600) 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="lightgrey")) 
+ggsave("Partial_Recall_category.pdf", plot = PRC, width = 210, height = 297, units = "mm")
 
-Count_Supp_Pos_true <-ggplot(filter(combined_data, control == 'positive', 
-         read_supp > 2, 
-         !grepl("wrong|false|reverse|trunc", fusionType)), aes(x = Algorithm)) +
-  geom_bar(aes(fill = fusionType)) +
-  labs(title = "Counts of Fusion Types",
-       x = "fusionType",
-       y = "Number of fusion calls") +
+TRC<- ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_category == "True_Recall"))+ 
+       aes(x = depth, y = Sequence_Identity, fill = fusion_type_count)+
+  geom_tile()+
+  geom_text(aes(label = fusion_type_count), color = "black", size = 3, alpha =1) +
+  facet_nested(fusionType ~ Algorithm, labeller = as_labeller(c(c("hybrid"="Inter-chromosomal", 
+                             "intra_chromosome"="Intra-chromosomal",
+                             "read_through"="Read-through",
+                             "tri_fusion"="Tri-fusion"), 
+                             c("Genion"="Genion", "JAFFAL" = "JAFFAL", "LongGF" = "LongGF", "FusionSeeker" = "FusionSeeker"),
+                             c("positive"="Postive", "negative" = "Negative"))) ) +  # Separate heatmaps for each algorithm
+  scale_fill_gradient(low = "white", high = "springgreen4") +  # Adjust color scale
+  scale_alpha_continuous(range = c(0.2, 1)) +  # Adjust transparency based on fusion_type_count
+  labs(x = "Depth",
+       y = "Mean Sequence Identity",
+       fill =  "#Fusions") +
   theme_minimal() +
-  #facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
-  scale_y_log10()+  # Optional: Use log scale if appropriate
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave("Count_Supp_Pos_true.png", plot = Count_Supp_Pos_true, width = 10, height = 6, dpi = 600) 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="lightgrey")) 
+ggsave("True_Recall_category.pdf", plot = TRC, width = 210, height = 297, units = "mm")
+```
 
-Read_Supp_Pos_true <-ggplot(filter(combined_data, control == 'positive', 
-         read_supp > 2, 
-         !grepl("wrong|false|reverse|trunc", fusionType)), aes(x = Algorithm, y = read_supp)) +
-  geom_boxplot(aes(fill = Algorithm)) +
-  labs(title = "Read Support of Fusion Types",
-       x = "Fusion Type",
-       y = "Read Support") +
+```{r}
+# install.packages("devtools")
+devtools::install_github("ricardo-bion/ggradar")
+library(ggradar)
+#reformat data to be compatible
+radar_data <- fusion_profile_stat_summary %>%
+  filter(
+    recall_category == "False_Call",
+    depth == "100GB",
+    Sequence_Identity == "85%",
+    control == "negative"
+  ) %>%
+  select(Algorithm, fusionType, fusion_type_count) %>%
+  ungroup()%>% 
+  pivot_wider(names_from = fusionType, values_from = fusion_type_count, values_fill = 0) %>%
+  rename(group = Algorithm) 
+ggradar(radar_data[c(4:8)],  grid.max = max(radar_data[c(5:8)], na.rm = TRUE)) 
+
+```
+
+```{r}
+#fusionseeker calls the same fusion multiple times with different read support because of breakpoint differences
+fusions_in_all_algorithms <- combined_data %>%
+  filter(read_supp > 2) %>%
+  group_by(fusion.gene.id, Sequence_Identity, depth, control, fusionType) %>%
+  summarise(overlap = n_distinct(Algorithm)) %>%
+  filter(overlap == 4) %>%
+  ungroup() %>%
+  left_join(combined_data)%>% unique()%>%
+  group_by(fusion.gene.id, Sequence_Identity, depth, control, Algorithm, overlap, fusionType) %>%
+  summarize(Total_Read_Supp = sum(read_supp))%>%
+  mutate(recall_category = case_when(
+      grepl("false", fusionType) ~ "False_Call",
+      grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
+      TRUE ~ "True_Recall"))
+fusions_in_all_algorithms$depth <- factor(fusions_in_all_algorithms$depth, levels = c("1GB", "10GB", "100GB"))
+fusions_in_all_algorithms$Sequence_Identity <- factor(fusions_in_all_algorithms$Sequence_Identity, levels = c("95%", "90%", "85%"))
+
+ggplot(fusions_in_all_algorithms, aes(x = fusion.gene.id, y = Algorithm, fill = recall_category, alpha = Total_Read_Supp)) +
+  geom_tile() +
+  geom_text(aes(label = Total_Read_Supp), color = "black", size = 3, alpha =1) +  # Add numbers to the tiles, adjust color for visibility
+  labs(x="", y="",
+       fill = "Recall Category",
+       alpha = "Read Support") +
   theme_minimal() +
-  facet_wrap(~ fusionType) +  # Create a separate plot for each Algorithm
-  scale_y_log10()+  # Optional: Use log scale if appropriate
+  facet_grid(Sequence_Identity ~ depth)+
+  scale_fill_manual(values = c("False_Call"="red", "Partial_Recall"="orange", "True_Recall"="springgreen4"
+  )) +  # Use a Brewer palette for distinct algorithm colors
+  scale_alpha_continuous(range = c(0.1, 1)) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave("Read_Supp_Pos_true.png", plot = Read_Supp_Pos_true, width = 10, height = 6, dpi = 600) 
 
+fusions_in_n_algorithms <- combined_data %>%
+  #filter(read_supp > 1) %>%
+  group_by(fusion.gene.id, Sequence_Identity, depth, control, fusionType) %>%
+  summarise(overlap = n_distinct(Algorithm)) %>%
+  #filter(overlap == 4) %>%
+  ungroup() %>%
+  left_join(combined_data)%>% unique()%>%
+  group_by(fusion.gene.id, Sequence_Identity, depth, control, Algorithm, overlap, fusionType) %>%
+  summarize(Total_Read_Supp = sum(read_supp))%>%
+  mutate(recall_category = case_when(
+      grepl("false", fusionType) ~ "False_Call",
+      grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
+      TRUE ~ "True_Recall")) %>%   
+  filter(fusion.gene.id %in% unique(fusions_in_all_algorithms$fusion.gene.id))
+fusions_in_n_algorithms$depth <- factor(fusions_in_n_algorithms$depth, levels = c("1GB", "10GB", "100GB"))
+fusions_in_n_algorithms$Sequence_Identity <- factor(fusions_in_n_algorithms$Sequence_Identity, levels = c("95%", "90%", "85%"))
+
+ReadSupport_Algorithm <- ggplot(filter(fusions_in_n_algorithms, depth=="100GB"), aes(x = fusion.gene.id, y = Algorithm, fill = Total_Read_Supp)) +
+  geom_tile() +
+  geom_text(aes(label = Total_Read_Supp), color = "black", size = 3, alpha =1) +  # Add numbers to the tiles, adjust color for visibility
+  labs(x="", y="",
+       fill = "Read Support") +
+  theme_minimal() +
+  facet_grid(Sequence_Identity ~ depth)+
+  scale_fill_gradient(low = "white", high = "cornflowerblue") +
+  scale_alpha_continuous(range = c(0.1, 1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="grey80"))
+ggsave("ReadSupport-Algorithm.pdf", plot = ReadSupport_Algorithm, width = 297, height = 210, units = "mm")
+
+```
+
+```{r}
+Fusion_Simulated_Fusion_overlap_sets <- list(
+  JAFFAL = unique(filter(combined_data, Algorithm == "JAFFAL", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id),
+  Genion = unique(filter(combined_data, Algorithm == "Genion", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id),
+  LongGF = unique(filter(combined_data, Algorithm == "LongGF", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id),
+  FusionSeeker = unique(filter(combined_data, Algorithm == "FusionSeeker", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id)
+)
+
+# Convert the list to a format compatible with UpSetR
+Fusion_overlap <- fromList(Fusion_Simulated_Fusion_overlap_sets)
+# Generate an upset plot without specifying intersect, which uses the default behavior
+True_overlap <- ComplexUpset::upset(
+  Fusion_overlap, intersect = names(Fusion_Simulated_Fusion_overlap_sets[1:4]), 
+  width_ratio=0.1, sort_intersections_by='degree',
+  queries=list(upset_query(intersect=c("JAFFAL", "Genion", "LongGF", "FusionSeeker"), color='blue')),
+  base_annotations = list(
+        'Intersection size'=(intersection_size(
+          text_colors=c(on_background='black', on_bar='white'),
+            mapping=aes(fill='bars_color')
+        ) + scale_fill_manual(values=c('bars_color'='springgreen4'), guide='none')
+          + ylab('True Recall')
+        ))) 
+ggsave("Compare_Contrast_True_Calls.pdf", plot = True_overlap, width = 297, height = 210, units = "mm")
+
+Fusion_Simulated_Fusion_overlap_sets <- list(
+  JAFFAL = unique(filter(combined_data, Algorithm == "JAFFAL", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id),
+  Genion = unique(filter(combined_data, Algorithm == "Genion", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id),
+  LongGF = unique(filter(combined_data, Algorithm == "LongGF", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id),
+  FusionSeeker = unique(filter(combined_data, Algorithm == "FusionSeeker", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id)
+)
+
+# Convert the list to a format compatible with UpSetR
+Fusion_overlap <- fromList(Fusion_Simulated_Fusion_overlap_sets)
+# Generate an upset plot without specifying intersect, which uses the default behavior
+PartialCall_Overlap <- ComplexUpset::upset(
+  Fusion_overlap, intersect = names(Fusion_Simulated_Fusion_overlap_sets[1:4]),
+  width_ratio=0.1, sort_intersections_by='degree',
+  queries=list(upset_query(intersect=c("JAFFAL", "Genion", "LongGF", "FusionSeeker"), color='blue')),
+  base_annotations = list(
+        'Intersection size'=(intersection_size(
+          text_colors=c(on_background='black', on_bar='black'),
+            mapping=aes(fill='bars_color')
+        ) + scale_fill_manual(values=c('bars_color'='orange'), guide='none')
+           + ylab('Partial Recall')
+        ))) 
+ggsave("Compare_Contrast_Partial_Calls.pdf", plot = PartialCall_Overlap, width = 297, height = 210, units = "mm")
+
+Fusion_Simulated_Fusion_overlap_sets <- list(
+  JAFFAL = unique(filter(combined_data, Algorithm == "JAFFAL", grepl("false", fusionType), read_supp > 2)$fusion.gene.id),
+  Genion = unique(filter(combined_data, Algorithm == "Genion", grepl("false", fusionType), read_supp > 2)$fusion.gene.id),
+  LongGF = unique(filter(combined_data, Algorithm == "LongGF", grepl("false", fusionType), read_supp > 2)$fusion.gene.id),
+  FusionSeeker = unique(filter(combined_data, Algorithm == "FusionSeeker", grepl("false", fusionType), read_supp > 2)$fusion.gene.id)
+)
+
+Fusion_overlap <- fromList(Fusion_Simulated_Fusion_overlap_sets)
+
+library(ComplexUpset)
+
+# Convert list to binary membership matrix
+Fusion_overlap_matrix <- as.data.frame(Fusion_overlap)  # Convert list-based to a dataframe
+
+# Ensure the matrix is in the correct format (0/1 values)
+Fusion_overlap_matrix <- as.data.frame(lapply(Fusion_overlap_matrix, as.integer))
+
+# Generate the UpSet plot using ComplexUpset
+False_Overlap <- ComplexUpset::upset(
+  Fusion_overlap_matrix, names(Fusion_overlap_matrix)[1:4],  # First four sets
+  width_ratio=0.1, sort_intersections_by='degree',
+  queries=list(upset_query(intersect=c("JAFFAL", "Genion", "LongGF", "FusionSeeker"), color='blue')),
+ base_annotations = list(
+        'Intersection size'=(intersection_size(
+          text_colors=c(on_background='black', on_bar='black'),
+            mapping=aes(fill='bars_color')
+        ) + scale_fill_manual(values=c('bars_color'='red'), guide='none') 
+          + ylab('False Calls')
+  )))
+ggsave("Compare_Contrast_False_Calls.pdf", plot = False_Overlap, width = 297, height = 210, units = "mm")
+```
+
+```{r}
+falsecall_overlap_table <-  combined_data %>%
+  filter(read_supp > 2, grepl("false", fusionType)) %>%
+  group_by(fusion.gene.id, control, depth, Sequence_Identity) %>%
+  summarise(overlap = n_distinct(Algorithm)) %>%  # Ensure the fusion appears with different algorithms
+  filter(overlap > 1) %>%
+  left_join(combined_data) 
+#find what false fusions are overlapping
+```
+
+```{r}
+Simulated_BreakPoint <- Simulated_Fusion_Info_3 
+JAFFAL_BreakPoint <- Annot_JAFFAL_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), spanning.reads >= 2) #chrom1, base1, chrom2, base2
+SB <- subset(Simulated_BreakPoint, fusion.gene.id == "ENSG00000178997:ENSG00000289083")
+J <- subset(JAFFAL_BreakPoint, fusion.gene.id == "ENSG00000178997:ENSG00000289083" & depth == "100GB" & Sequence_Identity == "90%")
+gene_names <- str_split("ENSG00000178997:ENSG00000289083", pattern = ":")[[1]] 
+      gene1 <- gene_names[1]
+      gene2 <- gene_names[2]
+     
+      SB1 <- as.integer(str_split(subset(SB, alternative_ID == gene1)$exonEnds, ",")[[1]])
+      SB2 <- as.integer(str_split(subset(SB, alternative_ID == gene2)$exonStarts, ",")[[1]])
+
+      JB1 <- toString(apply(outer(as.numeric(J$base1) , SB1, "-"), 1, function(x) x[which.min(abs(x))]))
+      JB2 <- toString(apply(outer(as.numeric(J$base2) , SB2, "-"), 1, function(x) x[which.min(abs(x))]))
+ 
+ list(c(gene1, gene2) , c(SB1, SB2) , c(JB1, JB2))
+ 
+ nrow(distinct(Breakpoint_Accuracy))
+```
+
+```{r}
+#Breakpoint accuracy recalls
+###Need to recheck Genion
+Simulated_BreakPoint <- Simulated_Fusion_Info_3 #%>% rename(B2 = exonStarts, B1 = exonEnds)
+
+Genion_BreakPoint <- Annot_Genion_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) %>% separate(V8, into = c("Gene1", "Gene2", "Gene3"), sep = ";") %>% 
+  separate(Gene1, into = c("Gene1.exonStarts", "Gene1.exonEnds"), sep = "-") %>% separate(Gene2, into = c("Gene2.exonStarts", "Gene2.exonEnds"), sep = "-") %>% separate(Gene3, into = c("Gene3.exonStarts", "Gene3.exonEnds"), sep = "-") %>%
+  separate(Gene1.exonStarts, into=c("C1", "Gene1.exonStarts")) %>% separate(Gene2.exonStarts, into=c("C2", "Gene2.exonStarts")) %>% separate(Gene3.exonStarts, into=c("C3", "Gene3.exonStarts")) %>% mutate_at(vars(C1, C2, C3), funs(paste0("chr", .)))# "C1",  "Gene1.2", "C2", "Gene2.1", "Gene2.2", "C3", "Gene3.1" 
+
+JAFFAL_BreakPoint <- Annot_JAFFAL_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), spanning.reads >= 2) #chrom1, base1, chrom2, base2
+LongGF_BreakPoint <- Annot_LongGF_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) #chrom1, breakpoint1, chrom2, base2
+FusionSeeker_BreakPoint <- Annot_FusionSeeker_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) #Chrom1, Breakpoint1, Chrom2, Base2
+
+Breakpoint_Accuracy <- data.frame(matrix(nrow = 0, ncol = length(c('seq_depth', 'seq_id', 'gene_fusion', 'GB1', 'GB2', 'GB3', 'GB4' , 'JB1', 'JB2', 'LB1', 'LB2', 'FSB1', 'FSB2'))))
+colnames(Breakpoint_Accuracy) <- c('seq_depth', 'seq_id', 'gene_fusion', 'GB1', 'GB2', 'GB3', 'GB4' , 'JB1', 'JB2', 'LB1', 'LB2', 'FSB1', 'FSB2')
+for (seq_depth in c('1GB' , '10GB' , '100GB')) {
+  for (seq_id in c('85%' , '90%' , '95%')) {   
+    for(gene_fusion in unique(c(Genion_BreakPoint$V1, JAFFAL_BreakPoint$fusion.gene.id, LongGF_BreakPoint$fusion.gene.id, FusionSeeker_BreakPoint$fusion.gene.id))){
+      SB <- subset(Simulated_BreakPoint, fusion.gene.id == gene_fusion)
+      G <- subset(Genion_BreakPoint,  V1 == gene_fusion & depth == seq_depth & Sequence_Identity == seq_id) 
+      J <- subset(JAFFAL_BreakPoint, fusion.gene.id == gene_fusion & depth == seq_depth & Sequence_Identity == seq_id)
+      L <- subset(LongGF_BreakPoint, fusion.gene.id== gene_fusion & depth == seq_depth & Sequence_Identity == seq_id)
+      FS <- subset(FusionSeeker_BreakPoint, fusion.gene.id == gene_fusion & depth == seq_depth & Sequence_Identity == seq_id)
+      gene_names <- str_split(gene_fusion, pattern = ":")[[1]] 
+      gene1 <- gene_names[1]
+      gene2 <- gene_names[2]
+     
+      SB1 <- as.integer(str_split(subset(SB, alternative_ID == gene1)$exonEnds, ",")[[1]])
+      SB2 <- as.integer(str_split(subset(SB, alternative_ID == gene2)$exonStarts, ",")[[1]])
+    
+      gene3 <- gene_names[3]
+      SB3 <- NA
+      SB4 <- NA
+      if(is.na(gene3) == FALSE){
+        SB3 <- as.integer(str_split(subset(SB, alternative_ID == gene2)$exonEnds, ",")[[1]])
+        SB4 <- as.integer(str_split(subset(SB, alternative_ID == gene3)$exonStarts, ",")[[1]])
+      }
+    
+  if(nrow(G) > 0){
+    
+  GB1 <- toString(apply(outer(as.numeric(G$Gene1.exonEnds) , SB1, "-"), 1, function(x) x[which.min(abs(x))]))
+  GB2 <- toString(apply(outer(as.numeric(G$Gene2.exonStarts) , SB2, "-"), 1, function(x) x[which.min(abs(x))]))
+  GB3 <- "NA"
+  GB4 <- "NA"
+  if(is.na(gene3) == FALSE){
+        GB3 <- toString(apply(outer(as.numeric(G$Gene2.exonEnds) , SB3, "-"), 1, function(x) x[which.min(abs(x))]))
+        GB4 <- toString(apply(outer(as.numeric(G$Gene3.exonStarts) , SB4, "-"), 1, function(x) x[which.min(abs(x))]))
+      }
+  }else{
+    GB1 <- "NA"
+    GB2 <- "NA"
+    GB3 <- "NA"
+    GB4 <- "NA"
+    }
+  if(nrow(J) > 0){
+  JB1 <- toString(apply(outer(as.numeric(J$base1) , SB1, "-"), 1, function(x) x[which.min(abs(x))]))
+  JB2 <- toString(apply(outer(as.numeric(J$base2) , SB2, "-"), 1, function(x) x[which.min(abs(x))]))
+  }else{
+    JB1 <- "NA"
+    JB2 <- "NA"
+    }
+  if(nrow(L) > 0){
+  LB1 <- toString(apply(outer(as.numeric(L$breakpoint1) , SB1, "-"), 1, function(x) x[which.min(abs(x))]))
+  LB2 <- toString(apply(outer(as.numeric(L$breakpoint2) , SB2, "-"), 1, function(x) x[which.min(abs(x))]))
+  }else{
+    LB1 <- "NA"
+    LB2 <- "NA"
+    }
+  if(nrow(FS) > 0){
+  FSB1 <- toString(apply(outer(as.numeric(FS$Breakpoint1) , SB1, "-"), 1, function(x) x[which.min(abs(x))]))
+  FSB2 <- toString(apply(outer(as.numeric(FS$Breakpoint2), SB2, "-"), 1, function(x) x[which.min(abs(x))]))
+  }else{
+    FSB1 <- "NA"
+    FSB2 <- "NA"
+  }
+  new_row <-  data.frame(seq_depth, seq_id, gene_fusion, GB1, GB2, GB3, GB4, JB1, JB2, LB1, LB2, FSB1, FSB2)
+  colnames(new_row) <- colnames(Breakpoint_Accuracy)
+   Breakpoint_Accuracy <- rbind(Breakpoint_Accuracy, new_row)
+  }
+ } 
+}
+
+Breakpoint_Accuracy <- Breakpoint_Accuracy %>% pivot_longer(cols = GB1:FSB2, names_to =  "Tool_Breakpoint", values_to = "Distance_from_Simulated_Breakpoint") %>%
+  mutate(Algorithm = case_when(
+    grepl("^GB", Tool_Breakpoint) ~ "Genion",
+    grepl("^JB", Tool_Breakpoint) ~ "JAFFAL",
+    grepl("^LB", Tool_Breakpoint) ~ "LongGF",
+    grepl("^FSB", Tool_Breakpoint) ~ "FusionSeeker"))%>%
+  mutate(values_vector = strsplit(as.character(Distance_from_Simulated_Breakpoint), ","))%>%
+  unnest(values_vector) %>%
+ mutate(values_vector = as.numeric(values_vector)) %>%
+  mutate(Breakpoint_number = case_when(
+    grepl("B1", Tool_Breakpoint) ~ "Breakpoint_1",
+    grepl("B2", Tool_Breakpoint) ~ "Breakpoint_2"))
+Breakpoint_Accuracy <-filter(Breakpoint_Accuracy, Distance_from_Simulated_Breakpoint != "NA") %>% distinct()
+```
+
+```{r}
+# Function to check if a number is outside exon ranges and compute nearest boundary distance
+check_position <- function(position) {
+  inside_exon <- FALSE
+  
+  # Check if the position falls within any exon range
+  for (i in seq_along(gene_exonStarts)) {
+    if (position >= gene_exonStarts[i] && position <= gene_exonEnds[i]) {
+      inside_exon <- TRUE
+      break
+    }
+  }
+  
+  if (inside_exon) {
+    return(paste(position, "is inside an exon."))
+  } else {
+    # Calculate distances to all exon start and end points
+    distances <- c(abs(position - gene_exonStarts), abs(position - gene_exonEnds))
+    
+    # Find the minimum distance
+    min_distance <- min(distances)
+    
+    return(list(message = paste(position, "is outside all exons, nearest boundary is", min_distance, "bases away."), 
+                distance = min_distance))
+  }
+}
+
+Simulated_BreakPoint <- Simulated_Fusion_Info_3 #%>% rename(B2 = exonStarts, B1 = exonEnds)
+
+Genion_BreakPoint <- Annot_Genion_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) %>% separate(V8, into = c("Gene1", "Gene2", "Gene3"), sep = ";") %>% 
+  separate(Gene1, into = c("Gene1.exonStarts", "Gene1.exonEnds"), sep = "-") %>% separate(Gene2, into = c("Gene2.exonStarts", "Gene2.exonEnds"), sep = "-") %>% separate(Gene3, into = c("Gene3.exonStarts", "Gene3.exonEnds"), sep = "-") %>%
+  separate(Gene1.exonStarts, into=c("C1", "Gene1.exonStarts")) %>% separate(Gene2.exonStarts, into=c("C2", "Gene2.exonStarts")) %>% separate(Gene3.exonStarts, into=c("C3", "Gene3.exonStarts")) %>% mutate_at(vars(C1, C2, C3), funs(paste0("chr", .)))# "C1",  "Gene1.2", "C2", "Gene2.1", "Gene2.2", "C3", "Gene3.1" 
+
+JAFFAL_BreakPoint <- Annot_JAFFAL_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), spanning.reads >= 2) #chrom1, base1, chrom2, base2
+LongGF_BreakPoint <- Annot_LongGF_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) #chrom1, breakpoint1, chrom2, base2
+FusionSeeker_BreakPoint <- Annot_FusionSeeker_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) #Chrom1, Breakpoint1, Chrom2, Base2
+
+Breakpoint_Accuracy <- data.frame(matrix(nrow = 0, ncol = length(c('seq_depth', 'seq_id', 'gene_fusion', 'GB1', 'GB2', 'GB3', 'GB4' , 'JB1', 'JB2', 'LB1', 'LB2', 'FSB1', 'FSB2'))))
+colnames(Breakpoint_Accuracy) <- c('seq_depth', 'seq_id', 'gene_fusion', 'GB1', 'GB2', 'GB3', 'GB4' , 'JB1', 'JB2', 'LB1', 'LB2', 'FSB1', 'FSB2')
+for (seq_depth in c('1GB' , '10GB' , '100GB')) {
+  for (seq_id in c('85%' , '90%' , '95%')) {   
+    for(gene_fusion in unique(c(Genion_BreakPoint$V1, JAFFAL_BreakPoint$fusion.gene.id, LongGF_BreakPoint$fusion.gene.id, FusionSeeker_BreakPoint$fusion.gene.id))){
+      
+      SB <- subset(Simulated_BreakPoint, fusion.gene.id == gene_fusion)
+      G <- subset(Genion_BreakPoint,  V1 == gene_fusion & depth == seq_depth & Sequence_Identity == seq_id) 
+      J <- subset(JAFFAL_BreakPoint, fusion.gene.id == gene_fusion & depth == seq_depth & Sequence_Identity == seq_id)
+      L <- subset(LongGF_BreakPoint, fusion.gene.id== gene_fusion & depth == seq_depth & Sequence_Identity == seq_id)
+      FS <- subset(FusionSeeker_BreakPoint, fusion.gene.id == gene_fusion & depth == seq_depth & Sequence_Identity == seq_id)
+      gene_names <- str_split(gene_fusion, pattern = ":")[[1]] 
+      gene1 <- gene_names[1]
+      gene2 <- gene_names[2]
+     
+      #Check breakpoint assigned for gene 1
+      gene_exonStarts <- as.integer(str_split(subset(SB, alternative_ID == gene1)$exonStarts, ",")[[1]])
+      gene_exonEnds <- as.integer(str_split(subset(SB, alternative_ID == gene1)$exonEnds, ",")[[1]])
+      
+      if(nrow(G) > 0){
+        GB1 <- sapply(unique(G$Gene1.exonEnds), function(x) check_position(x)[2])}
+      else{
+        GB1 <- "NA"
+        GB2 <- "NA"
+        GB3 <- "NA"
+        GB4 <- "NA"
+        }
+      
+      if(nrow(J) > 0){
+        JB1 <- sapply(unique(J$base1), function(x) check_position(x)[2])}
+      else{ 
+        JB1 <- "NA"  
+        JB2 <- "NA" 
+        }
+      
+      if(nrow(L) > 0){
+        LB1 <- sapply(L$breakpoint1, function(x) check_position(x)[2])}
+      else{
+        LB1 <- "NA"   
+        LB2 <- "NA" 
+        }
+      
+      if(nrow(FS) > 0){
+        FSB1 <- sapply(FS$Breakpoint1, function(x) check_position(x)[2])}
+      else{
+        FSB1 <- "NA" 
+        FSB2 <- "NA"
+        }
+          
+      #Check breakpoint assigned for gene 2
+      gene_exonStarts <- as.integer(str_split(subset(SB, alternative_ID == gene2)$exonStarts, ",")[[1]])
+      gene_exonEnds <- as.integer(str_split(subset(SB, alternative_ID == gene2)$exonEnds, ",")[[1]])
+    
+      if(nrow(G) > 0){
+        GB2 <- sapply(G$Gene2.exonStarts, function(x) check_position(x)[2])}
+      if(nrow(J) > 0){
+        JB2 <- sapply(J$base2, function(x) check_position(x)[2])}
+      if(nrow(L) > 0){
+        LB2 <- sapply(L$breakpoint2, function(x) check_position(x)[2])}
+      if(nrow(FS) > 0){
+        FSB2 <- sapply(FS$Breakpoint2, function(x) check_position(x)[2])}
+      
+      #check breakpoint assigned for gene 3
+      gene3 <- gene_names[3]
+      SB3 <- NA
+      SB4 <- NA
+      if(is.na(gene3) == FALSE){
+        if(nrow(G) > 0){
+          GB3 <- sapply(G$Gene2.exonEnds, function(x) check_position(x)[2])
+          gene_exonStarts <- as.integer(str_split(subset(SB, alternative_ID == gene3)$exonStarts, ",")[[1]])
+          gene_exonEnds <- as.integer(str_split(subset(SB, alternative_ID == gene3)$exonEnds, ",")[[1]])
+          GB4 <- sapply(G$Gene3.exonStarts, function(x) check_position(x)[2]) 
+        }
+      } 
+
+    new_row <-  data.frame(seq_depth, seq_id, gene_fusion, GB1, GB2, GB3, GB4, JB1, JB2, LB1, LB2, FSB1, FSB2)
+    colnames(new_row) <- colnames(Breakpoint_Accuracy)
+    Breakpoint_Accuracy <- rbind(Breakpoint_Accuracy, new_row)
+  }
+ } 
+}
+
+Breakpoint_Accuracy <- Breakpoint_Accuracy %>% pivot_longer(cols = GB1:FSB2, names_to =  "Tool_Breakpoint", values_to = "Distance_from_Simulated_Breakpoint") %>%
+  mutate(Algorithm = case_when(
+    grepl("^GB", Tool_Breakpoint) ~ "Genion",
+    grepl("^JB", Tool_Breakpoint) ~ "JAFFAL",
+    grepl("^LB", Tool_Breakpoint) ~ "LongGF",
+    grepl("^FSB", Tool_Breakpoint) ~ "FusionSeeker"))%>%
+  mutate(values_vector = strsplit(as.character(Distance_from_Simulated_Breakpoint), ","))%>%
+  unnest(values_vector) %>%
+ mutate(values_vector = as.numeric(values_vector)) %>%
+  mutate(Breakpoint_number = case_when(
+    grepl("B1", Tool_Breakpoint) ~ "Breakpoint_1",
+    grepl("B2", Tool_Breakpoint) ~ "Breakpoint_2"))
+Breakpoint_Accuracy <-filter(Breakpoint_Accuracy, Distance_from_Simulated_Breakpoint != "NA") %>% distinct()
+```
+
+
+```{r}
+ggplot(Breakpoint_Accuracy, aes(x = values_vector, y = Breakpoint_number, fill = Algorithm)) +
+  geom_violin() +
+  geom_jitter(width = 0.2, size = 0.5, color = "black", alpha = 0.5) +
+  labs(y = "Distance from Simulated Breakpoint/Exons") +
+  theme_minimal() #+  scale_y_log10()
 
 ```
 
