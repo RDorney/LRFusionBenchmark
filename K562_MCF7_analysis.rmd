@@ -44,18 +44,18 @@ names <- gsub(".tsv","", list.files(path = "/bioinformatics/ryley", pattern = "L
 for(i in names){
   assign(i, read.table(paste0("/bioinformatics/ryley/", i, ".tsv")))
 }
-LongGF <- do.call(rbind, lapply(my_files, function(filename) {
+LongGF_cell_lines <- do.call(rbind, lapply(my_files, function(filename) {
   read.table(filename) %>%
     mutate(Source = basename(filename))
 }))
 
-LongGF$V1[LongGF$V1=="SumGF"] <- "/bioinformatics/ryley/Algorithm_Benchmark/fusion_calling/LongGF/LongGF.run.MCF7_ENCODE_ENCFF887DGG_PacBio.log:SumGF"
-LongGF <- LongGF %>% mutate(Source = sub("^.*\\.run\\.(.*?)\\.log.*$", "\\1", V1))
+LongGF_cell_lines$V1[LongGF_cell_lines$V1=="SumGF"] <- "/bioinformatics/ryley/Algorithm_Benchmark/fusion_calling/LongGF/LongGF.run.MCF7_ENCODE_ENCFF887DGG_PacBio.log:SumGF"
+LongGF_cell_lines <- LongGF_cell_lines %>% mutate(Source = sub("^.*\\.run\\.(.*?)\\.log.*$", "\\1", V1))
 
 #Genion
 myfiles<- list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/fusion_calling/Genion", pattern = "*_genion", full.names = TRUE)
 file_list <- myfiles[!grepl("SRX905986", myfiles)]
-Genion<- do.call(rbind, lapply(file_list, function(filename) {
+Genion_cell_lines<- do.call(rbind, lapply(file_list, function(filename) {
   if (file.info(filename)$size > 0) {
     read.table(filename) %>%
       mutate(Source = sub("_genion$", "", basename(filename)))
@@ -64,10 +64,9 @@ Genion<- do.call(rbind, lapply(file_list, function(filename) {
   }
 }))
 
-
 #JAFFAL
 myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/fusion_calling/jaffal_results_cell_lines", pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
-JAFFAL <-  do.call(rbind, lapply(myfiles, function(filename) {
+JAFFAL_cell_lines <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = ",") %>%
     mutate(Source =  sub("^jaffal_results_cell_lines", "",sub(".fastq$", "",sample)))
 }))
@@ -75,25 +74,25 @@ JAFFAL <-  do.call(rbind, lapply(myfiles, function(filename) {
 myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/fusion_calling", pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE) %>%
   grep(pattern = "cell_lines", x = ., value = TRUE)
 
-JAFFAL_3Gene <- do.call(rbind, lapply(myfiles, function(filename) {
+JAFFAL_cell_lines_3Gene <- do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = "\t") %>%
     mutate(Source = sub("^jaffal_results_cell_lines", "",sub(".fastq$", "", basename(dirname(filename)))))
 }))
 
 #fusionseeker
 myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/fusion_calling/FusionSeeker", pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
-FusionSeeker <- do.call(rbind, lapply(myfiles, function(filename){
+FusionSeeker_cell_lines <- do.call(rbind, lapply(myfiles, function(filename){
   read.table(filename, header = TRUE) %>% mutate(Source = sub("^fusionseeker_", "", basename(dirname(filename))))
 }))
 
-LongGF <- LongGF %>%
+LongGF_cell_lines <- LongGF_cell_lines %>%
   mutate(Platform = case_when(
     grepl("PacBio", Source, ignore.case = TRUE) ~ "PacBio",
     !grepl("PacBio", Source, ignore.case = TRUE) ~ "Nanopore"), Cell_Lines = case_when(
     grepl("K562", Source, ignore.case = TRUE) ~ "K562",
     grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7",# Keep original value if no match
   ), Algorithm = "LongGF")
-Genion <- Genion%>%
+Genion_cell_lines <- Genion_cell_lines%>%
   mutate(Platform = case_when(
     grepl("PacBio", Source, ignore.case = TRUE) ~ "PacBio",
     !grepl("PacBio", Source, ignore.case = TRUE) ~ "Nanopore"), Cell_Lines = case_when(
@@ -101,7 +100,7 @@ Genion <- Genion%>%
     grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7",# Keep original value if no match
   ), Algorithm = "Genion")
 
-FusionSeeker <- FusionSeeker %>%
+FusionSeeker_cell_lines <- FusionSeeker_cell_lines %>%
   mutate(Platform = case_when(
     grepl("PacBio", Source, ignore.case = TRUE) ~ "PacBio",
     !grepl("PacBio", Source, ignore.case = TRUE) ~ "Nanopore"), Cell_Lines = case_when(
@@ -109,7 +108,7 @@ FusionSeeker <- FusionSeeker %>%
     grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7",# Keep original value if no match
   ), Algorithm = "FusionSeeker")
 
-JAFFAL <- JAFFAL%>%
+JAFFAL_cell_lines <- JAFFAL_cell_lines%>%
   mutate(Source = sample, Platform = case_when(
     grepl("PacBio", sample, ignore.case = TRUE) ~ "PacBio",
     !grepl("PacBio", sample, ignore.case = TRUE) ~ "Nanopore"), Cell_Lines = case_when(
@@ -117,7 +116,7 @@ JAFFAL <- JAFFAL%>%
     grepl("MCF7", sample, ignore.case = TRUE) ~ "MCF7",# Keep original value if no match
   ))
 
-JAFFAL_3Gene <- JAFFAL_3Gene %>%
+JAFFAL_cell_lines_3Gene <- JAFFAL_cell_lines_3Gene %>%
   mutate(Platform = case_when(
     grepl("PacBio", Source, ignore.case = TRUE) ~ "PacBio",
     !grepl("PacBio", Source, ignore.case = TRUE) ~ "Nanopore"), Cell_Lines = case_when(
@@ -129,20 +128,20 @@ JAFFAL_3Gene <- JAFFAL_3Gene %>%
 
 ```{r}
 #find impossible fusions chrM x genomic genes, and mitochondrial chimeras
-impossible_chimeras_FusionSeeker <- subset(FusionSeeker, (Chrom1 == "chrM" & Chrom2 != "chrM") | (Chrom1 != "chrM" & Chrom2 == "chrM")) %>% mutate(fusionType = "Impossible")
+impossible_chimeras_FusionSeeker_cell_lines <- subset(FusionSeeker_cell_lines, (Chrom1 == "chrM" & Chrom2 != "chrM") | (Chrom1 != "chrM" & Chrom2 == "chrM")) %>% mutate(fusionType = "Impossible")
 
-impossible_chimeras_LongGF <- filter(LongGF, (grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)) | (!grepl("chrM:", V4, ignore.case = TRUE) & grepl("chrM:", V5, ignore.case = TRUE))) %>% mutate(fusionType = "Impossible")
+impossible_chimeras_LongGF_cell_lines <- filter(LongGF_cell_lines, (grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)) | (!grepl("chrM:", V4, ignore.case = TRUE) & grepl("chrM:", V5, ignore.case = TRUE))) %>% mutate(fusionType = "Impossible")
 
-mito_chimeras_FusionSeeker <- subset(FusionSeeker, (Chrom1 == "chrM" & Chrom2 == "chrM")) %>% mutate(fusionType = "Mitochondrial")
+mito_chimeras_FusionSeeker_cell_lines <- subset(FusionSeeker_cell_lines, (Chrom1 == "chrM" & Chrom2 == "chrM")) %>% mutate(fusionType = "Mitochondrial")
 
-mito_chimeras_LongGF <- filter(LongGF, (grepl("chrM:", V4, ignore.case = TRUE) & grepl("chrM:", V5, ignore.case = TRUE))) %>% mutate(fusionType = "Mitochondrial")
+mito_chimeras_LongGF_cell_lines <- filter(LongGF_cell_lines, (grepl("chrM:", V4, ignore.case = TRUE) & grepl("chrM:", V5, ignore.case = TRUE))) %>% mutate(fusionType = "Mitochondrial")
 
-mito_chimeras_Genion <- filter(Genion, grepl("M:", V8, ignore.case = TRUE))
-mito_chimeras_JAFFAL <- subset(JAFFAL, (chrom1=="chrM" | chrom2=="chrM")) 
+mito_chimeras_Genion_cell_lines <- filter(Genion_cell_lines, grepl("M:", V8, ignore.case = TRUE))
+mito_chimeras_JAFFAL_cell_lines <- subset(JAFFAL_cell_lines, (chrom1=="chrM" | chrom2=="chrM")) 
 
-mito_chimeras <- rbind(impossible_chimeras_LongGF[c(3, 6:10)], mito_chimeras_LongGF[c(3, 6:10)])
+mito_chimeras <- rbind(impossible_chimeras_LongGF_cell_lines[c(3, 6:10)], mito_chimeras_LongGF_cell_lines[c(3, 6:10)])
 mito_chimeras$NumSupp <-mito_chimeras$V3
-mito_chimeras <-mito_chimeras[2:7] %>% rbind(mito_chimeras_FusionSeeker[c(4,10:14)], impossible_chimeras_FusionSeeker[c(4,10:14)])
+mito_chimeras <-mito_chimeras[2:7] %>% rbind(mito_chimeras_FusionSeeker_cell_lines[c(4,10:14)], impossible_chimeras_FusionSeeker_cell_lines[c(4,10:14)])
 ```
 
 ```{r}
@@ -165,7 +164,7 @@ ggplot(filter(mito_chimeras, NumSupp >=3), aes(x = Source, fill = fusionType)) +
   theme_minimal() +
   labs(title = "False calls by each algorithm", subtitle = "minimum read support of 2", x = "Fusion Type", y = "Count")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  facet_wrap(~Algorithm) +
+  facet_wrap(fusionType~Algorithm) +
   scale_y_log10()
 
 ```
@@ -205,17 +204,17 @@ ggplot(filter(mito_chimeras, NumSupp >=2), aes(x = Algorithm, y = NumSupp)) +
 ```
 ```{r}
 #filter self-fusions, e.g. paralogus genes 
-self_LongGF <- LongGF %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 == V2.2) %>% rename("NumSupp"="V3")
-self_FusionSeeker <- FusionSeeker %>%
+self_LongGF_cell_lines <- LongGF_cell_lines %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 == V2.2) %>% rename("NumSupp"="V3")
+self_FusionSeeker_cell_lines <- FusionSeeker_cell_lines %>%
   subset((Gene1 == Gene2) | 
          mapply(grepl, pattern = paste0(Gene1, "_PAR_Y"), x = Gene2) | 
          mapply(grepl, pattern = paste0(Gene2, "_PAR_Y"), x = Gene1))
-self_GENION <- Genion %>% separate(V1, into = c("V1.1","V1.2"), sep="::", remove = FALSE) %>%  subset((V1.1 == V1.2) | mapply(grepl, pattern = paste0(V1.1, "_PAR_Y"), x = V1.2) | 
+self_Genion_cell_lines <- Genion_cell_lines %>% separate(V1, into = c("V1.1","V1.2"), sep="::", remove = FALSE) %>%  subset((V1.1 == V1.2) | mapply(grepl, pattern = paste0(V1.1, "_PAR_Y"), x = V1.2) | 
          mapply(grepl, pattern = paste0(V1.2, "_PAR_Y"), x = V1.1))
-self_JAFFAL <- JAFFAL %>% separate(fusion.genes, into = c("V1.1","V1.2"), sep=":", remove = FALSE) %>% subset(V1.1 == V1.2)
+self_JAFFAL_cell_lines <- JAFFAL_cell_lines %>% separate(fusion.genes, into = c("V1.1","V1.2"), sep=":", remove = FALSE) %>% subset(V1.1 == V1.2)
 
 
-selfish <- rbind(self_LongGF[c(5, 8:11)], self_FusionSeeker[c(4,10:13)]) %>% mutate(fusionType = "Self-fusion")
+selfish <- rbind(self_LongGF_cell_lines[c(5, 8:11)], self_FusionSeeker_cell_lines[c(4,10:13)]) %>% mutate(fusionType = "Self-fusion")
 
 obv_false <- rbind(selfish, mito_chimeras)
 
@@ -231,12 +230,12 @@ ggplot(filter(obv_false, NumSupp >=3), aes(x = Algorithm, fill = fusionType)) +
   labs(title = "Obvious false calls by each algorithm", subtitle = "minimum read support of 2", x = "Fusion Type", y = "Count")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   facet_wrap(~Source)
-2```
+```
 
 ```{r}
 # removing impossible and mitochondrial fusions from results
-nomito_FusionSeeker <- subset(FusionSeeker, (Chrom1 != "chrM" & Chrom2 != "chrM"))
-nomito_LongGF <- filter(LongGF, (!grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)))
+nomito_FusionSeeker_cell_lines <- subset(FusionSeeker_cell_lines, (Chrom1 != "chrM" & Chrom2 != "chrM"))
+nomito_LongGF_cell_lines <- filter(LongGF_cell_lines, (!grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)))
 ```
 
 

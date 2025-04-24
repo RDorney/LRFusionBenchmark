@@ -920,19 +920,64 @@ ggsave("True_Recall_category.pdf", plot = TRC, width = 210, height = 297, units 
 # install.packages("devtools")
 devtools::install_github("ricardo-bion/ggradar")
 library(ggradar)
-#reformat data to be compatible
+devtools::install_github("Ringomed/ggvanced")
+library(ggvanced)
+devtools::install_github("xl0418/ggradar2",dependencies=TRUE)
+library(ggradar2)
+
+plot_patches <- list(c(unique(fusion_profile_stat_summary$control)), unique(c(fusion_profile_stat_summary$depth)), unique(c(fusion_profile_stat_summary$Sequence_Identity)), unique(c(fusion_profile_stat_summary$recall_category)))
+
+for(c in plot_patches[1]){
+  for(d in plot_patches[2]){
+    for(SI in plot_patches[3]){
+      for(rc in plot_patches[4]){
+        radar_data <- fusion_profile_stat_summary %>%
+          filter(
+            recall_category == rc,
+            depth == d,
+            Sequence_Identity == SI,
+            control == c
+          ) %>%
+          select(Algorithm, fusionType, fusion_type_count) %>%
+          ungroup()%>% 
+          pivot_wider(names_from = fusionType, values_from = fusion_type_count, values_fill = 0) 
+        if(nrow(radar_data) < 1){
+          next
+        }
+        
+        radar_data <- radar_data[c(4:ncol(radar_data))] 
+        
+        radarmax <- round(max(radar_data[2:ncol(radar_data)])/50)*50
+        radarmid <- (radarmax/2)
+        
+        ggradar(radar_data, plot.title = past0(rc, "@", d, "Sequencing Depth", SI, "Mean Sequence Identity"),  
+          grid.min = 0, grid.mid = radarmid, grid.max = radarmax,
+          values.radar = c("0", paste(radarmid), paste(radarmax)))
+      }
+    }
+  }
+}
+
+
+
 radar_data <- fusion_profile_stat_summary %>%
-  filter(
-    recall_category == "False_Call",
-    depth == "100GB",
-    Sequence_Identity == "85%",
-    control == "negative"
-  ) %>%
-  select(Algorithm, fusionType, fusion_type_count) %>%
-  ungroup()%>% 
-  pivot_wider(names_from = fusionType, values_from = fusion_type_count, values_fill = 0) %>%
-  rename(group = Algorithm) 
-ggradar(radar_data[c(4:8)],  grid.max = max(radar_data[c(5:8)], na.rm = TRUE)) 
+          filter(
+            recall_category == "False_Call",
+            depth == "100GB",
+            Sequence_Identity == "95%",
+            control == "positive"
+          ) %>%
+          select(Algorithm, fusionType, fusion_type_count) %>%
+          ungroup()%>% 
+          pivot_wider(names_from = fusionType, values_from = fusion_type_count, values_fill = 0) 
+rownames(radar_data) <- radar_data$Algorithm
+radar_data <- radar_data[c(4:ncol(radar_data))]
+ggspider(radar_data)
+
+ggspider(radar_data, scaled = TRUE)
+ggradar(radar_data, plot.title = "False Calls @ 100Gb Sequencing Depth, 95% Mean Sequence Identity",  
+        grid.min = 0, grid.mid =250, grid.max = 500,
+      values.radar = c("0", "250", "500"))
 
 ```
 
