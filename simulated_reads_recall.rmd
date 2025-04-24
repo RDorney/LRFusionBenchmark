@@ -599,7 +599,7 @@ dFS <- Annot_FusionSeeker_Sim[c(8,15, 16, 38, 45:47)]%>%
 combined_data <- rbind(dLGF, dJF, dJF3, dGen, dFS)
 combined_data$read_supp <- as.numeric(combined_data$read_supp)
 
-write.csv(combined_data,"~/LongReadFusionCallerBenchmark/combined_data_FusionCalls.csv", row.names = FALSE)
+write_tsv(combined_data,"/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/combined_data_FusionCalls.tsv", row.names = FALSE)
 ```
 
 ```{r}
@@ -616,6 +616,8 @@ combined_data_annotation <- filter(combined_data, read_supp > 2) %>%  mutate(rec
   complete(control, depth, Sequence_Identity, Algorithm, fill = list(False_Call_Number = 0, Partial_Call_Number = 0, True_Call_Number = 0))
 combined_data_annotation$depth <- factor(combined_data_annotation$depth, levels = c("1GB", "10GB", "100GB"))
 combined_data_annotation$Sequence_Identity <- factor(combined_data_annotation$Sequence_Identity, levels = c("85%", "90%", "95%"))
+
+write_tsv(combined_data_annotation, file="/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/combined_data_annotation.tsv")
 
 false_call_plot <-ggplot(filter(combined_data_annotation), aes(x = depth, y = Sequence_Identity, fill = False_Call_Number)) +
   geom_tile() +
@@ -689,6 +691,8 @@ stat_summary <- filter(combined_data, read_supp > 2) %>%
 
 stat_summary$depth <- factor(stat_summary$depth, levels = c("100GB", "10GB", "1GB"))
 stat_summary$Sequence_Identity <- factor(stat_summary$Sequence_Identity, levels = c("85%", "90%", "95%"))
+
+write_tsv(stat_summary, file="/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/stat_summary.tsv")
 
 #Calculate the effect of read support on recall/precision
 calculate_read_filt_statistics <- function(data, min_read_supp) {
@@ -980,6 +984,28 @@ ggradar(radar_data, plot.title = "False Calls @ 100Gb Sequencing Depth, 95% Mean
       values.radar = c("0", "250", "500"))
 
 ```
+```{r}
+ggplot(filter(fusion_profile_stat_summary,
+            recall_category == "False_Call"), aes( x = Sequence_Identity, y = depth, 
+                   colour = Algorithm, size = fusion_type_count))+
+  geom_jitter(height = 0.05, width = 0.3)+
+  facet_grid(fusionType~control)
+  
+ggplot(filter(fusion_profile_stat_summary,
+            recall_category == "Partial_Recall",
+            control == "positive"), aes( x = Sequence_Identity, y = depth, 
+                   colour = Algorithm, size = fusion_type_count))+
+  geom_jitter(height = 0.05, width = 0.3)+
+  facet_wrap(~fusionType, ncol = 2)
+  
+ggplot(filter(fusion_profile_stat_summary,
+            recall_category == "True_Recall",
+            control == "positive"), aes( x = Sequence_Identity, y = depth, 
+                   colour = Algorithm, size = fusion_type_count))+
+  geom_jitter(height = 0.05, width = 0.3)+
+  facet_wrap(~fusionType)
+```
+
 
 ```{r}
 #fusionseeker calls the same fusion multiple times with different read support because of breakpoint differences
@@ -1382,7 +1408,6 @@ Breakpoint_Accuracy <- Breakpoint_Accuracy %>% pivot_longer(cols = GB1:FSB2, nam
     grepl("B2", Tool_Breakpoint) ~ "Breakpoint_2"))
 Breakpoint_Accuracy <-filter(Breakpoint_Accuracy, Distance_from_Simulated_Breakpoint != "NA") %>% distinct()
 ```
-
 
 ```{r}
 ggplot(Breakpoint_Accuracy, aes(x = values_vector, y = Breakpoint_number, fill = Algorithm)) +
