@@ -18,6 +18,10 @@ library(UpSetR)
 library(ComplexUpset)
 library(patchwork)
 ```
+```{r}
+Analysis_output_folder <- "/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/"
+
+```
 
 The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa. Whilst gencode version 43 was used for this study, we also check the current ensembl version for where ensembl IDs may have been assigned a gene name in the newer version for comparing with literature.
 ```{r}
@@ -30,7 +34,7 @@ ensembljul2023 <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "
 
 Here we read in the data table containing information about the fusions generated with Fusim to be spiked in. We then modify the table to have separate columns for partner genes. I then use biomart to find the corresponding gene names/ids. This helps find potential alternative names/ids for gene fusions recalled.
 ```{r}
-simulated_fusions <- read.table(file = "~/benchmark_data_analysis/Jul23_benchmark_fusions.txt", header=TRUE, sep= "\t")
+simulated_fusions <- read.table(file = "~/benchmark_data_analysis/FUSIM_benchmark_fusions.txt", header=TRUE, sep= "\t")
 #convert from txt to tsv and save file
 write_tsv(simulated_fusions, file="~/simulated_fusion_info.tsv")
 
@@ -599,12 +603,14 @@ Annot_FusionSeeker_Sim$Algorithm <- "FusionSeeker"
 ```
 Label fusions as False Calls, Partial Real and True Recall in Genion and JAFFAL datasets
 ```{r}
-Genion_Fffscores <- Annot_Genion_Sim %>%  mutate(recall_category = case_when(
+Genion_Fffscores <- Annot_Genion_Sim[c(1:27, 37, 44:46)]%>%
+  unique()%>%  mutate(recall_category = case_when(
       grepl("false", fusionType) ~ "False_Call",
       grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
       TRUE ~ "True_Recall"))%>%
       select(Source, V4, V3.x, recall_category, control, depth, Sequence_Identity, fusionType, V7) %>% unique() #remove duplicate rows of true fusions
-JAFFAL_scoring <- Annot_JAFFAL_Sim %>%  mutate(recall_category = case_when(
+JAFFAL_scoring <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>% unique() %>%  
+  mutate(recall_category = case_when(
       grepl("false", fusionType) ~ "False_Call",
       grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
       TRUE ~ "True_Recall")) %>%
@@ -619,6 +625,7 @@ Supp_Figure14A <- ggplot(filter(JAFFAL_scoring, control =="positive", depth == "
   geom_sina()+  
   theme_minimal()+
   theme(legend.title = element_blank(), 
+        legend.text = element_text(size = 12),
         axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))+
@@ -632,6 +639,7 @@ Supp_Figure14B <- ggplot(filter(JAFFAL_scoring, control =="positive", depth == "
   geom_sina()+  
   theme_minimal()+
   theme(legend.title = element_blank(), 
+        legend.text = element_text(size = 12),
         axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))+
@@ -643,6 +651,7 @@ supp_Figure14C <-ggplot(filter(JAFFAL_scoring, control =="positive", depth == "1
   geom_sina()+  
   theme_minimal()+
   theme(legend.title = element_blank(), 
+        legend.text = element_text(size = 12),
         axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))+
@@ -652,8 +661,8 @@ supp_Figure14 <- supp_Figure14A/(supp_Figure14B + supp_Figure14C)+
   plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")),
                   tag_levels = "A")
   supp_Figure14
-ggsave("supp_Figure14.png", plot = supp_Figure14,  width = 297, height = 210 , unit ="mm")
-ggsave("supp_Figure14.pdf", plot = supp_Figure14,  width = 297, height = 210 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure14.png", plot = supp_Figure14,  width = 297, height = 210 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure14.pdf", plot = supp_Figure14,  width = 297, height = 210 , unit ="mm")
 ```
 check if Genion's FiN or ffigf score correlate to recall category (True, Partial or False call) or other variables. 
 Make Supplementary Figure 15 & 16
@@ -708,9 +717,9 @@ dFS <- Annot_FusionSeeker_Sim[c(1:28, 38, 45:47)]%>%
 combined_data <- rbind(dLGF, dJF, dJF3, dGen, dFS)
 combined_data$read_supp <- as.numeric(combined_data$read_supp)
 
-write_tsv(combined_data,"/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/combined_data_FusionCalls.tsv", row.names = FALSE)
+write_tsv(combined_data, paste0(Analysis_output_folder, "combined_data_FusionCalls.tsv"))
 
-combined_data_annotation <- filter(combined_data, read_supp > 2) %>%  mutate(recall_category = case_when(
+combined_data_annotation <- filter(combined_data, read_supp >= 2) %>% unique() %>% mutate(recall_category = case_when(
       grepl("false", fusionType) ~ "False_Call",
       grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
       TRUE ~ "True_Recall"))%>%
@@ -724,7 +733,7 @@ combined_data_annotation <- filter(combined_data, read_supp > 2) %>%  mutate(rec
 combined_data_annotation$depth <- factor(combined_data_annotation$depth, levels = c("1GB", "10GB", "100GB"))
 combined_data_annotation$Sequence_Identity <- factor(combined_data_annotation$Sequence_Identity, levels = c("85%", "90%", "95%"))
 
-write_tsv(combined_data_annotation, file="/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/combined_data_annotation.tsv")
+write_tsv(combined_data_annotation, file=paste0(Analysis_output_folder, "combined_data_annotation.tsv"))
 ```
 Check number of false, partial and true calls. Generate Supplementary Figure 2
 ```{r}
@@ -767,15 +776,14 @@ Supplementary_Figure2 <- (false_call_plot / partial_call_plot / true_call_plot)+
 
 # Display the combined plot
 Supplementary_Figure2
-
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Supplementary_Figure2.png", Supplementary_Figure2, width = 210, height = 210, units = "mm")
 ```
+
 Calculate Recall vs Precision, and F1 score
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Precision_Recall_ReadSupp_stats.R") 
-#Read in fusion calling in summary data
-combined_data <- read_csv("~/LongReadFusionCallerBenchmark/combined_data_FusionCalls.csv")
 #Calculate Recall vs Precision
-stat_summary <- filter(combined_data, read_supp > 2) %>%  
+stat_summary <- filter(combined_data, read_supp >= 2, control == "positive") %>%  unique() %>%
   mutate(stat_category = case_when(
     grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType) ~ "FALSE_CALL",
     TRUE ~ "TRUE_CALL")) %>%
@@ -785,23 +793,23 @@ stat_summary <- filter(combined_data, read_supp > 2) %>%
   summarise(CALL_COUNT = n()) %>%
   summarise(False_Point = sum(CALL_COUNT[stat_category == "FALSE_CALL"], na.rm = TRUE),
             True_Point = sum(CALL_COUNT[stat_category == "TRUE_CALL"], na.rm = TRUE)) %>%
-  
+  left_join(Spiked_Counts_wo_SF[c(2:4)])%>%
   # Compute final statistics
   mutate(FDR = False_Point / (False_Point + True_Point),
          Precision = True_Point / (True_Point + False_Point),
-         Recall = True_Point / 400,  # There are 400 spiked fusions
+         Recall = True_Point / Spiked_Number,  
          F1 = (2 * (Precision * Recall)) / (Precision + Recall),
-         Sensitivity = True_Point / (True_Point + (400 - True_Point)))
+         Sensitivity = True_Point / (True_Point + (Spiked_Number - True_Point)))
 
 stat_summary$depth <- factor(stat_summary$depth, levels = c("100GB", "10GB", "1GB"))
 stat_summary$Sequence_Identity <- factor(stat_summary$Sequence_Identity, levels = c("85%", "90%", "95%"))
 
-write_tsv(stat_summary, file="/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/stat_summary.tsv")
+write_tsv(stat_summary, file=paste0(Analysis_output_folder, "stat_summary.tsv"))
 
 #Calculate the effect of read support on recall/precision
 calculate_read_filt_statistics <- function(data, min_read_supp) {
   data %>%
-    filter(read_supp > min_read_supp)  %>%  
+    filter(read_supp >= min_read_supp, control == "positive")  %>%  
     mutate(stat_category = case_when(
       grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType) ~ "FALSE_CALL",
       TRUE ~ "TRUE_CALL")) %>% 
@@ -809,17 +817,20 @@ calculate_read_filt_statistics <- function(data, min_read_supp) {
     summarise(CALL_COUNT = n()) %>%
     summarise(False_Point = sum(CALL_COUNT[stat_category == "FALSE_CALL"], na.rm = TRUE),
               True_Point = sum(CALL_COUNT[stat_category == "TRUE_CALL"], na.rm = TRUE)) %>%
+    left_join(Spiked_Counts_wo_SF[c(2:4)])%>%
+    
     mutate(FDR = False_Point / (False_Point + True_Point),
            Precision = True_Point / (True_Point + False_Point),
-           Recall = True_Point / 400,  # There are 400 spiked fusions
+           Recall = True_Point / Spiked_Number,  
            F1 = (2 * (Precision * Recall)) / (Precision + Recall),
-           Sensitivity = True_Point / (True_Point + (400 - True_Point)))
+           Sensitivity = True_Point / (True_Point + (Spiked_Number - True_Point)),
+           minimum_read_support = min_read_supp)
 }
 
 readsupp_filtering <- calculate_read_filt_statistics(combined_data, 2) 
-
-for(number in unique(sort(combined_data$read_supp))){
-  result <- calculate_statistics(combined_data, number)
+                      
+for(number in seq(3, max(sort(unique(combined_data$read_supp))))){
+  result <- calculate_read_filt_statistics(combined_data, number)
   readsupp_filtering <- rbind(result, readsupp_filtering) 
 }
 readsupp_filtering$minimum_read_support <- as.numeric(readsupp_filtering$minimum_read_support)
@@ -830,15 +841,15 @@ Generate Supplementary Figures 8-10
 Recall_Precision <- ggplot(filter(stat_summary, control == 'positive'))+
   geom_point(aes(x = Precision, y= Recall, colour = Algorithm))+
   facet_grid(depth ~ Sequence_Identity)+
-  labs(x = "Precision", y = "Recall", Title = "NEW RECALL & PRECISION ANALYSIS")+
+  labs(x = "Precision", y = "Recall")+
   ylim(c(0,1.00))+
   xlim(c(0,1.00)) +
   theme(plot.title = element_text(size = 12),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))
 
-ggsave("Recall-Precision.pdf", plot = Recall_Precision, width = 297, height = 210, units = "mm")
-ggsave("Recall-Precision.png", plot = Recall_Precision, width = 297, height = 210, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Recall-Precision.pdf", plot = Recall_Precision, width = 297, height = 210, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Recall-Precision.png", plot = Recall_Precision, width = 297, height = 210, units = "mm")
 #Supplementary figure 9####
 ReadSupport_Precision <- ggplot(filter(readsupp_filtering, control == "positive"))+
   geom_line(aes(x = minimum_read_support, y = Precision, colour = Algorithm))+
@@ -849,8 +860,8 @@ ReadSupport_Precision <- ggplot(filter(readsupp_filtering, control == "positive"
   theme(plot.title = element_text(size = 12),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))
-ggsave("ReadSupport-Precision.pdf", plot = ReadSupport_Precision, width = 297, height = 210, units = "mm")
-ggsave("ReadSupport-Precision.png", plot = ReadSupport_Precision, width = 297, height = 210, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/ReadSupport-Precision.pdf", plot = ReadSupport_Precision, width = 297, height = 210, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/ReadSupport-Precision.png", plot = ReadSupport_Precision, width = 297, height = 210, units = "mm")
 #Supplementary figure 10 ####
 ReadSupport_F1Score <- ggplot(filter(readsupp_filtering, control == "positive"))+
   geom_line(aes(x = minimum_read_support, y = F1, colour = Algorithm))+
@@ -862,10 +873,10 @@ ReadSupport_F1Score <- ggplot(filter(readsupp_filtering, control == "positive"))
   theme(plot.title = element_text(size = 12),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12)) 
-ggsave("ReadSupport-F1Score.pdf", plot = ReadSupport_F1Score, width = 297, height = 210, units = "mm")
-
+ggsave("~/LongReadFusionCallerBenchmark/Figures/ReadSupport-F1Score.pdf", plot = ReadSupport_F1Score, width = 297, height = 210, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/ReadSupport-F1Score.png", plot = ReadSupport_F1Score, width = 297, height = 210, units = "mm")
 ```
-Make Figure 3 A 
+Make Figure 3A 
 ```{r}
 F1_subset<- ggplot(filter(readsupp_filtering, control == "positive", depth == "100GB", Sequence_Identity == "95%"))+
   geom_line(aes(x = minimum_read_support, y = F1, colour = Algorithm))+
@@ -873,7 +884,8 @@ F1_subset<- ggplot(filter(readsupp_filtering, control == "positive", depth == "1
   labs(x = "Read Support",
        y = "F1")+
   ylim(c(0,1.00)) +
-  theme(legend.position = "right", 
+  theme(legend.position = "right",
+        legend.text = element_text(size = 12),
     plot.title = element_text(size = 12),
     axis.text = element_text(size = 12),
     axis.title = element_text(size = 12))
@@ -898,11 +910,13 @@ Recall_subset<- ggplot(filter(readsupp_filtering, control == "positive", depth =
     axis.text = element_text(size = 12),
     axis.title = element_text(size = 12))
 
-Figure3A <-((Precision_subset /  Recall_subset + plot_layout(guides = 'keep')) |  F1_subset)
+Figure3A <-((Precision_subset /  Recall_subset) | F1_subset) + 
+              plot_layout(guides = 'keep')   
+
 ```
 Check the effect of removing obvious false chimeras from the fusion calls to see if they greatly influence precision. There visually appears to be minimal/negligible influence.
 ```{r}
-manual_filtering <- filter(combined_data, read_supp > 2) %>%  
+manual_filtering <- filter(combined_data, read_supp >=2) %>%  
   mutate(stat_category = case_when(
       grepl("false_fusion:mitochondrial|false_fusion:self_misalignment", fusionType) ~ "obvious_false",
       TRUE ~ "other")) %>% filter(stat_category == "other") %>% select(-'stat_category')%>%  
@@ -915,13 +929,13 @@ manual_filtering <- filter(combined_data, read_supp > 2) %>%
   summarise(CALL_COUNT = n()) %>%
   summarise(False_Point = sum(CALL_COUNT[stat_category == "FALSE_CALL"], na.rm = TRUE),
     True_Point = sum(CALL_COUNT[stat_category == "TRUE_CALL"], na.rm = TRUE)) %>%
-  
+  left_join(Spiked_Counts_wo_SF[c(2:4)])%>%
   # Compute final statistics
   mutate(FDR = False_Point / (False_Point + True_Point),
     Precision = True_Point / (True_Point + False_Point),
-    Recall = True_Point / 400,  # There are 400 spiked fusions
+    Recall = True_Point / Spiked_Number,  
     F1 = (2 * (Precision * Recall)) / (Precision + Recall),
-    Sensitivity = True_Point / (True_Point + (400 - True_Point)))
+    Sensitivity = True_Point / (True_Point + (Spiked_Number - True_Point)))
 
 manual_filtering$depth <- factor(manual_filtering$depth, levels = c("100GB", "10GB", "1GB"))
 manual_filtering$Sequence_Identity <- factor(manual_filtering$Sequence_Identity, levels = c("85%", "90%", "95%"))
@@ -948,18 +962,18 @@ calculate_read_filt_statistics <- function(data, min_read_supp) {
   summarise(CALL_COUNT = n()) %>%
   summarise(False_Point = sum(CALL_COUNT[stat_category == "FALSE_CALL"], na.rm = TRUE),
     True_Point = sum(CALL_COUNT[stat_category == "TRUE_CALL"], na.rm = TRUE)) %>%
-  
+   left_join(Spiked_Counts_wo_SF[c(2:4)])%>%
   # Compute final statistics
   mutate(FDR = False_Point / (False_Point + True_Point),
     Precision = True_Point / (True_Point + False_Point),
-    Recall = True_Point / 400,  # There are 400 spiked fusions
+    Recall = True_Point / Spiked_Number,  
     F1 = (2 * (Precision * Recall)) / (Precision + Recall),
-    Sensitivity = True_Point / (True_Point + (400 - True_Point)))
+    Sensitivity = True_Point / (True_Point + (Spiked_Number - True_Point)))
 }
 
 manual_readsupp_filtering <- calculate_read_filt_statistics(combined_data, 2) 
   for(number in unique(sort(combined_data$read_supp))){
-  result <- calculate_statistics(combined_data, number)
+  result <- calculate_read_filt_statistics(combined_data, number)
   manual_readsupp_filtering <- rbind(result, manual_readsupp_filtering) 
   }
 manual_readsupp_filtering$minimum_read_support <- as.numeric(manual_readsupp_filtering$minimum_read_support)
@@ -984,7 +998,7 @@ ggplot(filter(manual_readsupp_filtering, control == "positive"))+
 ```
 Create a summary of the number of false, partial and true calls in every simulation
 ```{r}
-fusion_profile_stat_summary <- combined_data %>%  filter(read_supp > 2) %>% unique()%>% group_by(control, depth, Sequence_Identity, Algorithm, fusionType) %>%
+fusion_profile_stat_summary <- combined_data %>%  filter(read_supp >=2) %>% unique()%>% group_by(control, depth, Sequence_Identity, Algorithm, fusionType) %>%
   summarise(fusion_type_count = n(), .groups = 'drop')%>% 
   ungroup() %>% 
   complete(control, depth, Sequence_Identity, Algorithm, fusionType, fill = list(fusion_type_count = 0)) %>%
@@ -1015,7 +1029,7 @@ FCC <- ggplot(filter(fusion_profile_stat_summary, recall_category == "False_Call
        fill =  "#Fusions") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="lightgrey")) 
-ggsave("False_fusion_category_counts.pdf", plot = FCC, width = 210, height = 297, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/False_fusion_category_counts.pdf", plot = FCC, width = 210, height = 297, units = "mm")
 ```
 Make Supplementary Figure 1
 ```{r}
@@ -1023,8 +1037,8 @@ TRC<- ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_c
        aes(x = depth, y = Sequence_Identity, fill = fusion_type_count)+
   geom_tile()+
   geom_text(aes(label = fusion_type_count), color = "black", size = 3, alpha =1) +
-  facet_nested(fusionType ~ Algorithm, labeller = as_labeller(c(c("hybrid"="Inter-chromosomal", 
-                             "intra_chromosome"="Intra-chromosomal",
+  facet_nested(fusionType ~ Algorithm, labeller = as_labeller(c(c("hybrid"="Inter-\n chromosomal", 
+                             "intra_chromosome"="Intra- \n chromosomal",
                              "read_through"="Read-through",
                              "tri_fusion"="Tri-fusion"), 
                              c("Genion"="Genion", "JAFFAL" = "JAFFAL", "LongGF" = "LongGF", "FusionSeeker" = "FusionSeeker"),
@@ -1033,10 +1047,11 @@ TRC<- ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_c
   scale_alpha_continuous(range = c(0.2, 1)) +  # Adjust transparency based on fusion_type_count
   labs(x = "Depth",
        y = "Mean Sequence Identity",
-       fill =  "#Fusions") +
+       fill =  "Fusions") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="lightgrey")) 
-ggsave("True_Recall_category.pdf", plot = TRC, width = 210, height = 297, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/True_Recall_category.pdf", plot = TRC) #, width = 210, height = 297, units = "mm"
+ggsave("~/LongReadFusionCallerBenchmark/Figures/True_Recall_category.png", plot = TRC)
 ```
 Make Supplementary Figure 4
 ```{r}
@@ -1044,14 +1059,14 @@ PRC <- ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_
        aes(x = depth, y = Sequence_Identity, fill = fusion_type_count) +
   geom_tile() +
   geom_text(aes(label = fusion_type_count), color = "black", size = 3, alpha =1) +
-  facet_nested(fusionType ~ Algorithm, labeller = as_labeller(c(c("reverse_order: hybrid"="(R) Inter-chromosomal", 
-                             "reverse_order: intra_chromosome"="(R) Intra-chromosomal",
+  facet_nested(fusionType ~ Algorithm, labeller = as_labeller(c(c("reverse_order: hybrid"="(R) Inter-\nchromosomal", 
+                             "reverse_order: intra_chromosome"="(R)  Intra-\nchromosomal",
                              "reverse_order: read_through"="(R) Read-through",
                              "wrong_order:tri_fusion"="(W) Tri-fusion",
                              "reverse_order:tri_fusion"="(R) Tri-fusion",
-                             "reverse_order:truncated_tri_fusion"="(R) Truncated Tri-fusion",
-                             "truncated_tri_fusion"="Truncated Tri-fusion" ,
-                             "chromosomal_misalignment:intra_chromosome"="(CM) Intra-chromosomal"), 
+                             "reverse_order:truncated_tri_fusion"="(R) Truncated \n Tri-fusion",
+                             "truncated_tri_fusion"="Truncated \n Tri-fusion" ,
+                             "chromosomal_misalignment:intra_chromosome"="(CM)  Intra-\nchromosomal"), 
                              c("Genion"="Genion", "JAFFAL" = "JAFFAL", "LongGF" = "LongGF", "FusionSeeker" = "FusionSeeker"),
                              c("positive"="Postive", "negative" = "Negative"))) ) +  # Separate heatmaps for each algorithm
   scale_fill_gradient(low = "white", high = "orange") +
@@ -1061,13 +1076,14 @@ PRC <- ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_
        fill =  "#Fusions") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="lightgrey")) 
-ggsave("Partial_Recall_category.pdf", plot = PRC, width = 210, height = 297, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Partial_Recall_category.pdf", plot = PRC, width = 210, height = 300, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Partial_Recall_category.png", plot = PRC, width = 210, height = 300, units = "mm")
 ```
 
 
-Make Figure 1 part A-D
+Make Figure 1 part D-G
 ```{r}
-Figure1A <- ggplot(filter(combined_data_annotation, control == "positive", depth == "100GB", Sequence_Identity == "95%")) +
+Figure1D <- ggplot(filter(combined_data_annotation, control == "positive", depth == "100GB", Sequence_Identity == "95%")) +
   geom_bar(aes(x = Algorithm, y = True_Call_Number, fill = Algorithm), stat = "identity") +
   theme_minimal() +
   labs(title = "True Fusions",
@@ -1081,7 +1097,7 @@ Figure1A <- ggplot(filter(combined_data_annotation, control == "positive", depth
     axis.title = element_text(size = 12))+
   ylim(c(0,400))
 
-Figure1B <-ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_category == "True_Recall", depth == "100GB", Sequence_Identity == "95%"))+ 
+Figure1E <-ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_category == "True_Recall", depth == "100GB", Sequence_Identity == "95%"))+ 
   
   geom_bar(aes(x = Algorithm, y = fusion_type_count, fill = Algorithm), stat = "identity")+
   facet_wrap(~fusionType, labeller = as_labeller(c(c("hybrid"="Inter-chromosomal", 
@@ -1098,13 +1114,14 @@ Figure1B <-ggplot(filter(fusion_profile_stat_summary, control == "positive", rec
         axis.ticks.x = element_blank(),
   plot.title = element_text(size = 12),
   axis.text = element_text(size = 12),
-  axis.title = element_text(size = 12))
+  axis.title = element_text(size = 12),
+  legend.position = "bottom")
 
-Figure1AB <- (Figure1A + Figure1B)+
+Figure1DE <- (Figure1D + Figure1E)+
   plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")))
-ggsave("Figure1AB.pdf", plot = Figure1AB)
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure1DE.pdf", plot = Figure1DE)
 
-Figure1C <- ggplot(
+Figure1F <- ggplot(
   filter(combined_data_annotation, control == "positive", depth == "100GB", Sequence_Identity == "95%")
 ) +
   geom_bar(aes(x = Algorithm, y = False_Call_Number, fill = Algorithm), stat = "identity") +
@@ -1119,7 +1136,7 @@ Figure1C <- ggplot(
     axis.text = element_text(size = 12),
     axis.title = element_text(size = 12))
 
-Figure1D <-ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_category == "False_Call", depth == "100GB", Sequence_Identity == "95%"))+ 
+Figure1G <-ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_category == "False_Call", depth == "100GB", Sequence_Identity == "95%"))+ 
   
   geom_bar(aes(x = Algorithm, y = fusion_type_count, fill = Algorithm), stat = "identity")+
   facet_wrap(~fusionType, labeller = as_labeller(c(c("wrong_order:tri_fusion" = "Wrong Order Tri-fusion", 
@@ -1138,9 +1155,9 @@ Figure1D <-ggplot(filter(fusion_profile_stat_summary, control == "positive", rec
        y = "",
        x = "")
 
-Figure1CD <- (Figure1C + Figure1D)+
+Figure1FG <- (Figure1F + Figure1G)+
   plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")))
-ggsave("Figure1CD.pdf", plot = Figure1CD)
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure1FG.pdf", plot = Figure1FG)
 ```
 
 Make Supplementary Figure 5
@@ -1160,14 +1177,14 @@ Figure5A_sup <- ggplot(
 Figure5B_sup <-ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_category == "Partial_Recall", depth == "100GB", Sequence_Identity == "95%"))+ 
        
   geom_bar(aes(x = Algorithm, y = fusion_type_count, fill = Algorithm), stat = "identity")+
-  facet_wrap(~fusionType, labeller = as_labeller(c(c("reverse_order: hybrid"="(R) Inter-Chromosomal", 
-                             "reverse_order: intra_chromosome"="(R) Intra-Chromosomal",
+  facet_wrap(~fusionType, labeller = as_labeller(c(c("reverse_order: hybrid"="(R) Inter- \n Chromosomal", 
+                             "reverse_order: intra_chromosome"="(R) Intra-\nChromosomal",
                              "reverse_order: read_through"="(R) Read-through",
                              "wrong_order:tri_fusion"="(W) Tri-Fusion",
                              "reverse_order:tri_fusion"="(R) Tri-Fusion",
-                             "reverse_order:truncated_tri_fusion"="(R) Truncated Tri-Fusion",
-                             "truncated_tri_fusion"="Truncated Tri-Fusion" ,
-                             "chromosomal_misalignment:intra_chromosome"="(CM) Intra-Chromosomal"))))+ 
+                             "reverse_order:truncated_tri_fusion"="(R) Truncated \nTri-Fusion",
+                             "truncated_tri_fusion"="Truncated \nTri-Fusion" ,
+                             "chromosomal_misalignment:intra_chromosome"="(CM) Intra-\nChromosomal"))))+ 
   theme_minimal() +
   theme(legend.position = "none", axis.text.x=element_blank())+
   labs(title = "",
@@ -1176,11 +1193,15 @@ Figure5B_sup <-ggplot(filter(fusion_profile_stat_summary, control == "positive",
        x = "")+
   ylim(c(0,100))+ 
   theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank())
+        axis.ticks.x = element_blank(),
+        plot.title = element_text(size = 12),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))
 
 Figure5_sup <- (Figure5A_sup + Figure5B_sup)+
-  plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")))
-ggsave("Figure1F.pdf", plot = Figure1F, width = 297 , unit ="mm")
+  plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")),tag_levels = "A")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure5_sup.pdf", plot = Figure5_sup, width = 297 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure5_sup.png", plot = Figure5_sup, width = 297 , unit ="mm")
 ```
 
 Create Supplementary Figure 6
@@ -1217,7 +1238,7 @@ Figure6A_2_sup <-ggplot(filter(fusion_profile_stat_summary, control == "positive
        x = "")+
   ylim(c(0,100))
 
-Figure6B_1 <-ggplot(filter(
+Figure6B_1_sup <-ggplot(filter(
   combined_data_annotation, control == "positive", Sequence_Identity == "95%"),
   aes(x = depth, y = False_Call_Number, colour = Algorithm, group = interaction(Algorithm, Sequence_Identity))
 ) +
@@ -1226,10 +1247,10 @@ Figure6B_1 <-ggplot(filter(
   theme_minimal() +
   labs(title = "Sequencing Depth ~ False Fusions",
        subtitle = "95% Sequence Identity",
-       y = "Fusions",
+       y = "Chimeras",
        x = "")
 
-Figure6B_2 <-ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_category == "False_Call", Sequence_Identity == "95%"),
+Figure6B_2_sup <-ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_category == "False_Call", Sequence_Identity == "95%"),
                     aes(x = depth, y = fusion_type_count, colour = Algorithm, group = interaction(Algorithm, Sequence_Identity)))+ 
   geom_point() +
   geom_line()+
@@ -1245,10 +1266,13 @@ Figure6B_2 <-ggplot(filter(fusion_profile_stat_summary, control == "positive", r
        y = "",
        x = "")
 
-Figure6_sup <- (Figure6A_1_sup + Figure6A_2_sup)/
-            (Figure6B_1_sup + Figure6B_2_sup)+
-  plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")))
-ggsave("Figure6_sup.pdf", plot = Figure6_sup, width = 270 , height = 270 , unit ="mm")
+Figure6_sup <- ((Figure6A_1_sup + Figure6A_2_sup)/
+            (Figure6B_1_sup + Figure6B_2_sup))+
+  plot_annotation(tag_levels = list(c("A.1", "A.2", "B.1", "B.2")),
+                  theme = theme(plot.title = element_text(size = 14, face = "bold")))
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure6_sup.pdf", plot = Figure6_sup, width = 270 , height = 270 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure6_sup.png", plot = Figure6_sup, width = 270 , height = 210 , unit ="mm")
+
 ```
 
 Make Supplementary Figure 7
@@ -1291,7 +1315,7 @@ Figure7B_1_sup <-ggplot(filter(
   geom_point() +
   geom_line()+
   theme_minimal() +
-  labs(title = "Sequence Identity ~ False Fusions",
+  labs(title = "Sequence Identity ~ False Chimeras",
        subtitle = "100Gb Sequencing Depth",
        y = "Fusions",
        x = "")
@@ -1313,9 +1337,12 @@ Figure7B_2_sup <-ggplot(filter(fusion_profile_stat_summary, control == "positive
        x = "")
 
 Figure7_sup <- (Figure7A_1_sup + Figure7A_2_sup)/
-            (Figure7B_1_sup + Figure7B_2_sup)+
-  plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")))
-ggsave("Figure7_sup.pdf", plot = Figure7_sup, width = 270 , height = 270 , unit ="mm")
+               (Figure7B_1_sup + Figure7B_2_sup)+
+               plot_annotation(tag_levels = list(c("A.1", "A.2", "B.1", "B.2")),
+                  theme = theme(plot.title = element_text(size = 14, face = "bold")))
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure7_sup.pdf", plot = Figure7_sup, width = 270 , height = 270 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure7_sup.png", plot = Figure7_sup, width = 270 , height = 210 , unit ="mm")
+
 ```
 
 Make Figure 2
@@ -1367,7 +1394,6 @@ Figure2B_1 <-ggplot(filter(
     plot.title = element_text(size = 12),
     axis.text = element_text(size = 12),
     axis.title = element_text(size = 12))
-
 Figure2B_2 <-ggplot(filter(
   stat_summary_2, control == "positive", depth == "100GB"),
   aes(x = Sequence_Identity, y = Recall, colour = Algorithm, group = interaction(Algorithm, depth))) +
@@ -1387,12 +1413,13 @@ Figure2B_2 <-ggplot(filter(
 Figure2 <- (Figure2A_1 + Figure2A_2)/
   (Figure2B_1 + Figure2B_2)+
   plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")))
-ggsave("Figure2_paper.pdf", plot = Figure2, width = 297, height = 210, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure2_paper.png", plot = Figure2, width = 297, height = 210, units = "mm")
+
 ```
 fusionseeker and some of fusion callers will produce duplicate calls the same fusion multiple times with different read support because of breakpoint differences. We need to consolidate these for ease in comparing how read support for the same fusion will differ by fusion caller tool
 ```{r}
 fusions_in_all_algorithms <- combined_data %>%
-  filter(read_supp > 2)%>% unique %>% #filter for read support greater than 2
+  filter(read_supp >=2)%>% unique() %>% #filter for read support greater than 2
   group_by(fusion.gene.id, Sequence_Identity, depth, control, fusionType) %>%
   summarise(overlap = n_distinct(Algorithm)) %>%
   filter(overlap == 4) %>% #filter for fusions in all 4 algorithms
@@ -1416,34 +1443,38 @@ Figure3B <-ggplot(filter(fusions_in_all_algorithms, depth == "100GB", Sequence_I
   labs(x="", y="",
        fill = "Read Support") +
   theme_minimal() +
-  facet_nested(Sequence_Identity ~ depth + recall_category , scales = "free_x", space = "free")+
+  facet_nested(~ recall_category , scales = "free_x", space = "free",
+               labeller = as_labeller(c("Partial_Recall" = "Partial Recall", "True_Recall" = "True Recall")))+
   scale_fill_gradient2(low = "lemonchiffon", mid="orange" ,high = "orchid", na.value = "grey", midpoint = 25)+
   scale_alpha_continuous(range = c(0.1, 1)) + 
-  theme(legend.position = "left",
+  theme(strip.text.x = element_text(size = 12),
+        legend.position = "right",
+        legend.text = element_text(size = 12),
         legend.spacing.x = unit(0.1, "cm"),   # reduce horizontal gap
         legend.spacing.y = unit(0.1, "cm"),   # reduce vertical gap inside legend
         legend.margin    = margin(0, 0, 0, 0),# trim around the legend box
         axis.text.x = element_text(angle = 45, hjust = 1), 
         strip.background = element_rect(color="black", fill="grey80"),
         plot.title = element_text(size = 12),
-        axis.text = element_text(size = 8),
+        axis.text.y = element_text(size = 12),
+        axis.text.x.bottom = element_text(size = 10),
         axis.title = element_text(size = 12))+ plot_layout(guides = 'keep')
 
-ggsave("Figure3B_paper.pdf", plot = Figure3B, width = 297, height = 210, units = "mm")  
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure3B_paper.pdf", plot = Figure3B, width = 297, height = 210, units = "mm")  
 ```
 Make Compound Figure 3
 ```{r}
-Figure3<- Figure3A + Figure3B
-ggsave("Figure3A_paper.pdf", plot = Figure3A, width = 297, height = 210, units = "mm")
-ggsave("Figure3B_paper.pdf", plot = Figure3B, width = 297, height = 210, units = "mm")  
-ggsave("Figure3_paper.pdf", plot = Figure3, width = 297, height = 210, units = "mm")  
+Figure3<- (Figure3A / Figure3B) +
+          plot_annotation(tag_levels = list(c("A", "", "", "B")))
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure3_paper.png", plot = Figure3, width = 210, height = 297, units = "mm")  
+
 ```
 
 identify fusions in more than one algorithm
 ```{r}
 #consolidate reads for duplicate fusion calls due to different breakpoints
 Total_Read_Supp_summary <- combined_data%>% 
-   filter(read_supp > 2)%>% unique() %>% #remove duplicates as a result of annotations
+   filter(read_supp >=2)%>% unique() %>% #remove duplicates as a result of annotations
   group_by(fusion.gene.id, Sequence_Identity, depth, control, Algorithm, fusionType)  %>%
   summarise(Total_Read_Supp = sum(read_supp), .groups = "drop")
 
@@ -1473,7 +1504,12 @@ supp_Figure11_A<- ggplot(filter(fusions_in_n_algorithms, depth == "100GB", contr
   labs(x="", y="",
        fill = "Read Support") +
   theme_minimal() +
-  facet_nested(Sequence_Identity ~ depth + recall_category , scales = "free_x", space = "free")+
+  facet_nested(Sequence_Identity ~ recall_category , 
+               scales = "free_x", space = "free",
+               labeller = labeller(
+    recall_category = as_labeller(c("Partial_Recall" = "Partial Recall", "True_Recall" = "True Recall")),
+    Sequence_Identity = label_value  # keep original values unchanged
+    ))+
   scale_fill_gradient2(low = "lemonchiffon", mid="orange" ,high = "orchid", na.value = "grey", midpoint = 50)+
   scale_alpha_continuous(range = c(0.1, 1)) + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1), 
@@ -1482,8 +1518,8 @@ supp_Figure11_A<- ggplot(filter(fusions_in_n_algorithms, depth == "100GB", contr
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         panel.spacing.y = unit(0.2, "lines"))  # reduce vertical space
-ggsave("supp_Figure11_A.pdf", plot = supp_Figure11_A,  width = 400, height = 210 , unit ="mm")
-ggsave("supp_Figure11_A.png", plot = supp_Figure11_A,  width = 400, height = 210 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure11_A.pdf", plot = supp_Figure11_A,  width = 400, height = 210 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure11_A.png", plot = supp_Figure11_A,  width = 400, height = 210 , unit ="mm")
 
 supp_Figure11_B <-ggplot(filter(fusions_in_n_algorithms, depth == "100GB", control == "positive", overlap >= 2, recall_category == "True_Recall"), aes(x = fusion.gene.id, y = Algorithm, fill = Total_Read_Supp)) +
   geom_tile() +
@@ -1491,7 +1527,11 @@ supp_Figure11_B <-ggplot(filter(fusions_in_n_algorithms, depth == "100GB", contr
   labs(x="", y="",
        fill = "Read Support") +
   theme_minimal() +
-  facet_nested(Sequence_Identity ~ depth + recall_category , scales = "free_x", space = "free")+
+  facet_nested(Sequence_Identity ~ recall_category , scales = "free_x", space = "free",
+               labeller = labeller(
+    recall_category = as_labeller(c("Partial_Recall" = "Partial Recall", "True_Recall" = "True Recall")),
+    Sequence_Identity = label_value  # keep original values unchanged
+    ))+
   scale_fill_gradient2(low = "lemonchiffon", mid="orange" ,high = "orchid", na.value = "grey", midpoint = 50)+
   scale_alpha_continuous(range = c(0.1, 1)) + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1), 
@@ -1500,27 +1540,28 @@ supp_Figure11_B <-ggplot(filter(fusions_in_n_algorithms, depth == "100GB", contr
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12),
         panel.spacing.y = unit(0.2, "lines"))  # reduce vertical space
-ggsave("supp_Figure11_B.pdf", plot = supp_Figure11_B,  width = 400, height = 210 , unit ="mm")
-ggsave("supp_Figure11_B.png", plot = supp_Figure11_B,  width = 400, height = 210 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure11_B.pdf", plot = supp_Figure11_B,  width = 400, height = 210 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure11_B.png", plot = supp_Figure11_B,  width = 400, height = 210 , unit ="mm")
 
-supp_Figure11 <- supp_Figure11_A / supp_Figure11_B
-ggsave("supp_Figure11.png", plot = supp_Figure11,  width = 400, height = 420 , unit ="mm")
-ggsave("supp_Figure11.pdf", plot = supp_Figure11,  width = 400, height = 420 , unit ="mm")
+supp_Figure11 <- (supp_Figure11_A / supp_Figure11_B)+
+  plot_annotation(tag_levels = "A")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure11.png", plot = supp_Figure11,  width = 400, height = 420 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure11.pdf", plot = supp_Figure11,  width = 400, height = 420 , unit ="mm")
 ```
 Generate upset plots to see the total number of overlapping fusions between fusion callers
 ```{r}
 Fusion_Simulated_Fusion_overlap_sets <- list(
-  JAFFAL = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id),
-  Genion = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id),
-  LongGF = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id),
-  FusionSeeker = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id)
+  JAFFAL = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp >= 2)$fusion.gene.id),
+  Genion = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp >= 2)$fusion.gene.id),
+  LongGF = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp >= 2)$fusion.gene.id),
+  FusionSeeker = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp >= 2)$fusion.gene.id)
 )
 
 # Convert the list to a format compatible with UpSetR
 Fusion_overlap <- fromList(Fusion_Simulated_Fusion_overlap_sets)
 ```
 
-Make Figure 1E
+Make Figure 1H
 ```{r}
 True_overlap <- ComplexUpset::upset(
   Fusion_overlap, intersect = names(Fusion_Simulated_Fusion_overlap_sets[1:4]), name='',
@@ -1533,24 +1574,27 @@ True_overlap <- ComplexUpset::upset(
         ) + scale_fill_manual(values=c('bars_color'='springgreen4'), guide='none')
           + ylab('True Recall')
         ))) 
-ggsave("Figure1E.pdf", plot = True_overlap, width = 297, height = 210, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure1H.pdf", plot = True_overlap, width = 297, height = 210, units = "mm")
 ```
 Create Compound Figure 1:
 ```{r}
-Figure1_paper <- (Figure1A | Figure1B| Figure1C | Figure1D)/
+Figure1_paper <- (Figure1D | Figure1E)/
+                  (Figure1F | Figure1G)/
                   (True_overlap) +   
-  plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")))
-ggsave("Figure1_paper.pdf", plot = Figure1_paper)
+  plot_annotation(tag_levels = list(c("D", "E", "F", "G", "H")), 
+                  theme = theme(plot.title = element_text(size = 14, face = "bold")                                ))
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure1_paper.pdf", plot = Figure1_paper, width = 300, height = 430, units = "mm", limitsize = FALSE)
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure1_paper.png", plot = Figure1_paper, width = 300, height = 430, units = "mm", limitsize = FALSE)
 ```
 
 Make Supplementary Figure 3 
 ```{r}
 #Supplementary Figure 3A
 Fusion_Simulated_Fusion_overlap_sets <- list(
-  JAFFAL = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", grepl("false", fusionType), read_supp > 2)$fusion.gene.id),
-  Genion = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", grepl("false", fusionType), read_supp > 2)$fusion.gene.id),
-  LongGF = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", grepl("false", fusionType), read_supp > 2)$fusion.gene.id),
-  FusionSeeker = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", grepl("false", fusionType), read_supp > 2)$fusion.gene.id))
+  JAFFAL = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", grepl("false", fusionType), read_supp >= 2)$fusion.gene.id),
+  Genion = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", grepl("false", fusionType), read_supp >= 2)$fusion.gene.id),
+  LongGF = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", grepl("false", fusionType), read_supp >= 2)$fusion.gene.id),
+  FusionSeeker = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", grepl("false", fusionType), read_supp >= 2)$fusion.gene.id))
 
 Fusion_overlap <- fromList(Fusion_Simulated_Fusion_overlap_sets)
 
@@ -1575,10 +1619,10 @@ False_Overlap <- ComplexUpset::upset(
 
 #Supplementary Figure 3B
 Fusion_Simulated_Fusion_overlap_sets <- list(
-  JAFFAL = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id),
-  Genion = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id),
-  LongGF = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id),
-  FusionSeeker = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id)
+  JAFFAL = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id),
+  Genion = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id),
+  LongGF = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id),
+  FusionSeeker = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id)
 )
 
 # Convert the list to a format compatible with UpSetR
@@ -1595,22 +1639,25 @@ PartialCall_Overlap <- ComplexUpset::upset(
         ) + scale_fill_manual(values=c('bars_color'='orange'), guide='none')
            + ylab('Partial Recall')
         ))) 
-supp_Figure3 <-(False_Overlap/PartialCall_Overlap)
-ggsave("supp_Figure3.pdf", plot = supp_Figure3, width = 297, height =210 , units = "mm")
+supp_Figure3 <-(False_Overlap/PartialCall_Overlap)+   
+  plot_annotation(tag_levels = list(c("A", "", "", "B")))
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure3.pdf", plot = supp_Figure3, width = 297, height =210 , units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure3.png", plot = supp_Figure3, width = 297, height =210 , units = "mm")
+supp_Figure3
 ```
 
 Repeat analysis with removed obvious false chimeras to see if they have any influence. Any differences observed are negligible
 ```{r}
-combined_data_with_heuristic <- filter(combined_data, read_supp > 2) %>%  
+combined_data_with_heuristic <- filter(combined_data, read_supp >= 2) %>%  
   mutate(stat_category = case_when(
       grepl("false_fusion:mitochondrial|false_fusion:self_misalignment", fusionType) ~ "obvious_false",
       TRUE ~ "other")) %>% filter(stat_category == "other") %>% select(-'stat_category')
 
 Fusion_Simulated_Fusion_overlap_sets <- list(
-  JAFFAL = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id),
-  Genion = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id),
-  LongGF = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id),
-  FusionSeeker = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp > 2)$fusion.gene.id)
+  JAFFAL = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp >= 2)$fusion.gene.id),
+  Genion = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp >= 2)$fusion.gene.id),
+  LongGF = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp >= 2)$fusion.gene.id),
+  FusionSeeker = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp >= 2)$fusion.gene.id)
 )
 
 # Convert the list to a format compatible with UpSetR
@@ -1627,13 +1674,13 @@ True_overlap <- ComplexUpset::upset(
         ) + scale_fill_manual(values=c('bars_color'='springgreen4'), guide='none')
           + ylab('True Recall')
         ))) 
-ggsave("Compare_Contrast_True_Calls.pdf", plot = True_overlap, width = 297, height = 210, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Compare_Contrast_True_Calls.pdf", plot = True_overlap, width = 297, height = 210, units = "mm")
 
 Fusion_Simulated_Fusion_overlap_sets <- list(
-  JAFFAL = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id),
-  Genion = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id),
-  LongGF = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id),
-  FusionSeeker = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp > 2)$fusion.gene.id)
+  JAFFAL = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id),
+  Genion = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id),
+  LongGF = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id),
+  FusionSeeker = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id)
 )
 
 # Convert the list to a format compatible with UpSetR
@@ -1650,13 +1697,13 @@ PartialCall_Overlap <- ComplexUpset::upset(
         ) + scale_fill_manual(values=c('bars_color'='orange'), guide='none')
            + ylab('Partial Recall')
         ))) 
-ggsave("Compare_Contrast_Partial_Calls.pdf", plot = PartialCall_Overlap, width = 297, height = 210, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Compare_Contrast_Partial_Calls.pdf", plot = PartialCall_Overlap, width = 297, height = 210, units = "mm")
 
 Fusion_Simulated_Fusion_overlap_sets <- list(
-  JAFFAL = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", grepl("false", fusionType), read_supp > 2)$fusion.gene.id),
-  Genion = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", grepl("false", fusionType), read_supp > 2)$fusion.gene.id),
-  LongGF = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", grepl("false", fusionType), read_supp > 2)$fusion.gene.id),
-  FusionSeeker = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", grepl("false", fusionType), read_supp > 2)$fusion.gene.id)
+  JAFFAL = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", grepl("false", fusionType), read_supp >= 2)$fusion.gene.id),
+  Genion = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", grepl("false", fusionType), read_supp >= 2)$fusion.gene.id),
+  LongGF = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", grepl("false", fusionType), read_supp >= 2)$fusion.gene.id),
+  FusionSeeker = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", grepl("false", fusionType), read_supp >= 2)$fusion.gene.id)
 )
 
 Fusion_overlap <- fromList(Fusion_Simulated_Fusion_overlap_sets)
@@ -1678,14 +1725,15 @@ False_Overlap <- ComplexUpset::upset(
         ) + scale_fill_manual(values=c('bars_color'='red'), guide='none') 
           + ylab('False Calls')
   )))
-ggsave("Compare_Contrast_False_Calls.pdf", plot = False_Overlap, width = 297, height = 210, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Compare_Contrast_False_Calls.pdf", plot = False_Overlap, width = 297, height = 210, units = "mm")
 
 ```
 
 Calculate the breakpoint accuracy
 ```{r}
 Simulated_BreakPoint <- Simulated_Fusion_Info_3 
-JAFFAL_BreakPoint <- Annot_JAFFAL_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), spanning.reads >= 2) #chrom1, base1, chrom2, base2
+JAFFAL_BreakPoint <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>% distinct() %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), spanning.reads >= 2) 
+  #chrom1, base1, chrom2, base2
 SB <- subset(Simulated_BreakPoint, fusion.gene.id == "ENSG00000009830:ENSG00000087258")
 J <- subset(JAFFAL_BreakPoint, fusion.gene.id == "ENSG00000009830:ENSG00000087258" & depth == "100GB" & Sequence_Identity == "95%")
 gene_names <- str_split("ENSG00000009830:ENSG00000087258", pattern = ":")[[1]] 
@@ -1702,15 +1750,13 @@ gene_names <- str_split("ENSG00000009830:ENSG00000087258", pattern = ":")[[1]]
  
  nrow(distinct(Breakpoint_Accuracy))
 
-Simulated_BreakPoint <- Simulated_Fusion_Info_3 #%>% rename(B2 = exonStarts, B1 = exonEnds)
-
-Genion_BreakPoint <- Annot_Genion_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) %>% separate(V8, into = c("Gene1", "Gene2", "Gene3"), sep = ";") %>% 
+Genion_BreakPoint <- Annot_Genion_Sim[c(1:27, 37, 44:46)] %>% distinct() %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) %>% separate(V8, into = c("Gene1", "Gene2", "Gene3"), sep = ";") %>% 
   separate(Gene1, into = c("Gene1.exonStarts", "Gene1.exonEnds"), sep = "-") %>% separate(Gene2, into = c("Gene2.exonStarts", "Gene2.exonEnds"), sep = "-") %>% separate(Gene3, into = c("Gene3.exonStarts", "Gene3.exonEnds"), sep = "-") %>%
   separate(Gene1.exonStarts, into=c("C1", "Gene1.exonStarts")) %>% separate(Gene2.exonStarts, into=c("C2", "Gene2.exonStarts")) %>% separate(Gene3.exonStarts, into=c("C3", "Gene3.exonStarts")) %>% mutate_at(vars(C1, C2, C3), funs(paste0("chr", .)))# "C1",  "Gene1.2", "C2", "Gene2.1", "Gene2.2", "C3", "Gene3.1" 
 
-JAFFAL_BreakPoint <- Annot_JAFFAL_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), spanning.reads >= 2) #chrom1, base1, chrom2, base2
-LongGF_BreakPoint <- Annot_LongGF_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) #chrom1, breakpoint1, chrom2, base2
-FusionSeeker_BreakPoint <- Annot_FusionSeeker_Sim %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) #Chrom1, Breakpoint1, Chrom2, Base2
+JAFFAL_BreakPoint <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>% distinct() %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), spanning.reads >= 2) #chrom1, base1, chrom2, base2
+LongGF_BreakPoint <- Annot_LongGF_Sim[c(1:24, 34, 41:43)] %>% distinct() %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) #chrom1, breakpoint1, chrom2, base2
+FusionSeeker_BreakPoint <- Annot_FusionSeeker_Sim[c(1:28, 38, 45:47)] %>% distinct() %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) #Chrom1, Breakpoint1, Chrom2, Base2
 
 JAFFAL_BreakPoint_Accuracy <-  data.frame(matrix(nrow = 0, ncol = length(c('seq_depth', 'seq_id', 'gene_fusion', 'JB1', 'JB2'))))
 colnames(JAFFAL_BreakPoint_Accuracy) <- c('seq_depth', 'seq_id', 'gene_fusion','JB1', 'JB2')
@@ -1889,25 +1935,100 @@ absolute_Breakpoint_Accuracy <- Breakpoint_Accuracy %>%
   mutate(values_vector = abs(values_vector))
 ```
 
-Make Figure 4
+Make Figure 4 & Supplementary Figure 13
 ```{r}
 library(ggforce)
+absolute_Breakpoint_Accuracy$Distance_from_Simulated_Breakpoint <-
+  as.numeric(as.character(absolute_Breakpoint_Accuracy$Distance_from_Simulated_Breakpoint))
+
+#Statistical test: Check if data is normally distributed
+breakpoint_stat_data <- filter(absolute_Breakpoint_Accuracy, seq_depth == "100GB", seq_id == "95%")
+breakpoint_stat_data$Log1p_values <- log1p(breakpoint_stat_data$values_vector)
+by(breakpoint_stat_data$Log1p_values,
+   breakpoint_stat_data$Algorithm,
+    shapiro.test)
+breakpoint1_stat_data <- filter(absolute_Breakpoint_Accuracy, seq_depth == "100GB", seq_id == "95%", Breakpoint_number == "Breakpoint_1")
+breakpoint1_stat_data$Log1p_values <- log1p(breakpoint1_stat_data$values_vector)
+by(breakpoint1_stat_data$Log1p_values,
+   breakpoint1_stat_data$Algorithm,
+    shapiro.test)
+breakpoint2_stat_data <- filter(absolute_Breakpoint_Accuracy, seq_depth == "100GB", seq_id == "95%", Breakpoint_number == "Breakpoint_2")
+breakpoint2_stat_data$Log1p_values <- log1p(breakpoint2_stat_data$values_vector)
+by(breakpoint2_stat_data$Log1p_values,
+   breakpoint2_stat_data$Algorithm,
+    shapiro.test)
+
+ggplot(breakpoint_stat_data,
+        aes(sample = Log1p_values)) +
+     stat_qq() +
+     stat_qq_line(color = "red") +
+     facet_grid(Breakpoint_number ~ Algorithm) +
+     theme_minimal() +
+     labs(title = "Q–Q Plots by Algorithm and Breakpoint",
+          x = "Theoretical Quantiles",
+          y = "Sample Quantiles")
+#Data is not normally distributed, so we will do a Kruskal Wallis Test followed by a pairwise test.
+kruskal.test(Log1p_values ~ Algorithm, data = breakpoint_stat_data)
+kruskal.test(Log1p_values ~ Algorithm, data = breakpoint1_stat_data)
+kruskal.test(Log1p_values ~ Algorithm, data = breakpoint2_stat_data)
+
 #Figure 4 ####
-Figure4 <- ggplot(filter(absolute_Breakpoint_Accuracy, seq_depth == "100GB", seq_id == "95%"), aes(y = values_vector, x = Breakpoint_number, color = Algorithm)) +
+Figure4 <- ggplot(filter(absolute_Breakpoint_Accuracy, seq_depth == "100GB", seq_id == "95%"), 
+       aes(y = Distance_from_Simulated_Breakpoint, x = Breakpoint_number, color = Algorithm)) +
   geom_boxplot(outlier.shape = NA) +
   geom_sina(maxwidth = 0.8)+
   theme_minimal()+
-  theme(
-    panel.grid.minor = element_blank(),   # remove minor log lines
-    panel.grid.major.x = element_blank(),  # optional: remove vertical major lines
-    plot.title = element_text(size = 12),
-    axis.text = element_text(size = 12),
-    axis.title = element_text(size = 12))+ 
-  scale_y_continuous(trans='log1p', labels = label_log(digits = 2),
-                     breaks = c(0, 1, 10, 100, 1000, 10000, 100000, 1000000, 1000000, 10000000, 100000000))+
-  labs(y = "Absolute distance from simulated breakpoint",
-       x= "")
-
-ggsave("Figure4_paper.pdf", plot = Figure4, width = 297, height = 210, units = "mm")
+  theme(legend.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        panel.grid.minor = element_blank(),   # remove minor log lines
+        panel.grid.major.x = element_blank(),  # optional: remove vertical major lines
+        plot.title = element_text(size = 12),
+        axis.text = element_text(size = 8),
+        axis.title = element_text(size = 12))+ 
+  scale_y_continuous(transform = scales::pseudo_log_trans(base=10) , 
+                     breaks = c(-1000000000, -100000000, -10000000, -1000000, -100000, -10000, -1000, -100, 
+                                -10, -1, 
+                                0, 
+                                1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000),
+                     labels = c(expression(-10^9), expression(-10^8), expression(-10^7), expression(-10^6), expression(-10^5), expression(-10^4), expression(-10^3), expression(-10^2),
+                                expression(-10^1), "-1", 
+                                "0", 
+                                "1", expression(10^1), 
+                                expression(10^2), expression(10^3), expression(10^4), expression(10^5), expression(10^6), expression(10^7), expression(10^8), expression(10^9))
+  )+   
+  scale_x_discrete(labels = c("Breakpoint 1", "Breakpoint 2"))+
+  labs(y = "Distance from simulated breakpoint",
+       x= "")+
+  stat_compare_means(method = "kruskal.test", aes(group = Algorithm), label.y = 8.5 , show.legend = FALSE)+
+  geom_pwc(method = "dunn_test", p.adjust.method = "bonferroni", hide.ns = TRUE, label = "p.adj.signif",
+           y.position = c(6.5, 7.5 , 5.5, 6.5 ,7.5 ), show.legend = FALSE)
+ 
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure4_paper.pdf", plot = Figure4, width = 297, height = 210, units = "mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure4_paper.png", plot = Figure4)
+           
+supp_Figure13 <-ggplot(filter(absolute_Breakpoint_Accuracy), aes(y = values_vector, x = Breakpoint_number, color = Algorithm)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_sina()+
+  theme_minimal()+ 
+  scale_y_continuous(trans='log1p', 
+                     breaks = c(0, 1, 10, 100, 
+                                1000, 10000, 100000, 1000000, 
+                                10000000, 100000000, 1000000000, 10000000000),
+                     labels = c("0", "1", "10", expression(10^2),
+             expression(10^3), expression(10^4), expression(10^5), expression(10^6),
+             expression(10^7), expression(10^8), expression(10^9), expression(10^10)))+
+  scale_x_discrete(labels = c("Breakpoint 1", "Breakpoint 2"))+
+  labs(y = "Absolute distance from simulated breakpoint", x= "")+
+  facet_grid(seq_depth ~ seq_id)+ 
+  theme(legend.title = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        panel.grid.minor = element_blank(),   # remove minor log lines
+        panel.grid.major.x = element_blank(),  # optional: remove vertical major linesplot.title = element_text(size = 12),
+        strip.text.x = element_text(size = 12),
+        strip.text.y = element_text(size = 12),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure13.png", plot = supp_Figure13,  width = 300, height = 420 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure13.pdf", plot = supp_Figure13,  width = 297, height = 420 , unit ="mm")
 ```
 

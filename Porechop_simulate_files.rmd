@@ -15,22 +15,17 @@ rsync -aP --checksum jc462828@zodiac.hpc.jcu.edu.au:/gpfs01/v2/Q5401/Algorithm_B
 ```
 
 ## porechop_abi
-Porechop ABI is used to trim off the simulated adapters from the simulated reads
+Porechop ABI is used to trim off the simulated adapters from the simulated reads in the Replicates/ directory
 ```{bash}
+#activate conda environment containing porechop
 conda activate porechop_abi_env 
+#need to make temp file for porechop to work
 chmod u+rwx /bioinformatics/ryley/Algorithm_Benchmark/Replicates/temp_porechop_files
 
 for file in $(ls /bioinformatics/ryley/Algorithm_Benchmark/Replicates) ; do
   prefix=$(basename "$file" .fastq.gz)
   porechopped_file="porechop_${prefix}"
   porechop_abi -abi --custom_adapter /bioinformatics/ryley/Algorithm_Benchmark/Badread_custom_adapter -i "$file" -o "$porechopped_file".fastq -tmp temp_porechop_files/
-done
-
-for file in $(ls /bioinformatics/ryley/Algorithm_Benchmark/Replicates/Spiked_Simulated_10Gb_Q85_replicate_{8..9}.fastq.gz) ; do
-  prefix=$(basename "$file" .fastq.gz)
-  porechopped_file="porechop_${prefix}"
-  porechop_abi -abi --custom_adapter /bioinformatics/ryley/Algorithm_Benchmark/Badread_custom_adapter -i "$file" -o "$porechopped_file".fastq -tmp temp_porechop_files/
-  gzip "$porechopped_file".fastq &
 done
 
 conda deactivate
@@ -40,3 +35,4 @@ conda deactivate
 ```{bash}
 rsync -aP --checksum /bioinformatics/ryley/Algorithm_Benchmark/Algorithm_Benchmark_Replicates/pore*gz jc462828@zodiac.hpc.jcu.edu.au:/gpfs01/v2/Q5401/Algorithm_Benchmark_Replicates
 ```
+

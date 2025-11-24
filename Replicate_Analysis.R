@@ -85,7 +85,7 @@ Simulated_Fusion_Info_3<-Sim_Info_Names %>%
   unite("original.fusion.gene.id", c(V1, V2), sep=":", remove= FALSE, na.rm = TRUE)
 
 #Read in data from LongGF####
-system("grep SumGF /bioinformatics/ryley/Algorithm_Benchmark/Replicates/Adapter_porechop_trimmed/LongGF/LongGF*Spiked*.log > /home/ryleyd/LongReadFusionCallerBenchmark/Replicates/LongGF_Spiked.tsv")
+system("grep SumGF /bioinformatics/ryley/Algorithm_Benchmark/Replicates/LongGF/LongGF*Spiked*.log > /home/ryleyd/LongReadFusionCallerBenchmark/Replicates/LongGF_Spiked.tsv")
 
 #Process LongGF data
 LongGF_Replicate_Sim <-  read.table("/home/ryleyd//Replicates/LongGF_Spiked.tsv")%>%
@@ -175,7 +175,7 @@ Annot_LongGF_Sim_Replicate$fusionType <- mapply(function(g1, g2, current_type, c
 }, Annot_LongGF_Sim_Replicate$ensembl_gene1, Annot_LongGF_Sim_Replicate$ensembl_gene2, Annot_LongGF_Sim_Replicate$fusionType, Annot_LongGF_Sim_Replicate$chromosome1, Annot_LongGF_Sim_Replicate$chromosome2, Annot_LongGF_Sim_Replicate$Gene1, Annot_LongGF_Sim_Replicate$Gene2)
 
 #FusionSeeker Replicate Analysis####
-myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Replicates/Adapter_porechop_trimmed/FusionSeeker", pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
+myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Replicates/FusionSeeker", pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
 FusionSeeker_Sim_Replicate <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE) %>%
     mutate(Source = basename(dirname(filename)))%>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
@@ -268,14 +268,32 @@ Annot_FusionSeeker_Sim_Replicate$fusionType <- mapply(function(g1, g2, Gen1, Gen
 }, Annot_FusionSeeker_Sim_Replicate$Gene1_alternative_ID.x, Annot_FusionSeeker_Sim_Replicate$Gene2_alternative_ID.x,
 Annot_FusionSeeker_Sim_Replicate$Gene1, Annot_FusionSeeker_Sim_Replicate$Gene2, 
 Annot_FusionSeeker_Sim_Replicate$fusionType, Annot_FusionSeeker_Sim_Replicate$Chrom1, Annot_FusionSeeker_Sim_Replicate$Chrom2)
+Annot_FusionSeeker_Sim <- Annot_FusionSeeker_Sim %>%
+  mutate(depth = case_when(
+    grepl("10GB", Source) ~ "10GB",
+    grepl("1GB", Source) ~ "1GB"  # Keep original value if no match
+  ), Sequence_Identity = case_when(
+    grepl("95", Source) ~ "95%",
+    grepl("90", Source) ~ "90%",
+    grepl("85", Source) ~ "85%" # Keep original value if no match
+  ), Replicate_Seed = case_when(
+    grepl("replicate_1.", sample) ~ "1",
+    grepl("replicate_2", sample) ~ "2",
+    grepl("replicate_3", sample) ~ "3",
+    grepl("replicate_4", sample) ~ "4",
+    grepl("replicate_5", sample) ~ "5",
+    grepl("replicate_6", sample) ~ "6",
+    grepl("replicate_7", sample) ~ "7",
+    grepl("replicate_8", sample) ~ "8",
+    grepl("replicate_9", sample) ~ "9",
+    grepl("replicate_10", sample) ~ "10"
+  ))
 
 #JAFFAL####
 #read in data
-myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Replicates/Adapter_porechop_trimmed/JAFFAL/", pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
-JAFFAL_Sim_Replicate <-  do.call(rbind, lapply(myfiles, function(filename) {
-  read.table(filename, header = TRUE, sep = ",") %>%
-    mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", sample), "positive", "negative"))
-})) %>% separate(fusion.genes, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE)
+JAFFAL_Sim_Replicate <- read.table("/bioinformatics/ryley/Algorithm_Benchmark/Replicates/jaffal_results_replicates/jaffa_results.csv", header = TRUE, sep = ",") %>%
+     mutate(control = ifelse(grepl("Spiked", sample), "positive", "negative"))%>% 
+  separate(fusion.genes, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE)
 ogJAFFAL_replicate <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = ",") %>%
     mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", sample), "positive", "negative"))
@@ -352,9 +370,29 @@ Annot_JAFFAL_Sim_Replicate$fusionType <- mapply(function(g1, g2, Gen1, Gen2, cur
   }
   return(current_type)
 }, Annot_JAFFAL_Sim_Replicate$ensembl_gene1, Annot_JAFFAL_Sim_Replicate$ensembl_gene2, Annot_JAFFAL_Sim_Replicate$Gene1, Annot_JAFFAL_Sim_Replicate$Gene2, Annot_JAFFAL_Sim_Replicate$fusionType, Annot_JAFFAL_Sim_Replicate$chrom1, Annot_JAFFAL_Sim_Replicate$chrom2)
-  
+
+Annot_JAFFAL_Sim_Replicate <- Annot_JAFFAL_Sim_Replicate%>%
+  mutate(depth = case_when(
+    grepl("10GB", sample) ~ "10GB",
+    grepl("1GB", sample) ~ "1GB"# Keep original value if no match
+  ), Sequence_Identity = case_when(
+    grepl("95", sample) ~ "95%",
+    grepl("90", sample) ~ "90%",
+    grepl("85", sample) ~ "85%" # Keep original value if no match
+  ), Replicate_Seed = case_when(
+    grepl("replicate_1.", sample) ~ "1",
+    grepl("replicate_2", sample) ~ "2",
+    grepl("replicate_3", sample) ~ "3",
+    grepl("replicate_4", sample) ~ "4",
+    grepl("replicate_5", sample) ~ "5",
+    grepl("replicate_6", sample) ~ "6",
+    grepl("replicate_7", sample) ~ "7",
+    grepl("replicate_8", sample) ~ "8",
+    grepl("replicate_9", sample) ~ "9",
+    grepl("replicate_10", sample) ~ "10"
+  ))
 #JAFFAL 3 Gene ####
-myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Replicates/Adapter_porechop_trimmed/JAFFAL/", pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE)
+myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Replicates/jaffal_results_replicates/", pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE)
 JAFFAL_3Gene_Sim_Replicate <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = "\t") %>%
     mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
@@ -395,6 +433,26 @@ Annot_JAFFAL_3Gene_Sim_Replicate$fusionType <- mapply(function(g1, g2, g3, curre
     }
   }
   return(current_type)}, Annot_JAFFAL_3Gene_Sim_Replicate$Gene1, Annot_JAFFAL_3Gene_Sim_Replicate$Gene2, Annot_JAFFAL_3Gene_Sim_Replicate$Gene3, Annot_JAFFAL_3Gene_Sim_Replicate$fusionType)
+
+Annot_JAFFAL_3Gene_Sim_Replicate%>%
+  mutate(depth = case_when(
+    grepl("10GB", Source) ~ "10GB",
+    grepl("1GB", Source) ~ "1GB"# Keep original value if no match
+  ), Sequence_Identity = case_when(
+    grepl("95", Source) ~ "95%",
+    grepl("90", Source) ~ "90%",
+    grepl("85", Source) ~ "85%" # Keep original value if no match
+  ), Replicate_Seed = case_when(
+    grepl("replicate_1.", Source) ~ "1",
+    grepl("replicate_2", Source) ~ "2",
+    grepl("replicate_3", Source) ~ "3",
+    grepl("replicate_4", Source) ~ "4",
+    grepl("replicate_5", Source) ~ "5",
+    grepl("replicate_6", Source) ~ "6",
+    grepl("replicate_7", Source) ~ "7",
+    grepl("replicate_8", Source) ~ "8",
+    grepl("replicate_9", Source) ~ "9",
+    grepl("replicate_10", Source) ~ "10"))
 
 #Genion####
 #Read in Data
@@ -468,3 +526,19 @@ Annot_Genion_Sim_Replicate$fusionType <- mapply(function(g1, g2, g3, current_typ
   #if it's not blank, its already been labelled
   else {return(current_type)}
 }, Annot_Genion_Sim_Replicate$V1.1, Annot_Genion_Sim_Replicate$V1.2,  Annot_Genion_Sim_Replicate$V1.3, Annot_Genion_Sim_Replicate$fusionType, Annot_Genion_Sim_Replicate$chr1, Annot_Genion_Sim_Replicate$chr2 , Annot_Genion_Sim_Replicate$chr3, Annot_Genion_Sim_Replicate$V2.1, Annot_Genion_Sim_Replicate$V2.2)
+
+Annot_Genion_Sim_Replicate <- Annot_Genion_Sim_Replicate %>%
+  mutate(depth = case_when(
+    grepl("10GB", Source) ~ "10GB",
+    grepl("1GB", Source) ~ "1GB"  # Keep original value if no match
+  ), Sequence_Identity = case_when(
+    grepl("95", Source) ~ "95%",
+    grepl("90", Source) ~ "90%",
+    grepl("85", Source) ~ "85%" # Keep original value if no match
+  ))
+
+Annot_LongGF_Sim_Replicate$Algorithm <- "LongGF"
+Annot_JAFFAL_Sim$Algorithm_Replicate <- "JAFFAL"
+Annot_JAFFAL_3Gene_Sim_Replicate$Algorithm <- "JAFFAL"
+Annot_Genion_Sim_Replicate$Algorithm <- "Genion"
+Annot_FusionSeeker_Sim_Replicate$Algorithm <- "FusionSeeker"
