@@ -107,6 +107,9 @@ Simulated_Fusion_Info_3<-Sim_Info_Names %>%
   unite("fusion.gene.id" , c(Gene1_alternative_ID, Gene2_alternative_ID, Gene3_alternative_ID), sep = ":", remove= FALSE, na.rm = TRUE) %>%
   unique() %>%
   unite("original.fusion.gene.id", c(V1, V2), sep=":", remove= FALSE, na.rm = TRUE)
+
+#convert from txt to tsv and save file
+write_tsv(Simulated_Fusion_Info_2, file="~/LongReadFusionCallerBenchmark/SimulatedData/simulated_data_info/simulated_fusion_info_with_GeneID.tsv")
 ```
 
 LongGF suggests to extract the called fusions form the output log using 'grep SumGF'.
@@ -333,7 +336,6 @@ setdiff(unique(c(ogFusionSeeker$ID, ogFusionSeeker$Source)), unique(c(Annot_Fusi
 ```
 Repeat pre-processing steps for JAFFAL
 ```{r}
-#JAFFAL
 myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/JAFFAL/", pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
 JAFFAL_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = ",") %>%
@@ -617,9 +619,9 @@ JAFFAL_scoring <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>% unique() %>%
       select(sample, contig, fusion.genes, spanning.reads, classification, recall_category, control, depth, Sequence_Identity, fusionType) %>% unique()
 ```
 Check if JAFFAL's classification correlates to recall category. 
-Make Supplementary Figure 14
+Make Supplementary Figure 15
 ```{r}
-Supp_Figure14A <- ggplot(filter(JAFFAL_scoring, control =="positive", depth == "100GB", Sequence_Identity == "95%"),
+Supp_Figure15A <- ggplot(filter(JAFFAL_scoring, control =="positive", depth == "100GB", Sequence_Identity == "95%"),
                         aes(y = spanning.reads, x = classification, colour =recall_category ))+
   geom_boxplot(outlier.shape = NA)+
   geom_sina()+  
@@ -633,7 +635,7 @@ Supp_Figure14A <- ggplot(filter(JAFFAL_scoring, control =="positive", depth == "
         title = "Sequencing Depth 100Gb , 95% Mean Sequence Identity",
        x = "", y ="supporting reads")
 
-Supp_Figure14B <- ggplot(filter(JAFFAL_scoring, control =="positive", depth == "100GB", Sequence_Identity == "95%", fusionType=="read_through"),
+Supp_Figure15B <- ggplot(filter(JAFFAL_scoring, control =="positive", depth == "100GB", Sequence_Identity == "95%", fusionType=="read_through"),
        aes(y = spanning.reads, x = classification, colour =fusionType ))+
   geom_boxplot(outlier.shape = NA)+
   geom_sina()+  
@@ -645,7 +647,7 @@ Supp_Figure14B <- ggplot(filter(JAFFAL_scoring, control =="positive", depth == "
         axis.title = element_text(size = 12))+
   labs(subtitle = "JAFFAL's classication of simulated read-throughs",
        x="",y ="supporting reads")
-supp_Figure14C <-ggplot(filter(JAFFAL_scoring, control =="positive", depth == "100GB", Sequence_Identity == "95%", classification=="PotentialReadThrough"),
+supp_Figure15C <-ggplot(filter(JAFFAL_scoring, control =="positive", depth == "100GB", Sequence_Identity == "95%", classification=="PotentialReadThrough"),
                         aes(y = spanning.reads, x = classification, colour = recall_category  ))+
   geom_boxplot(outlier.shape = NA)+
   geom_sina()+  
@@ -657,18 +659,18 @@ supp_Figure14C <-ggplot(filter(JAFFAL_scoring, control =="positive", depth == "1
         axis.title = element_text(size = 12))+
   labs(subtitle = "JAFFAL's 'Potential Readthrough' recall classification", x="", y="")+
   ylim(c(0,20))
-supp_Figure14 <- supp_Figure14A/(supp_Figure14B + supp_Figure14C)+
+supp_Figure15 <- supp_Figure15A/(supp_Figure15B + supp_Figure15C)+
   plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")),
                   tag_levels = "A")
-  supp_Figure14
-ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure14.png", plot = supp_Figure14,  width = 297, height = 210 , unit ="mm")
-ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure14.pdf", plot = supp_Figure14,  width = 297, height = 210 , unit ="mm")
+  supp_Figure15
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure15.png", plot = supp_Figure15,  width = 297, height = 210 , unit ="mm")
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure15.pdf", plot = supp_Figure15,  width = 297, height = 210 , unit ="mm")
 ```
 check if Genion's FiN or ffigf score correlate to recall category (True, Partial or False call) or other variables. 
-Make Supplementary Figure 15 & 16
+Make Supplementary Figure 16 & 17
 ```{r}
-#supplementary figure 15
-ggplot(filter(Genion_Fffscores, control =="positive"))+
+#supplementary figure 16
+supp_Figure16 <- ggplot(filter(Genion_Fffscores, control =="positive"))+
   geom_point(aes(x = V4, y= V3.x, colour = recall_category))+
   facet_grid(depth ~ Sequence_Identity)+
   scale_x_log10(breaks = 10^(-5:3))+
@@ -677,8 +679,9 @@ ggplot(filter(Genion_Fffscores, control =="positive"))+
         axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))
-#supplementary figure 16
-ggplot(filter(Genion_Fffscores, control =="positive", fusionType=="read_through"))+
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure16.png", plot = supp_Figure16,  width = 297, height = 210 , unit ="mm")
+#supplementary figure 17
+supp_Figure17 <- ggplot(filter(Genion_Fffscores, control =="positive", fusionType=="read_through"))+
   geom_point(aes(x = V4, y= V3.x, colour = V7))+
   facet_grid(depth ~ Sequence_Identity)+
   scale_x_log10(breaks = 10^(-5:5))+
@@ -687,6 +690,7 @@ ggplot(filter(Genion_Fffscores, control =="positive", fusionType=="read_through"
         axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))
+ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure17.png", plot = supp_Figure17,  width = 297, height = 210 , unit ="mm")
 ```
 
 Consolidate fusion caller outputs into one dataframe to more easily compare
@@ -1938,6 +1942,7 @@ absolute_Breakpoint_Accuracy <- Breakpoint_Accuracy %>%
 Make Figure 4 & Supplementary Figure 13
 ```{r}
 library(ggforce)
+library(ggpubr)
 absolute_Breakpoint_Accuracy$Distance_from_Simulated_Breakpoint <-
   as.numeric(as.character(absolute_Breakpoint_Accuracy$Distance_from_Simulated_Breakpoint))
 
@@ -2006,19 +2011,26 @@ Figure4 <- ggplot(filter(absolute_Breakpoint_Accuracy, seq_depth == "100GB", seq
 ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure4_paper.pdf", plot = Figure4, width = 297, height = 210, units = "mm")
 ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure4_paper.png", plot = Figure4)
            
-supp_Figure13 <-ggplot(filter(absolute_Breakpoint_Accuracy), aes(y = values_vector, x = Breakpoint_number, color = Algorithm)) +
+supp_Figure13 <-ggplot(filter(absolute_Breakpoint_Accuracy), aes(y = Distance_from_Simulated_Breakpoint, x = Breakpoint_number, color = Algorithm)) +
   geom_boxplot(outlier.shape = NA) +
   geom_sina()+
   theme_minimal()+ 
-  scale_y_continuous(trans='log1p', 
-                     breaks = c(0, 1, 10, 100, 
-                                1000, 10000, 100000, 1000000, 
-                                10000000, 100000000, 1000000000, 10000000000),
-                     labels = c("0", "1", "10", expression(10^2),
-             expression(10^3), expression(10^4), expression(10^5), expression(10^6),
-             expression(10^7), expression(10^8), expression(10^9), expression(10^10)))+
+  scale_y_continuous(transform = scales::pseudo_log_trans(base=10) , 
+                     breaks = c(-1000000000, -100000000, -10000000, -1000000, -100000, -10000, -1000, -100, 
+                                -10, -1, 
+                                0, 
+                                1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000),
+                     labels = c(expression(-10^9), expression(-10^8), expression(-10^7), expression(-10^6), expression(-10^5), expression(-10^4), expression(-10^3), expression(-10^2),
+                                expression(-10^1), "-1", 
+                                "0", 
+                                "1", expression(10^1), 
+                                expression(10^2), expression(10^3), expression(10^4), expression(10^5), expression(10^6), expression(10^7), expression(10^8), expression(10^9))
+  )+   
   scale_x_discrete(labels = c("Breakpoint 1", "Breakpoint 2"))+
   labs(y = "Absolute distance from simulated breakpoint", x= "")+
+  stat_compare_means(method = "kruskal.test", aes(group = Algorithm), label.y = 8.5 , show.legend = FALSE, label = "p.format",)+
+  geom_pwc(method = "dunn_test", p.adjust.method = "bonferroni", hide.ns = TRUE, label = "p.adj.signif",
+           y.position = c(6.5, 7.5 , 5.5, 6.5 ,7.5 ), show.legend = FALSE)+
   facet_grid(seq_depth ~ seq_id)+ 
   theme(legend.title = element_text(size = 12),
         legend.text = element_text(size = 12),
@@ -2026,7 +2038,7 @@ supp_Figure13 <-ggplot(filter(absolute_Breakpoint_Accuracy), aes(y = values_vect
         panel.grid.major.x = element_blank(),  # optional: remove vertical major linesplot.title = element_text(size = 12),
         strip.text.x = element_text(size = 12),
         strip.text.y = element_text(size = 12),
-        axis.text = element_text(size = 12),
+        axis.text = element_text(size = 9.5),
         axis.title = element_text(size = 12))
 ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure13.png", plot = supp_Figure13,  width = 300, height = 420 , unit ="mm")
 ggsave("~/LongReadFusionCallerBenchmark/Figures/supp_Figure13.pdf", plot = supp_Figure13,  width = 297, height = 420 , unit ="mm")

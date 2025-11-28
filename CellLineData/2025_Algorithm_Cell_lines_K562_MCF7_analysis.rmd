@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
+Load relevant R libraries for data analysis
 ```{r}
 library(tidyverse)
 library(dplyr)
@@ -17,7 +17,12 @@ library("viridis")
 library(UpSetR)
 library(ComplexUpset)
 library(biomaRt)
-known_fusions <- read.table("~/benchmark_data_analysis/real_gene_fusions.tsv", header=TRUE)
+```
+
+The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa of our curated list of known gene fusions. 
+```{r}
+Cell_line_data_directory <- "~/LongReadFusionCallerBenchmark/CellLineData/"
+known_fusions <- read.table(paste0(Cell_line_data_directory, "real_gene_fusions.tsv"), header=TRUE)
 ensembljul2023 <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://jul2023.archive.ensembl.org")
 ensemblv109 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 109)
 ensemblv110 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 110)
@@ -47,6 +52,10 @@ gene_info_2 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id
                              mart = ensemblv110)) %>% unique()
 known_fusions_biomart <- left_join(known_fusions,  gene_info_1, by  = c("Gene1"="external_gene_name")) %>% left_join(gene_info_2, by  = c("Gene2"="external_gene_name"))
 write_csv(known_fusions_biomart, file="~/known_fusions_biomart.csv")
+```
+
+Read in the manually curated excel spreadsheet of known gene fusions and use biomart to check gene IDs
+```{r}
 library(readxl)
 known_fusions_manual_annotation <- read_excel("known_fusions_manual_annotation.xlsx")
 
@@ -81,10 +90,11 @@ known_fusions_biomart <-known_fusions_manual_annotation %>% left_join(gene_info_
 
 ```
 
-find the longgf fusion genes and output to a tsv file
+Extract fusion genes called by longgf and output to a tsv file
 ```{bash}
 #change to directory contain LongGF results of cell line data
-cd /bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/LongGF/
+LongGF_CellLine_Directory="/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/LongGF/"
+cd ${LongGF_CellLine_Directory}
 
 #find the longgf fusion genes and output to a tsv file
 grep SumGF LongGF.run.SGNex_K562_directcDNA_replicate_combined.log > LongGF.SGNex_K562_directcDNA_replicate_combined.tsv
@@ -123,16 +133,17 @@ grep SumGF LongGF.run.SGNex_MCF7_directRNA_2.5G_rasusa.log > LongGF.SGNex_MCF7_d
 grep SumGF LongGF.run.SGNex_MCF7_directRNA_7.5G_rasusa.log > LongGF.SGNex_MCF7_directRNA_7.5G_rasusa.tsv
 ```
 
-Read in Data from fusioncalling output from different algorithms on K562 and MCF7
+Read in Data from fusioncalling output from different algorithms [LongGF, Genion, JAFFAL, FusionSeeker] performed on sequencing data from K562 and MCF7
 ```{r}
 ####Read in Data from fusioncalling output from different algorithms on K562 and MCF7
 #LongGF
-my_files <- list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/LongGF", pattern = "tsv", full.names=TRUE)
+LongGF_CellLine_Directory<-"/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/LongGF/"
+my_files <- list.files(path = LongGF_CellLine_Directory, pattern = "tsv", full.names=TRUE)
 all_tsv <-lapply(my_files, read.table)
-names(all_tsv) <- gsub(".tsv","",list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/LongGF", pattern = "tsv",full.names = FALSE),fixed = TRUE)
-names <- gsub(".tsv","",list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/LongGF", pattern = "tsv",full.names = FALSE),fixed = TRUE)
+names(all_tsv) <- gsub(".tsv","",list.files(path = LongGF_CellLine_Directory, pattern = "tsv",full.names = FALSE),fixed = TRUE)
+names <- gsub(".tsv","",list.files(path = LongGF_CellLine_Directory, pattern = "tsv",full.names = FALSE),fixed = TRUE)
 for(i in names){
-  assign(i, read.table(paste0("/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/LongGF/", i, ".tsv")))
+  assign(i, read.table(paste0(LongGF_CellLine_Directory, i, ".tsv")))
 }
 LongGF_cell_lines <- do.call(rbind, lapply(my_files, function(filename) {
   read.table(filename) %>%
@@ -140,7 +151,8 @@ LongGF_cell_lines <- do.call(rbind, lapply(my_files, function(filename) {
 }))
 
 #Genion
-myfiles<- list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/Genion", pattern = "*_genion", full.names = TRUE)
+Genion_CellLine_Directory <- "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/Genion"
+myfiles<- list.files(path = Genion_CellLine_Directory, pattern = "*_genion", full.names = TRUE)
 Genion_cell_lines<- do.call(rbind, lapply(myfiles, function(filename) {
   if (file.info(filename)$size > 0) {
     read.table(filename) %>%
@@ -151,13 +163,14 @@ Genion_cell_lines<- do.call(rbind, lapply(myfiles, function(filename) {
 }))
 
 #JAFFAL
-myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files", pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
+CellLine_Directory <- "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files"
+myfiles<-list.files(path = CellLine_Directory, pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
 JAFFAL_cell_lines <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = ",") %>%
     mutate(Source =  sub(".fastq$", "",sample))
 }))
 #JAFFAL_3Gene 
-myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files", pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE) 
+myfiles<-list.files(path = CellLine_Directory, pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE) 
 
 JAFFAL_cell_lines_3Gene <- do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = "\t") %>%
@@ -165,7 +178,9 @@ JAFFAL_cell_lines_3Gene <- do.call(rbind, lapply(myfiles, function(filename) {
 }))
 
 #fusionseeker
-myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/FusionSeeker", pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
+FusionSeeker_CellLine_Directory <- "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/FusionSeeker"
+
+myfiles<-list.files(path = FusionSeeker_CellLine_Directory, pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
 FusionSeeker_cell_lines <- do.call(rbind, lapply(myfiles, function(filename){
   read.table(filename, header = TRUE) %>% mutate(Source = sub("^fusionseeker_", "", basename(dirname(filename))))
 }))
@@ -173,11 +188,10 @@ FusionSeeker_cell_lines <- do.call(rbind, lapply(myfiles, function(filename){
 
 Make a column to indicate which cell line the fusion was found in, and a column to indicate what tool was used, and column to indicate the sequencing depth and library type
 ```{r}
-#Make a column to indicate which cell line the fusion was found in, and a column to indicate what tool was used, and column to indicate the sequencing depth and library type
 LongGF_cell_lines <- LongGF_cell_lines %>%
   mutate(Cell_Lines = case_when(
     grepl("K562", Source, ignore.case = TRUE) ~ "K562",
-    grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7",# Keep original value if no match
+    grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7"
   ), Algorithm = "LongGF",
   Sequencing_Depth = case_when(
     grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
@@ -269,17 +283,18 @@ mito_chimeras_FusionSeeker_cell_lines <- subset(FusionSeeker_cell_lines, (Chrom1
 
 mito_chimeras_LongGF_cell_lines <- filter(LongGF_cell_lines, (grepl("chrM:", V4, ignore.case = TRUE) & grepl("chrM:", V5, ignore.case = TRUE))) %>% mutate(fusionType = "Mitochondrial")
 
-mito_chimeras_Genion_cell_lines <- filter(Genion_cell_lines, grepl("M:", V8, ignore.case = TRUE))
-mito_chimeras_JAFFAL_cell_lines <- subset(JAFFAL_cell_lines, (chrom1=="chrM" | chrom2=="chrM")) 
-#combine into one data frame
-mito_chimeras <- rbind(mitochondrial_genomic_LongGF_cell_lines[c(3, 6:11)], mito_chimeras_LongGF_cell_lines[c(3, 6:11)])
-mito_chimeras$NumSupp <-mito_chimeras$V3
-mito_chimeras <-mito_chimeras[c(2:8)] %>% rbind(mito_chimeras_FusionSeeker_cell_lines[c(4,10:15)], mitochondrial_genomic_FusionSeeker_cell_lines[c(4,10:15)])
+mito_chimeras_Genion_cell_lines <- filter(Genion_cell_lines, grepl("M:", V8, ignore.case = TRUE)) #nothing observed
 
-mito_chimeras$Sequencing_Depth<- factor(mito_chimeras$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
-mito_chimeras$Library<- factor(mito_chimeras$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
-#plot the mito_chimeras data
-ggplot(filter(mito_chimeras, NumSupp >=2), aes(x = Sequencing_Depth, fill = fusionType)) +
+mito_chimeras_JAFFAL_cell_lines <- subset(JAFFAL_cell_lines, (chrom1=="chrM" | chrom2=="chrM")) #nothing observed
+#combine into one data frame
+mito_chimeras_cell_line <- rbind(mitochondrial_genomic_LongGF_cell_lines[c(3, 6:11)], mito_chimeras_LongGF_cell_lines[c(3, 6:11)])
+mito_chimeras_cell_line$NumSupp <-mito_chimeras_cell_line$V3
+mito_chimeras_cell_line <-mito_chimeras_cell_line[c(2:8)] %>% rbind(mito_chimeras_FusionSeeker_cell_lines[c(4,10:15)], mitochondrial_genomic_FusionSeeker_cell_lines[c(4,10:15)])
+
+mito_chimeras_cell_line$Sequencing_Depth<- factor(mito_chimeras_cell_line$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
+mito_chimeras_cell_line$Library<- factor(mito_chimeras_cell_line$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
+#plot the mito_chimeras_cell_line data
+ggplot(filter(mito_chimeras_cell_line, NumSupp >=2), aes(x = Sequencing_Depth, fill = fusionType)) +
   geom_bar() +
   theme_minimal() +
   labs(title = "False calls by each algorithm", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
@@ -287,48 +302,59 @@ ggplot(filter(mito_chimeras, NumSupp >=2), aes(x = Sequencing_Depth, fill = fusi
   facet_grid(Library+Cell_Lines~Algorithm) +
   scale_y_log10()
 
-ggplot(filter(mito_chimeras, NumSupp >=2), aes(x = Sequencing_Depth, y = NumSupp)) +
+ggplot(filter(mito_chimeras_cell_line, NumSupp >=2), aes(x = Sequencing_Depth, y = NumSupp)) +
   geom_boxplot(aes(fill = fusionType)) +
-  labs(title = "Distribution of Read Support for False Fusions",
+  labs(title = "Distribution of Read Support for false chimeras",
        x = "Read Depth",
        y = "Read Support") +
   theme_minimal() +
   facet_grid(Library+Cell_Lines~ Algorithm) +  
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
-#filter misalignments and fusions between self, e.g. paralogus genes fused 
-self_LongGF_cell_lines <- LongGF_cell_lines %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 == V2.2) %>% rename("NumSupp"="V3")
-self_FusionSeeker_cell_lines <- FusionSeeker_cell_lines %>%
+filter misalignments and fusions between self, e.g. paralogus genes fused 
+```{r}
+self_alignment_LongGF_cell_lines <- LongGF_cell_lines %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 == V2.2) %>% rename("NumSupp"="V3")
+self_alignment_FusionSeeker_cell_lines <- FusionSeeker_cell_lines %>%
   subset((Gene1 == Gene2) | 
          mapply(grepl, pattern = paste0(Gene1, "_PAR_Y"), x = Gene2) | 
          mapply(grepl, pattern = paste0(Gene2, "_PAR_Y"), x = Gene1))
-self_Genion_cell_lines <- Genion_cell_lines %>% separate(V1, into = c("V1.1","V1.2"), sep="::", remove = FALSE) %>%  subset((V1.1 == V1.2) | mapply(grepl, pattern = paste0(V1.1, "_PAR_Y"), x = V1.2) | 
+self_alignment_Genion_cell_lines <- Genion_cell_lines %>% separate(V1, into = c("V1.1","V1.2"), sep="::", remove = FALSE) %>%  subset((V1.1 == V1.2) | mapply(grepl, pattern = paste0(V1.1, "_PAR_Y"), x = V1.2) | 
          mapply(grepl, pattern = paste0(V1.2, "_PAR_Y"), x = V1.1))
-self_JAFFAL_cell_lines <- JAFFAL_cell_lines %>% separate(fusion.genes, into = c("V1.1","V1.2"), sep=":", remove = FALSE) %>% subset(V1.1 == V1.2)
+self_alignment_JAFFAL_cell_lines <- JAFFAL_cell_lines %>% separate(fusion.genes, into = c("V1.1","V1.2"), sep=":", remove = FALSE) %>% subset(V1.1 == V1.2)
 
 
-selfish <- rbind(self_LongGF_cell_lines[c(5, 8:12)], self_FusionSeeker_cell_lines[c(4,10:14)]) %>% mutate(fusionType = "Self-Misalignment")
-#combine paralogous gene fusions and mitochondrial chimeras into a dataframe call obvious false fusions (obv_false)
-obv_false <- rbind(selfish, mito_chimeras)
-obv_false$Sequencing_Depth<- factor(obv_false$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
-obv_false$Library<- factor(obv_false$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
+self_alignment_results <- rbind(self_alignment_LongGF_cell_lines[c(5, 8:12)], self_alignment_FusionSeeker_cell_lines[c(4,10:14)]) %>% mutate(fusionType = "Self-Misalignment")
+```
 
-ggplot(filter(obv_false, NumSupp >=2, Sequencing_Depth == c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb")), aes(x = Sequencing_Depth, fill = fusionType)) +
+combine paralogous gene fusions and mitochondrial chimeras into a dataframe containing obvious false_chimeras
+```{r}
+false_chimeras <- rbind(self_alignment_results, mito_chimeras_cell_line)
+false_chimeras$Sequencing_Depth<- factor(false_chimeras$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
+false_chimeras$Library<- factor(false_chimeras$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
+
+supp_Figure14 <-ggplot(filter(false_chimeras, NumSupp >=2, Sequencing_Depth == c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb")), aes(x = Sequencing_Depth, fill = fusionType)) +
   geom_bar() +
   theme_minimal() +
   labs(title = "False calls by each algorithm", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))+
   facet_grid(Library+Cell_Lines~Algorithm) +
-  scale_y_log10() 
-
+  scale_y_log10()+
+  labs(fill = "Fusion Type") 
+ggsave("supp_Figure14.png", plot = supp_Figure14,  width = 210, height =297  , unit ="mm")
 ```
-Filter out the obvious false fusions from the data and assign ensembl gene IDs to fusion gene partners
-```{r}
-#filter out the obvious false fusions from the data
-filtered_LongGF_cell_lines <- anti_join(LongGF_cell_lines, mito_chimeras_LongGF_cell_lines) %>% anti_join(mitochondrial_genomic_LongGF_cell_lines) %>% anti_join(self_LongGF_cell_lines)
-filtered_FusionSeeker_cell_lines <- anti_join(FusionSeeker_cell_lines, mitochondrial_genomic_FusionSeeker_cell_lines) %>% anti_join(mito_chimeras_FusionSeeker_cell_lines) %>% anti_join(self_FusionSeeker_cell_lines)
 
-#seperate fusion gene partners, make new dataframe Fusion SEParated LongGf Cell Line
+Filter out the obvious false chimeras from the original dataframe and assign ensembl gene IDs to fusion gene partners
+```{r}
+#filter out the obvious false chimeras from the data
+filtered_LongGF_cell_lines <- anti_join(LongGF_cell_lines, mito_chimeras_LongGF_cell_lines) %>% anti_join(mitochondrial_genomic_LongGF_cell_lines) %>% anti_join(self_alignment_LongGF_cell_lines)
+filtered_FusionSeeker_cell_lines <- anti_join(FusionSeeker_cell_lines, mitochondrial_genomic_FusionSeeker_cell_lines) %>% anti_join(mito_chimeras_FusionSeeker_cell_lines) %>% anti_join(self_alignment_FusionSeeker_cell_lines)
+```
+
+Seperate fusion gene partners, make new dataframe (F)usion (SEP)arated Algorithm (C)el(l)
+```{r}
 fsep_LGcl <- filtered_LongGF_cell_lines %>% separate(V2, into = c('Gene1', 'Gene2'), sep = ":", remove = FALSE)
 #assign ensembl gene IDs to fusion gene partners
 gene_info_1 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
@@ -458,8 +484,9 @@ fsep_JAFFALcl_3Gene <-left_join(fsep_JAFFALcl_3Gene, gene_info_1, by  = c("Gene1
 #separate fusion genes for Genion
 fsep_Gencl <- Genion_cell_lines %>% separate(V1, into = c("Gene1", "Gene2", "Gene3"), "::", remove=FALSE)
 ```
+
+Check which known gene fusions have been re-discovered
 ```{r}
-#with
 known_fusions_biomart$discovery <- "known"
 fsep_JAFFALcl <- filter(fsep_JAFFALcl, spanning.reads >=2)
 fsep_Gencl <- filter(fsep_Gencl, V5 >=2)
@@ -474,12 +501,12 @@ disc_JAFFALcl <-disc_JAFFALcl %>%  mutate(discovery = case_when(
     TRUE ~ discovery)) %>%  mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y))
 disc_JAFFALcl_3Gene <- fsep_JAFFALcl_3Gene %>%  mutate(discovery ="novel", fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y, "::", ensembl_gene_id)) %>% rename(fusion.genes = Fusion, spanning.reads = Reads, classification = Classification)
 
-summary_JAFFAL_df <- disc_JAFFALcl %>% full_join(disc_JAFFALcl_3Gene) %>%
+CellData_summary_JAFFAL_df <- disc_JAFFALcl %>% full_join(disc_JAFFALcl_3Gene) %>%
   group_by(across(all_of(colnames(JAFFAL_cell_lines)))) %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
-summary_JAFFAL_df <- summary_JAFFAL_df %>% group_by(Source, Cell_Lines, 
+CellData_summary_JAFFAL_df <- CellData_summary_JAFFAL_df %>% group_by(Source, Cell_Lines, 
     Sequencing_Depth, Algorithm, Library) %>%
   summarise(knownnumber = sum(knowncount), novelnumber= sum(novelcount))
 
@@ -489,12 +516,12 @@ disc_Genioncl <-disc_Genioncl %>%  mutate(discovery = case_when(
     V1 %in% check ~ "known",  # if the fusion is in the known list
     is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
     TRUE ~ discovery))
-summary_Genion_df <- disc_Genioncl %>%
+CellData_summary_Genion_df <- disc_Genioncl %>%
   group_by(across(all_of(colnames(Genion_cell_lines)))) %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
-summary_Genion_df <- summary_Genion_df %>% group_by(Source, Cell_Lines, 
+CellData_summary_Genion_df <- CellData_summary_Genion_df %>% group_by(Source, Cell_Lines, 
     Sequencing_Depth, Algorithm, Library) %>%
   summarise(knownnumber = sum(knowncount), novelnumber= sum(novelcount))
 
@@ -504,12 +531,12 @@ disc_FusionSeekercl <-disc_FusionSeekercl %>% mutate(fusionGeneID = paste0(ensem
     fusionGeneID %in% check ~ "known",  # if fusion.genes is in the known list
     is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
     TRUE ~ discovery))
-summary_FusionSeeker_df <- disc_FusionSeekercl %>%
+CellData_summary_FusionSeeker_df <- disc_FusionSeekercl %>%
   group_by(across(all_of(colnames(FusionSeeker_cell_lines)))) %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
-summary_FusionSeeker_df <- summary_FusionSeeker_df %>% group_by(Source, Cell_Lines, 
+CellData_summary_FusionSeeker_df <- CellData_summary_FusionSeeker_df %>% group_by(Source, Cell_Lines, 
     Sequencing_Depth, Algorithm, Library) %>%
   summarise(knownnumber = sum(knowncount), novelnumber= sum(novelcount))
 
@@ -519,99 +546,117 @@ disc_LongGFcl <-disc_LongGFcl %>%  mutate(discovery = case_when(
     fusionGeneID %in% check ~ "known",  # if fusion.genes is in the known list
     is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
     TRUE ~ discovery))
-summary_LongGF_df <- disc_LongGFcl %>%
+CellData_summary_LongGF_df <- disc_LongGFcl %>%
   group_by(across(all_of(colnames(LongGF_cell_lines)))) %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
-summary_LongGF_df <- summary_LongGF_df %>% group_by(Source, Cell_Lines, 
+CellData_summary_LongGF_df <- CellData_summary_LongGF_df %>% group_by(Source, Cell_Lines, 
     Sequencing_Depth, Algorithm, Library) %>%
   summarise(knownnumber = sum(knowncount), novelnumber= sum(novelcount))
 
-super_summary <- rbind(summary_FusionSeeker_df, summary_Genion_df, summary_JAFFAL_df, summary_LongGF_df)
-super_summary$Sequencing_Depth<- factor(super_summary$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
-super_summary$Library<- factor(super_summary$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
-super_summary %>% filter(Sequencing_Depth != "Total")
- 
-Cell_Line_novelvsknown <- ggplot(filter(super_summary, Sequencing_Depth != "Total"))+
-  geom_point(aes(x = novelnumber , y =knownnumber, colour = Algorithm, shape = Sequencing_Depth, ))+
-  facet_grid(Library~Cell_Lines, scales = "free_y")+
-  labs(x="Novel Fusions", y = "Known Fusions") 
-ggsave("Cell_Line_novelvsknown.pdf", plot = Cell_Line_novelvsknown, width = 297, height = 210, units = "mm")
-```
+super_CellData_summary <- rbind(CellData_summary_FusionSeeker_df, CellData_summary_Genion_df, CellData_summary_JAFFAL_df, CellData_summary_LongGF_df)
+super_CellData_summary$Sequencing_Depth<- factor(super_CellData_summary$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
+super_CellData_summary$Library<- factor(super_CellData_summary$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
+super_CellData_summary %>% filter(Sequencing_Depth != "Total")
 
+```
+Make Figure 5: novel vs known fusions
 ```{r}
+#Figure 5 ####
 # Plot for K562 with smaller y-axis limit
-p_k562 <- ggplot(filter(super_summary, Sequencing_Depth != "Total", Cell_Lines == "K562")) +
-  geom_point(aes(x = novelnumber, y = knownnumber, colour = Algorithm, shape = Sequencing_Depth)) +
+p_k562 <- ggplot(filter(super_CellData_summary, Sequencing_Depth != "Total", Cell_Lines == "K562")) +
+  geom_point(aes(x = novelnumber, y = knownnumber, colour = Algorithm, size = Sequencing_Depth)) +
   facet_grid(Library ~ Cell_Lines)+ 
   theme(legend.position = "none",
-    strip.text.y = element_blank(),         # removes row facet labels (Library)
-    strip.background.y = element_blank()    # removes grey background for row labels
-    )+
+        strip.text.y = element_blank(),         # removes row facet labels (Library)
+        strip.background.y = element_blank(),    # removes grey background for row labels
+        strip.text.x = element_text(size = 12),
+        plot.title = element_text(size = 12),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))+
+  scale_x_continuous(trans='log1p', 
+                     breaks = c(0, 1, 10, 100, 
+                                1000, 10000),
+                     labels = c("0", "1", "10", expression(10^2),
+                                expression(10^3), expression(10^4)))+
   labs(x = "Novel Fusions", y = "Known Fusions") +
   ylim(0, 6)  # Adjust this limit to your preference
 
 # Plot for MCF7 with larger y-axis limit
-p_mcf7 <- ggplot(filter(super_summary, Sequencing_Depth != "Total", Cell_Lines == "MCF7")) +
-  geom_point(aes(x = novelnumber, y = knownnumber, colour = Algorithm, shape = Sequencing_Depth)) +
+p_mcf7 <- ggplot(filter(super_CellData_summary, Sequencing_Depth != "Total", Cell_Lines == "MCF7")) +
+  geom_point(aes(x = novelnumber, y = knownnumber, colour = Algorithm, size = Sequencing_Depth)) +
   facet_grid(Library ~ Cell_Lines) +
-  labs(x = "Novel Fusions", y = "") +
-  ylim(0, 53)  # Adjust as needed
+  labs(x = "Novel Fusions", y = "")+ 
+  theme(legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        plot.title = element_text(size = 12),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))+
+  scale_x_continuous(trans='log1p', 
+                     breaks = c(0, 1, 10, 100, 
+                                1000, 10000),
+                     labels = c("0", "1", "10", expression(10^2),
+                                expression(10^3), expression(10^4)))+
+  ylim(0, 55)  # Adjust as needed
 
 #combine the two plots
-p_k562 + p_mcf7
+Figure5 <- p_k562 + p_mcf7
+ggsave("Figure5_paper.pdf", plot = Figure5, width = 210, height =200 , units = "mm")
+ggsave("Figure5_paper.jpeg", plot = Figure5, width = 210, height =200 , units = "mm")
 ```
 
+Check how many fusions were found by more than one algorithm
 ```{r}
-overlap_JAFFAL <- full_join(disc_JAFFALcl, disc_JAFFALcl_3Gene )%>%
+Overlap_CellData_JAFFAL <- full_join(disc_JAFFALcl, disc_JAFFALcl_3Gene )%>%
   filter(spanning.reads >=2) %>% rename(read_support = spanning.reads) %>%
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
-overlap_Genion <- fsep_Gencl %>% filter(V5 >=2) %>%
+Overlap_CellData_Genion <- fsep_Gencl %>% filter(V5 >=2) %>%
   rename(fusionGeneID = V1, read_support = V5)%>% 
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
-overlap_FusionSeeker <- fsep_FScl %>%
+Overlap_CellData_FusionSeeker <- fsep_FScl %>%
   mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y))  %>%
   filter(NumSupp >= 2) %>%
   rename(read_support = NumSupp)%>%
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
-overlap_LongGF <- fsep_LGcl %>%
+Overlap_CellData_LongGF <- fsep_LGcl %>%
   mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y)) %>%
   filter(V3 >=2)  %>%
   rename(read_support = V3)%>% select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
 
-head(rbind(overlap_JAFFAL, overlap_Genion, overlap_FusionSeeker, overlap_LongGF))
+head(rbind(Overlap_CellData_JAFFAL, Overlap_CellData_Genion, Overlap_CellData_FusionSeeker, Overlap_CellData_LongGF))
 library(dplyr)
 library(tidyr)
 library(UpSetR)
 library(ComplexUpset)
-fusion_data <- rbind(overlap_JAFFAL, overlap_Genion, overlap_FusionSeeker, overlap_LongGF)
+fusion_data <- rbind(Overlap_CellData_JAFFAL, Overlap_CellData_Genion, Overlap_CellData_FusionSeeker, Overlap_CellData_LongGF)
 
-Overlap_algorithms <- fusion_data %>% 
+Overlap_CellData_algorithms <- fusion_data %>% 
   group_by(fusionGeneID, Cell_Lines, Sequencing_Depth, Library) %>%
   summarise(overlap = n_distinct(Algorithm), .groups = "drop") %>%
   left_join(fusion_data, by = c("fusionGeneID", "Cell_Lines", "Sequencing_Depth", "Library"))%>%
   group_by(fusionGeneID, Cell_Lines, Sequencing_Depth, Library, Algorithm, overlap) %>%
   summarise(Total_Read_Supp = sum(read_support), .groups = "drop")
-Overlap_algorithms$Sequencing_Depth<- factor(Overlap_algorithms$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
-Overlap_algorithms$Library<- factor(Overlap_algorithms$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
+Overlap_CellData_algorithms$Sequencing_Depth<- factor(Overlap_CellData_algorithms$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
+Overlap_CellData_algorithms$Library<- factor(Overlap_CellData_algorithms$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
 
-Overlap_discovery <- left_join(Overlap_algorithms, known_fusions_biomart[c(1,6,7,10:12)], by = c("fusionGeneID", "Cell_Lines"="Cell_Line")) %>%  mutate(discovery = if_else(is.na(discovery), "novel", discovery))
+Overlap_CellData_discovery <- left_join(Overlap_CellData_algorithms, known_fusions_biomart[c(1,6,7,10:12)], by = c("fusionGeneID", "Cell_Lines"="Cell_Line")) %>%  mutate(discovery = if_else(is.na(discovery), "novel", discovery))
 
 # Step 1: Summarize Read_Supp per algorithm
-OverlapknownOnly <- Overlap_discovery %>%
+OverlapknownOnly <- Overlap_CellData_discovery %>%
   filter(discovery != "novel") %>%
   group_by(fusionGene, Cell_Lines, Sequencing_Depth, Library, Algorithm) %>%
   summarise(Read_Supp = sum(Total_Read_Supp), .groups = "drop")
 
 # Step 2: Compute overlap (distinct algorithms per fusion call)
-overlap_info <- OverlapknownOnly %>%
+Overlap_CellData_info <- OverlapknownOnly %>%
   group_by(fusionGene, Cell_Lines, Sequencing_Depth, Library) %>%
   summarise(overlap = n_distinct(Algorithm), .groups = "drop")
 
 # Step 3: Join back to retain Algorithm column
 OverlapknownOnly <- OverlapknownOnly %>%
-  left_join(overlap_info, by = c("fusionGene", "Cell_Lines", "Sequencing_Depth", "Library")) %>%
+  left_join(Overlap_CellData_info, by = c("fusionGene", "Cell_Lines", "Sequencing_Depth", "Library")) %>%
   mutate(fusionGene = fct_reorder(fusionGene, overlap, .desc = TRUE))
 
 ggplot(filter(OverlapknownOnly, Sequencing_Depth == "Total"), 
@@ -625,12 +670,31 @@ ggplot(filter(OverlapknownOnly, Sequencing_Depth == "Total"),
   scale_alpha_continuous(range = c(0.1, 1)) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="grey80"))
 
+#Supplementary figure 12####
+supp_Figure12 <-  ggplot(filter(Overlap_CellData_algorithms, Sequencing_Depth == "Total", overlap > 3), 
+       aes(x = fusionGeneID, y = Algorithm, fill = Total_Read_Supp)) +
+  geom_tile() +
+  geom_text(aes(label = Total_Read_Supp), color = "black", size = 4, alpha =1) +  # Add numbers to the tiles, adjust color for visibility
+  labs(x="", y="", fill = "") +
+  theme_minimal() +
+  facet_grid(Library ~ Cell_Lines, scales = "free_x", space = "free") +
+  scale_fill_gradient2(low = "lemonchiffon", mid="orange" ,high = "orchid", na.value = "grey", midpoint = 30)+
+  scale_alpha_continuous(range = c(0.1, 1)) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        strip.background = element_rect(color="black", fill="grey80"),
+        plot.title = element_text(size = 12),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))
+ggsave("supp_Figure12.png", plot = supp_Figure12,  width = 297, height = 210 , unit ="mm")
+ggsave("supp_Figure12.pdf", plot = supp_Figure12,  width = 297, height = 210 , unit ="mm")
+
 ```
+
 ```{r}
-overlap_total <- Overlap_discovery %>% filter(Sequencing_Depth == "Total") %>%
+Overlap_CellData_total <- Overlap_CellData_discovery %>% filter(Sequencing_Depth == "Total") %>%
   separate()
 
-ggplot(filter(overlap_total, str_count(fusionGeneID, "::") == 2), 
+ggplot(filter(Overlap_CellData_total, str_count(fusionGeneID, "::") == 2), 
        aes(x = fusionGeneID, y = Algorithm, fill = Total_Read_Supp)) +
   geom_tile() +
   geom_text(aes(label = Total_Read_Supp), color = "black", size = 3, alpha =1) +  # Add numbers to the tiles, adjust color for visibility
@@ -641,10 +705,11 @@ ggplot(filter(overlap_total, str_count(fusionGeneID, "::") == 2),
   scale_alpha_continuous(range = c(0.1, 1)) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="grey80"))
 
-MCF7_total_directcDNA <- overlap_total %>% filter(Cell_Lines == "MCF7", Library == "direct-cDNA") %>% select(c(discovery, Algorithm, fusionGeneID ))
+MCF7_total_directcDNA <- Overlap_CellData_total %>% filter(Cell_Lines == "MCF7", Library == "direct-cDNA") %>% select(c(discovery, Algorithm, fusionGeneID ))
 ```
+
 ```{r}
-shared_fusions_cell <- Overlap_algorithms %>% filter(Sequencing_Depth == "Total")%>%
+shared_fusions_cell <- Overlap_CellData_algorithms %>% filter(Sequencing_Depth == "Total")%>%
   separate(fusionGeneID, into = c("Gene1","Gene2","Gene3"), sep="::", remove = FALSE)
 
 gene_names_shared_fusions_cell <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
@@ -763,12 +828,12 @@ disc_JAFFALcl <-disc_JAFFALcl %>%  mutate(discovery = case_when(
     TRUE ~ discovery)) %>%  mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y))
 disc_JAFFALcl_3Gene <- fsep_JAFFALcl_3Gene %>%  mutate(discovery ="novel", fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y, "::", ensembl_gene_id)) %>% rename(fusion.genes = Fusion, spanning.reads = Reads, classification = Classification)
 
-summary_JAFFAL_df <- disc_JAFFALcl %>% full_join(disc_JAFFALcl_3Gene) %>%
+CellData_summary_JAFFAL_df <- disc_JAFFALcl %>% full_join(disc_JAFFALcl_3Gene) %>%
   group_by(across(all_of(colnames(JAFFAL_cell_lines)))) %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
-summary_JAFFAL_df <- summary_JAFFAL_df %>% group_by(Source, Cell_Lines, 
+CellData_summary_JAFFAL_df <- CellData_summary_JAFFAL_df %>% group_by(Source, Cell_Lines, 
     Sequencing_Depth, Algorithm, Library) %>%
   summarise(knownnumber = sum(knowncount), novelnumber= sum(novelcount))
 
@@ -778,12 +843,12 @@ disc_Genioncl <-disc_Genioncl %>%  mutate(discovery = case_when(
     V1 %in% check ~ "known",  # if the fusion is in the known list
     is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
     TRUE ~ discovery))
-summary_Genion_df <- disc_Genioncl %>%
+CellData_summary_Genion_df <- disc_Genioncl %>%
   group_by(across(all_of(colnames(Genion_cell_lines)))) %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
-summary_Genion_df <- summary_Genion_df %>% group_by(Source, Cell_Lines, 
+CellData_summary_Genion_df <- CellData_summary_Genion_df %>% group_by(Source, Cell_Lines, 
     Sequencing_Depth, Algorithm, Library) %>%
   summarise(knownnumber = sum(knowncount), novelnumber= sum(novelcount))
 
@@ -793,12 +858,12 @@ disc_FusionSeekercl <-disc_FusionSeekercl %>% mutate(fusionGeneID = paste0(ensem
     fusionGeneID %in% check ~ "known",  # if fusion.genes is in the known list
     is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
     TRUE ~ discovery))
-summary_FusionSeeker_df <- disc_FusionSeekercl %>%
+CellData_summary_FusionSeeker_df <- disc_FusionSeekercl %>%
   group_by(across(all_of(colnames(FusionSeeker_cell_lines)))) %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
-summary_FusionSeeker_df <- summary_FusionSeeker_df %>% group_by(Source, Cell_Lines, 
+CellData_summary_FusionSeeker_df <- CellData_summary_FusionSeeker_df %>% group_by(Source, Cell_Lines, 
     Sequencing_Depth, Algorithm, Library) %>%
   summarise(knownnumber = sum(knowncount), novelnumber= sum(novelcount))
 
@@ -808,21 +873,24 @@ disc_LongGFcl <-disc_LongGFcl %>%  mutate(discovery = case_when(
     fusionGeneID %in% check ~ "known",  # if fusion.genes is in the known list
     is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
     TRUE ~ discovery))
-summary_LongGF_df <- disc_LongGFcl %>%
+CellData_summary_LongGF_df <- disc_LongGFcl %>%
   group_by(across(all_of(colnames(LongGF_cell_lines)))) %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
-summary_LongGF_df <- summary_LongGF_df %>% group_by(Source, Cell_Lines, 
+CellData_summary_LongGF_df <- CellData_summary_LongGF_df %>% group_by(Source, Cell_Lines, 
     Sequencing_Depth, Algorithm, Library) %>%
   summarise(knownnumber = sum(knowncount), novelnumber= sum(novelcount))
 
-super_summary <- rbind(summary_FusionSeeker_df, summary_Genion_df, summary_JAFFAL_df, summary_LongGF_df)
-super_summary$Sequencing_Depth<- factor(super_summary$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
-super_summary$Library<- factor(super_summary$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
-super_summary %>% filter(Sequencing_Depth != "Total")
+super_CellData_summary <- rbind(CellData_summary_FusionSeeker_df, CellData_summary_Genion_df, CellData_summary_JAFFAL_df, CellData_summary_LongGF_df)
+# Convert Sequencing_Depth into an ordered factor
+super_CellData_summary$Sequencing_Depth<- factor(super_CellData_summary$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
+# Convert Library type into an ordered factor
+super_CellData_summary$Library<- factor(super_CellData_summary$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
+# Quick check: filter out "Total" depth entries
+super_CellData_summary %>% filter(Sequencing_Depth != "Total")
  
-Cell_Line_novelvsknown <- ggplot(filter(super_summary, Sequencing_Depth != "Total"))+
+Cell_Line_novelvsknown <- ggplot(filter(super_CellData_summary, Sequencing_Depth != "Total"))+
   geom_point(aes(x = novelnumber , y =knownnumber, colour = Algorithm, shape = Sequencing_Depth, ))+
   facet_grid(Library~Cell_Lines, scales = "free_y")+
   labs(x="Novel Fusions", y = "Known Fusions") 
