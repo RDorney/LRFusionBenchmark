@@ -1,0 +1,2 @@
+Sample	Primers_found	Rescue	Unusable
+pychopper_stats_output	16320409.0	1555363.0	980514.0

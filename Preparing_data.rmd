@@ -9,146 +9,138 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
-library(dplyr)
-library(tidyr)
-Nanopore_sequencing <- read.csv("/bioinformatics/ryley/Library_Benchmark/Nanopore_Huh7_fusions/jaffa_results.csv", header = TRUE) %>% mutate(library_type = case_when(grepl('FBA22517|FBA22660', sample)  ~ "direct_RNA",
-                                                        grepl('FAZ', sample)  ~ "PCR_cDNA",
-                                                        grepl('FBA62655|FBA43334', sample)  ~ "direct_cDNA"),
-                               RNA_sample = case_when(grepl('FAZ80247|FBA62655|FBA22660', sample)  ~ "Huh7_p9_8_7_B1",
-                                                        grepl('FBA22517|FAZ83542|FBA43334', sample) ~ "Huh7_p9_8_7_B2"),
-                               Platform = "ONT")
+```{bash}
+#conda create --name STAR_env bioconda::star
+##Need to choose a different aligner for aligning short reads
+#/opt/JAFFA-version-2.3/tools/bin/bowtie2 --very-fast -p 10 -x /opt/JAFFA-version-2.3/hg38_genCode47 -1 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B1_22T7FFLT3_CATTAGTGCG-TGACTACATA_R1.fastq.gz -2 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B1_22T7FFLT3_CATTAGTGCG-TGACTACATA_R2.fastq.gz -S /bioinformatics/ryley/Library_Benchmark/Huh7_B1_Illumina.sam
+#samtools view -@ 4 -bS /bioinformatics/ryley/Library_Benchmark/Huh7_B1_Illumina.sam | samtools sort -@ 4 -o /bioinformatics/ryley/Library_Benchmark/Huh7_B1_Illumina.sorted.bam &
 
-Illumina_sequencing_IllHB1<- read.csv("/bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7B1_JAFFA_direct_analysis/jaffa_direct_Huh7B1.csv", header = TRUE) %>% mutate(library_type = "PCR_cDNA",
-                               RNA_sample = "Huh7_p9_8_7_B1",
-                               Platform = "Illumina")
-Illumina_sequencing_IllHB2<- read.csv("/bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/JAFFA_direct_analysis/Huh7B2_direct/jaffa_direct_Huh7B2.csv", header = TRUE) %>% mutate(library_type = "PCR_cDNA",
-                               RNA_sample = "Huh7_p9_8_7_B2",
-                               Platform = "Illumina")
-Illumina_sequencing <- rbind(Illumina_sequencing_IllHB1, Illumina_sequencing_IllHB2)
+#/opt/JAFFA-version-2.3/tools/bin/bowtie2 --very-fast -p 10 -x /opt/JAFFA-version-2.3/hg38_genCode47 -1 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B2_22T7FFLT3_ACGGTCAGGA-CGGCCTCGTT_R1.fastq.gz -2 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B2_22T7FFLT3_ACGGTCAGGA-CGGCCTCGTT_R2.fastq.gz -S /bioinformatics/ryley/Library_Benchmark/Huh7_B2_Illumina.sam
+#samtools view -@ 4 -bS /bioinformatics/ryley/Library_Benchmark/Huh7_B2_Illumina.sam | samtools sort -@ 4 -o /bioinformatics/ryley/Library_Benchmark/Huh7_B2_Illumina.sorted.bam 
 
-PacBio_Sequencing <- read.csv("/bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/PacBio_Revio_full_length_cDNA/jaffa_results.csv", header = TRUE) %>% 
-  mutate(library_type = "PCR_cDNA", 
-         RNA_sample = case_when(grepl('B1', sample)  ~ "Huh7_p9_8_7_B1", 
-                                grepl('B2', sample)  ~  "Huh7_p9_8_7_B2"), 
-         Platform = "PacBio")
-
-Huh7_JAFFAL <- rbind(Illumina_sequencing, Nanopore_sequencing, PacBio_Sequencing)
+#wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.annotation.gtf.gz -O ~/reference_files/gencode.v47.annotation.gtf.gz
+#gunzip ~/reference_files/gencode.v47.annotation.gtf.gz
 ```
-
-```{r}
-#import tri-gene results
-PacBio_Sequencing_3Gene <- rbind(mutate(read.table("/bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/PacBio_Revio_full_length_cDNA/PB1_FLNCcDNA.fastq/PB1_FLNCcDNA.fastq.3gene_summary", header = TRUE), sample = "PB1_FLNCcDNA.fastq") , mutate(read.table("/bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/PacBio_Revio_full_length_cDNA/PB2_FLNCcDNA.fastq/PB2_FLNC.fastq.3gene_summary", header = TRUE), sample = "PB2_FLNCcDNA.fastq" ))%>% 
-  mutate(library_type = "PCR_cDNA", 
-         RNA_sample = case_when(grepl('B1', sample)  ~ "Huh7_p9_8_7_B1", 
-                                grepl('B2', sample)  ~  "Huh7_p9_8_7_B2"), 
-         Platform = "PacBio")
-
-Tri_gene <- list.files(path="/bioinformatics/ryley/Library_Benchmark", pattern = "3gene_summary", full.names = TRUE, recursive = TRUE) 
-Nano_3gene <- Tri_gene[grepl("Nanopore_Huh7_fusionschopper_filtered", Tri_gene)]
-name <- 0
-for (location in Nano_3gene){
-  name <- name + 1
-  assign(paste0("file_", name), mutate(read.table(location, header = TRUE), sample = location, library_type = case_when(grepl('FBA22517|FBA22660', sample)  ~ "direct_RNA",
-                                                        grepl('FAZ', sample)  ~ "PCR_cDNA",
-                                                        grepl('FBA62655|FBA43334', sample)  ~ "direct_cDNA"),
-                               RNA_sample = case_when(grepl('FAZ80247|FBA62655|FBA22660', sample)  ~ "Huh7_p9_8_7_B1",
-                                                        grepl('FBA22517|FAZ83542|FBA43334', sample) ~ "Huh7_p9_8_7_B2"),
-                               Platform = "ONT"))
-} 
-
-Nanopore_sequencing_3Gene <- rbind(file_1, file_2, file_3, file_4, file_5, file_6)
-
-Huh7_JAFFAL_3Gene <- rbind(PacBio_Sequencing_3Gene, Nanopore_sequencing_3Gene)
-```
-
-```{r}
-#filtering our rRNA fusions and low read support fusions
-obvious_library_chimeras <- Huh7_JAFFAL %>%
-  filter(!grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y)", chrom1) | #non-genomic chromosomes and scaffolds
-         !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y)", chrom2))
-lowread_Huh7_JAFFAL <- Huh7_JAFFAL %>% filter((spanning.pairs==0 & spanning.reads==1) |(spanning.pairs==1 & spanning.reads==0)) #fusions supported by only one spanning read or one spanning pair
-
-filtered_Huh7_JAFFAL <- Huh7_JAFFAL %>%
-  filter(grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y)", chrom1) |
-         grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y)", chrom2)) %>%
-  filter((spanning.pairs>=0 & spanning.reads>=2) |(spanning.pairs>=2 & spanning.reads>=0))
-
-filtered_Huh7_JAFFAL_3Gene <- Huh7_JAFFAL_3Gene %>%
-  filter(Reads>=2)
-```
-
-```{r}
-#number of fusions
-library(ggplot2)
-ggplot(filtered_Huh7_JAFFAL)+
-  geom_point(aes(x=spanning.pairs, y=spanning.reads, colour=Platform, shape=library_type))
-
-ggplot(filtered_Huh7_JAFFAL) +
-  geom_bar(aes(fill=RNA_sample, x=Platform), position = position_dodge(preserve = "single")) +
-  scale_y_log10()
-  
-ggplot(filtered_Huh7_JAFFAL, aes(x = interaction(library_type, Platform), fill = RNA_sample)) +
-  geom_bar(position = position_dodge(preserve = "single")) +
-  scale_y_log10()+
-  coord_flip()
-
-ggplot(filtered_Huh7_JAFFAL_3Gene) +
-  geom_bar(aes(fill=RNA_sample, x=Platform), position = position_dodge(preserve = "single"))
-  
-
-bar_data <- filtered_Huh7_JAFFAL %>%
-  count(library_type, Platform, RNA_sample) %>%
-  arrange(desc(n)) %>% rename(number_of_fusions = n)
-
-```
-
-```{r}
-#number of reads for each library vs read lengths for each library vs read depth for each library (table)
-
-#number of previously identified fusions
-#number of splicing identified per fusion
-#tri-gene fusions
-#number of fusions from each type
-```
-
 
 ```{bash Aligning Reads}
 #need to rerun
+#align long reads to genome
 for input_file in /bioinformatics/ryley/Library_Benchmark/Huh-7_Library_Comparison/*/*/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/Huh-7_Library_Comparision_PCR-cDNA/*/*/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/Huh7_Library_Comparison_direct_cDNA/*/*/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/PacBio_Revio_full_length_cDNA/*.fastq.gz; do
-  file_prefix=$(basename "$input_file" .fastq.gz)
-  /opt/JAFFA-version-2.3/tools/bin/minimap2 -t 4 -ax splice /opt/JAFFA-version-2.3/hg38_genCode47.fa $input_file | samtools view -@ 8 -b | samtools sort -@ 8 -o /bioinformatics/ryley/Library_Benchmark/${file_prefix}.sorted.bam 
-  
+  file_prefix=$(basename "$input_file" .fastq.gz); /opt/JAFFA-version-2.3/tools/bin/minimap2 -t 4 -ax splice /opt/JAFFA-version-2.3/hg38.fa $input_file | samtools view -@ 8 -b | samtools sort -@ 8 -o /bioinformatics/ryley/Library_Benchmark/${file_prefix}.sorted.bam 
 done
 
-/opt/JAFFA-version-2.3/tools/bin/bowtie2 --very-fast -p 10 -x /opt/JAFFA-version-2.3/hg38_genCode47 -1 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B1_22T7FFLT3_CATTAGTGCG-TGACTACATA_R1.fastq.gz -2 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B1_22T7FFLT3_CATTAGTGCG-TGACTACATA_R2.fastq.gz -S /bioinformatics/ryley/Library_Benchmark/Huh7_B1_Illumina.sam
-samtools view -@ 4 -bS /bioinformatics/ryley/Library_Benchmark/Huh7_B1_Illumina.sam | samtools sort -@ 4 -o /bioinformatics/ryley/Library_Benchmark/Huh7_B1_Illumina.sorted.bam &
-
-/opt/JAFFA-version-2.3/tools/bin/bowtie2 --very-fast -p 10 -x /opt/JAFFA-version-2.3/hg38_genCode47 -1 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B2_22T7FFLT3_ACGGTCAGGA-CGGCCTCGTT_R1.fastq.gz -2 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B2_22T7FFLT3_ACGGTCAGGA-CGGCCTCGTT_R2.fastq.gz -S /bioinformatics/ryley/Library_Benchmark/Huh7_B2_Illumina.sam
-samtools view -@ 4 -bS /bioinformatics/ryley/Library_Benchmark/Huh7_B2_Illumina.sam | samtools sort -@ 4 -o /bioinformatics/ryley/Library_Benchmark/Huh7_B2_Illumina.sorted.bam 
+#wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.transcripts.fa.gz 
+#align stranded reads against genome
+for input_file in /bioinformatics/ryley/Library_Benchmark/Huh-7_Library_Comparison/*/*/*.fastq.gz; do
+  file_prefix=$(basename "$input_file" .fastq.gz)
+  /opt/JAFFA-version-2.3/tools/bin/minimap2 -t 4 -ax splice -uf -k14 /opt/JAFFA-version-2.3/hg38.fa $input_file | samtools view -@ 8 -b | samtools sort -@ 8 -o /bioinformatics/ryley/Library_Benchmark/${file_prefix}.stranded.sorted.bam 
+done
 
 wait
+#align  reads against transcriptome
+for input_file in /bioinformatics/ryley/Library_Benchmark/Huh-7_Library_Comparision_PCR-cDNA/*/*/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/Huh7_Library_Comparison_direct_cDNA/*/*/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/PacBio_Revio_full_length_cDNA/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/Huh-7_Library_Comparison/*/*/*.fastq.gz; do
+  file_prefix=$(basename "$input_file" .fastq.gz)
+  /opt/JAFFA-version-2.3/tools/bin/minimap2 -t 4 -ax lr:hq ~/reference_files/gencode.v47.transcripts.fa.gz $input_file | samtools view -@ 8 -b | samtools sort -@ 8 -o /bioinformatics/ryley/Library_Benchmark/${file_prefix}.transcriptome.sorted.bam 
+done
 
-rm -rv /bioinformatics/ryley/Library_Benchmark/Huh7_B1_Illumina.sam
-rm -rv /bioinformatics/ryley/Library_Benchmark/Huh7_B2_Illumina.sam
-ls -lht /bioinformatics/ryley/Library_Benchmark/*bam
+samtools index -@ 8 -M -b /bioinformatics/ryley/Library_Benchmark/*.sorted.bam 
 
-wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.annotation.gtf.gz -O ~/reference_files/gencode.v47.annotation.gtf.gz
-gunzip ~/reference_files/gencode.v47.annotation.gtf.gz
+
 ```
 
 ```{bash}
-conda create --name Subread_env bioconda::subread
+#conda create --name Subread_env bioconda::subread
 conda activate Subread_env
 featureCounts -v
-featureCounts -a ~/reference_files/gencode.v47.annotation.gtf -o LongReadLibraries.counts.txt -M -O -T 8 -g gene_id -L /bioinformatics/ryley/Library_Benchmark/*cDNA.sorted.bam /bioinformatics/ryley/Library_Benchmark/*pass*sorted.bam
+featureCounts -a ~/reference_files/gencode.v47.annotation.gtf -o LongReadLibraries.counts.txt -M -O -T 8 -g gene_id -L /bioinformatics/ryley/Library_Benchmark/*.sorted.bam 
 
-featureCounts -a ~/reference_files/gencode.v47.annotation.gtf -o ShortReadLibraries.counts.txt -M -O -T 8 -g gene_id -p --countReadPairs  /bioinformatics/ryley/Library_Benchmark/*Illumina*.sorted.bam
+#featureCounts -a ~/reference_files/gencode.v47.annotation.gtf -o ShortReadLibraries.counts.txt -M -O -T 8 -g gene_id -p --countReadPairs  /bioinformatics/ryley/Library_Benchmark/*Illumina*.sorted.bam
 conda deactivate Subread_env
 ```
 
-```{bash}
-multiqc ./ /bioinformatics/ryley/Library_Benchmark/
+```{r}
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Run_featureCounts.R")
 ```
-mu
+
+```{bash}
+for input_file in /bioinformatics/ryley/Library_Benchmark/*.sorted.bam; do
+  file_prefix=$(basename "$input_file" .bam)
+samtools stats -@ 8 $input_file > ${file_prefix}.stats
+done
+multiqc /bioinformatics/ryley/Library_Benchmark/
+
+```
+```{bash}
+# Create an read lengths data file
+echo -e "file\tread_length\tcount" > ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/library_read_length_summary.tsv
+
+# Loop through each *.stats file and extract RL lines
+for file in /bioinformatics/ryley/Library_Benchmark/*stats*; do
+  grep "^RL" "$file" | cut -f 2- | while read -r length count; do
+    file_prefix=$(basename "$file" .stats )
+    echo -e "${file_prefix}\t${length}\t${count}" >> ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/library_read_length_summary.tsv
+  done
+done
+
+```
+
+```{r}
+Longlibrary_read_lengths <- read.delim("library_read_length_summary.tsv", header = TRUE)%>% 
+  mutate(library_type = case_when(grepl('FBA22517|FBA22660', file)  ~ "direct_RNA", 
+                                  grepl('FBA62655|FBA43334', file)  ~ "direct_cDNA", 
+                                  grepl('FAZ|FLNCcDNA', file)  ~ "PCR_cDNA"), 
+         RNA_sample = case_when(grepl('FAZ80247|FBA62655|FBA22660|PB1_FLNCcDNA', file)  ~ "Huh7_p9_8_7_B1",
+                                grepl('FBA22517|FAZ83542|FBA43334|PB2_FLNCcDNA', file) ~ "Huh7_p9_8_7_B2"), 
+         Platform = case_when(grepl('FBA22517|FBA22660|FAZ83542|FBA43334|FBA62655|FAZ80247', file)  ~  "ONT",
+                              grepl('PB', file)  ~  "PacBio"),
+         Alignment = case_when(grepl('transcriptome', file)  ~  "transcriptome", 
+                               grepl('stranded', file)  ~  "stranded_genome",
+                               TRUE ~ "genome"))
+
+
+```
+
+```{bash}
+wget http://bioinfo-sysu.com/fpia/public/static/data/FPIA_tcga_fusion.csv -O /home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/FPIA_tcga_fusion.csv
+```
+
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(readxl)
+#Import data of known fusions
+ChimerDB_KB <- read_excel('/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/ChimerKB4.xlsx') %>% mutate(database = "ChimerDBv4", subdatabase ="ChimerKB" ) %>%
+  mutate(order = case_when(Disease %in% c("hepatocellular carcinoma" , "hepatocellular carcinoma (HCC)" , "neoplasm, LCC(HCC)") ~ "HCC",
+                           TRUE ~ "All_Fusions"))
+ChimerDB_Pub4 <- read_excel('/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/ChimerPub4.xlsx') %>% mutate(database = "ChimerDBv4", subdatabase ="ChimerPub" ) %>%
+  mutate(order = case_when(Disease %in% c("hepatocellular carcinoma","hepatocellular carcinoma (HCC)","neoplasm, LCC(HCC)") ~ "HCC",
+                           Disease == "intrahepatic cholangiocarcinoma (ICC)" ~ "Liver",
+                           TRUE ~ "All_Fusions"))
+ChimerDB_Seq4 <- read_excel('/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/ChimerSeq4.xlsx') %>% mutate(database = "ChimerDBv4", subdatabase ="ChimerSeq" ) %>%
+  mutate(order = case_when(Cancertype == "LIHC" ~ "HCC",
+                           Cancertype == "CHOL" ~ "Liver",
+                           TRUE ~ "All_Fusions"))
+
+DepMap_OmicsFusionFiltered <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/DepMap_OmicsFusionFiltered.csv")  %>% mutate(database = "DepMap", subdatabase ="OmicsFiltered")
+DepMap_Model_metadata <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Model.csv")
+DepMap <- left_join(DepMap_OmicsFusionFiltered, DepMap_Model_metadata)
+DepMap_Liver <- DepMap %>% filter(OncotreeLineage == "Liver") %>% mutate(order = "Liver")
+DepMap_HCC <- DepMap %>% filter(OncotreeCode =="HCC") %>% mutate(order = "HCC")
+DepMap_Huh7 <- DepMap %>% filter(CellLineName == "HuH-7" | StrippedCellLineName == "Huh7") %>% mutate(order = "Huh7")
+
+mitelmandb_genefusion <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/mitelmandb_genefusion.csv") %>% mutate(database = "Mitelman", subdatabase = "DataBrowser") %>%
+  mutate(order = case_when(`Tumor Location`== "Liver" ~ "Liver",
+                           TRUE ~ "All_Fusions"))
+FPIA_tcga_fusion <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/FPIA_tcga_fusion.csv") %>% mutate(database = "FPIA", subdatabase ="TCGA")%>%
+  mutate(order = case_when(cancer == "LIHC" ~ "HCC",
+                           TRUE ~ "All_Fusions"))
+Cosmic_Liver_Fusion<- read_tsv("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Cosmic_Liver_Fusion_Tsv_v102_GRCh38.tsv") %>% mutate(database = "Cosmic", subdatabase ="Liver_v102")
+Cosmic_Fusion<- read_tsv("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Cosmic_Fusion_v102_GRCh38.tsv")%>% mutate(database = "Cosmic") %>% left_join(Cosmic_Liver_Fusion[c(1:3,8,9,17,18, 27, 28)]) %>% mutate(order = case_when(subdatabase =="Liver_v102" ~ "Liver", 
+                          TRUE ~ "All_Fusions" )) #Cosmic has no fusions in HCC
+  
+```
+
 

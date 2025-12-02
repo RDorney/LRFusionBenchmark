@@ -1,0 +1,5 @@
+Sample	Chromosome X	Chromosome Y
+FBA62655_pass_9d20541a_79aab80e_merged	250338.0	10252.0
+dorado_trimmed_FBA43334_fail_6846ed3b_6b29293f_concatenated	8562.0	2343.0
+dorado_trimmed_FBA43334_pass_6846ed3b_6b29293f_concatenated	179979.0	9289.0
+dorado_trimmed_FBA62655_pass_9d20541a_79aab80e_concatenated	150543.0	7252.0

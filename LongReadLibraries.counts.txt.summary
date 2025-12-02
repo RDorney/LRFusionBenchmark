@@ -1,0 +1,15 @@
+Status	/bioinformatics/ryley/Library_Benchmark/PB1_FLNCcDNA.sorted.bam	/bioinformatics/ryley/Library_Benchmark/PB2_FLNCcDNA.sorted.bam	/bioinformatics/ryley/Library_Benchmark/chopper_filtered_dorado_trimmed_FAZ80247_pass_03069096_5394ef1c_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/chopper_filtered_dorado_trimmed_FAZ83542_pass_1344a466_45031b9d_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/chopper_filtered_dorado_trimmed_FBA43334_pass_6846ed3b_6b29293f_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/chopper_filtered_dorado_trimmed_FBA62655_pass_9d20541a_79aab80e_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/chopper_filtered_FBA22517_pass_d17fa1e0_a6486b6e_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/chopper_filtered_FBA22660_pass_d1e1158a_77e47f3b_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/dorado_FBA62655_pass_9d20541a_79aab80e_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/dorado_trimmed_FAZ80247_pass_03069096_5394ef1c_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/dorado_trimmed_FAZ83542_pass_1344a466_45031b9d_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/dorado_trimmed_FBA43334_pass_6846ed3b_6b29293f_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/dorado_trimmed_FBA62655_pass_9d20541a_79aab80e_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/FAZ80247_pass_03069096_5394ef1c_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/FAZ83542_pass_1344a466_45031b9d_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/FBA22517_pass_d17fa1e0_a6486b6e_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/FBA22660_pass_d1e1158a_77e47f3b_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/FBA43334_pass_6846ed3b_6b29293f_concatenated.sorted.bam	/bioinformatics/ryley/Library_Benchmark/FBA62655_pass_9d20541a_79aab80e_concatenated.sorted.bam
+Assigned	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Unassigned_Unmapped	193457	209125	93653	148853	1220642	820239	1047017	1656121	840838	295104	555734	1259062	841057	294903	555411	1130363	1753171	1258394	840838
+Unassigned_Read_Type	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Unassigned_Singleton	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Unassigned_MappingQuality	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Unassigned_Chimera	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Unassigned_FragmentLength	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Unassigned_Duplicate	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Unassigned_MultiMapping	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Unassigned_Secondary	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Unassigned_NonSplit	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Unassigned_NoFeatures	76789442	76003358	57467145	57041810	20957014	11359447	8400303	12221017	11386679	57775955	57329983	20992405	11385604	57776684	57331351	8473940	12304302	20994982	11386679
+Unassigned_Overlapping_Length	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Unassigned_Ambiguity	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0

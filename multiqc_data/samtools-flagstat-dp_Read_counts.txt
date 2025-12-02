@@ -1,0 +1,3 @@
+Sample	Total Reads	Total Passed QC	Mapped	Secondary Alignments	Supplementary Alignments	Duplicates	Paired in Sequencing	Properly Paired	Self and mate mapped	Singletons	Mate mapped to diff chr	Diff chr (mapQ >= 5)
+dorado_trimmed_FBA43334_fail_6846ed3b_6b29293f_concatenated	1.7637699999999998	1.7637699999999998	1.717034	1.263213	0.09963799999999999	0.0	0.0	0.0	0.0	0.0	0.0	0.0
+transcriptome_aligned	30.5171	30.5171	29.475306	18.607765	4.7678959999999995	0.0	0.0	0.0	0.0	0.0	0.0	0.0
