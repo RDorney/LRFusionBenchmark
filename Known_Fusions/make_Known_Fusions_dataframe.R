@@ -108,8 +108,8 @@ gene_info_KnownFusions <- rbind(getBM(
   attributes = c('ensembl_gene_id', 'external_gene_name', "external_synonym", "chromosome_name"),
   filters = "external_synonym",
   values = unique(c(Known_Fusions_df$Gene1, Known_Fusions_df$Gene2)),
-  mart = ensemblv113
-))%>% filter(!str_detect(chromosome_name, "PATCH|HSCHR|KI|G")) %>% 
+  mart = ensemblv113))%>% 
+  filter(!str_detect(chromosome_name, "PATCH|HSCHR|KI|G")) %>% 
   pivot_longer(cols = external_gene_name:external_synonym, names_to = "name_type", values_to = "gene_names")%>%
   filter(gene_names != "") %>% 
   select(c("ensembl_gene_id", "chromosome_name", "gene_names")) %>%
@@ -117,4 +117,8 @@ gene_info_KnownFusions <- rbind(getBM(
 
 #Give Gene Fusions their gene ids
 left_join(Known_Fusions_df, gene_info_KnownFusions, by = c("Gene1"="gene_names")) %>%
-  left_join(gene_info_KnownFusions, by = c("Gene2"="gene_names"))
+  left_join(gene_info_KnownFusions, by = c("Gene2"="gene_names"))%>% 
+  filter(!str_detect(chromosome_name, "PATCH|HSCHR")) %>% 
+  pivot_longer(cols = external_gene_name:external_synonym, names_to = "name_type", values_to = "gene_names")%>%
+  filter(gene_names != "")%>%
+  unique()

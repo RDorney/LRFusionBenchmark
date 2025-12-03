@@ -1,6 +1,5 @@
 # Pipeline internals
 .bpipe/
-
 # Sequencing data
 *.fastq
 *.fastq.gz
@@ -22,10 +21,6 @@
 .Rhistory
 .RData
 .Ruserdata
-
-#Images
-.png
-.pdf
 
 Reference_Files/
 *.fastq
