@@ -32,7 +32,7 @@ ensemblv110 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version 
 ensembljul2023 <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://jul2023.archive.ensembl.org")
 ```
 
-Here we read in the data table containing information about the fusions generated with Fusim to be spiked in. We then modify the table to have separate columns for partner genes. I then use biomart to find the corresponding gene names/ids. This helps find potential alternative names/ids for gene fusions recalled.
+Here we read in the data table containing information about the fusions generated with Fusim to be spiked in. We then modify the table to have separate columns for partner genes. We then use biomart to find the corresponding gene names/ids. This helps find potential alternative names/ids for gene fusions recalled.
 ```{r}
 simulated_fusions <- read.table(file = "~/benchmark_data_analysis/FUSIM_benchmark_fusions.txt", header=TRUE, sep= "\t")
 #convert from txt to tsv and save file

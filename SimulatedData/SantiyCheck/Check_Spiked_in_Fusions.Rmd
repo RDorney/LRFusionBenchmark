@@ -23,8 +23,11 @@ grep -v "chimera" Spiked_Fusions.csv > Spiked_Fusions_no_chimeras.csv
 ```
 Read the file generated containing fusions, and count how many fusions are in each file. We can also see how many supporting reads there are for each fusion
 ```{r}
-fastq_directory <- "/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/fastq_files/"
-Spiked_fusion_file <-  paste0(fastq_directory, "Spiked_Fusions_no_chimeras.csv")
+library(readr)
+library(dplyr)
+library(tidyr)
+Simulateddatainfo_directory <- "~/LongReadFusionCallerBenchmark/SimulatedData/simulated_data_info/"
+Spiked_fusion_file <-  paste0(Simulateddatainfo, "Spiked_Fusions_no_chimeras.csv")
 Spiked_Fusions <- read.csv(Spiked_fusion_file, header = FALSE)
 colnames(Spiked_Fusions) <- c("simulation", "read_id","gene_info","strand","range","lfdgp","length","ergrg","error_free_length","gr","read_identity")
 
@@ -44,6 +47,7 @@ Spiked_Counts <- unique(Spiked_Fusions[c(1,3,12,13)]) |>
   dplyr::count(simulation, depth, Sequence_Identity, name = "Spiked_Number")
 Spiked_ReadCounts <- Spiked_Fusions[c(1,3,12,13)] |>
   dplyr::count(simulation, gene_info, depth, Sequence_Identity, name = "Spiked_ReadSupp")
+write_csv(Spiked_ReadCounts, file = paste0(Simulateddatainfo_directory, "Fusion_ReadCounts.csv"))
 
 #the numbers above include our self-fusions which were excluded from analysis, so we will filter them out here and recount
 Spiked_Counts_wo_SF <- unique(filter(Spiked_Fusions, name1 != name2)[c(1,3,12,13)]) |>
