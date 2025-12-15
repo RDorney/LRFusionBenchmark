@@ -21,6 +21,19 @@ This repository aims to:
 - Provide reproducible pipelines and analysis scripts for fusion benchmarking
 
 ## 📁 Repository Structure
-Figures
+### Figures
 - png files of Figures in our Manuscript
-
+### Simulated Data
+#### Data_Analysis_Scripts
+- simulated_reads_recall.rmd
+#### FASTQC_files
+#### Sanity Check
+- Checked_Spiked_in_Fusions.Rmd
+#### simulated_data_info
+- 
+### CellLineData
+- Analysis R Markdown of algorithm performance on K562 & MCF7 data 
+  #### CellLineData/2025_Algorithm_Cell_lines_K562_MCF7_analysis.rmd
+- List of Known Gene Fusions in K562 & MCF7
+  #### /CellLineData/known_fusions_manual_annotation.xlsx
+  #### /CellLineData/real_gene_fusions.tsv
