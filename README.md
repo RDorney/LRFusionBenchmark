@@ -35,5 +35,5 @@ This repository aims to:
 - Analysis R Markdown of algorithm performance on K562 & MCF7 data 
   #### CellLineData/2025_Algorithm_Cell_lines_K562_MCF7_analysis.rmd
 - List of Known Gene Fusions in K562 & MCF7
-  #### /CellLineData/known_fusions_manual_annotation.xlsx
-  #### /CellLineData/real_gene_fusions.tsv
+  - /CellLineData/known_fusions_manual_annotation.xlsx
+  - /CellLineData/real_gene_fusions.tsv
