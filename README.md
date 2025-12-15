@@ -21,4 +21,6 @@ This repository aims to:
 - Provide reproducible pipelines and analysis scripts for fusion benchmarking
 
 ## 📁 Repository Structure
+Figures
+- png files of Figures in our Manuscript
 
