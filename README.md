@@ -21,16 +21,22 @@ This repository aims to:
 - Provide reproducible pipelines and analysis scripts for fusion benchmarking
 
 ## 📁 Repository Structure
-### Figures
+### Figures📁
 - png files of Figures in our Manuscript
-### Simulated Data
-#### Data_Analysis_Scripts
+### Simulated Data📁
+#### Data_Analysis_Scripts📁
 - simulated_reads_recall.rmd
-#### FASTQC_files
-#### Sanity Check
+#### FASTQC_files📁
+#### Sanity Check📁
 - Checked_Spiked_in_Fusions.Rmd
-#### simulated_data_info
-- 
+#### simulated_data_info📁
+- FUSIM_benchmark_fusions.txt (Output of FUSIM, contains information about simulated fusions. has csv structure)
+- Fusion_ReadCounts.csv (csv table showing the number of reads simulated for each fusion gene in each simulation)
+- Porechop_simulate_files.rmd
+- Spiked_Fusions.csv (reads corresponding to spiked fusions in each simulation)
+- Spiked_Fusions_no_chimeras.csv (the number of spiked fusions in each simulation that were not combined with other reads i.e. not part of an artificial chimera)
+- Spiked_Fusions_with_chimeras.csv (as above, but reads of fusion genes that are also part of artificial chimera)
+  
 ### CellLineData
 - Analysis R Markdown of algorithm performance on K562 & MCF7 data 
   #### CellLineData/2025_Algorithm_Cell_lines_K562_MCF7_analysis.rmd
