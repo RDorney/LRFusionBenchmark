@@ -1,12 +1,37 @@
+# Pipeline internals
+.bpipe/
+
+# Sequencing data
+*.fastq
+*.fastq.gz
+*.fq
+*.fasta
+*.fa
+*.fna
+
+# Large intermediates
+*.bam
+*.sam
+*.cram
+
+# Logs
+*.log
+
+#Rstudio junk
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+
+#Images
 .png
 .pdf
-.fastq
-.fastq.gz
-.fasta
-.bam
-.sam
-.png
+
+Reference_Files/
+*.fastq
+*.fastq.gz
+*.bam
+*.fa
+*.fa.gz
+*.gtf
+

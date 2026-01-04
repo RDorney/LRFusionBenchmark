@@ -9,6 +9,49 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+Trimming Nanopore reads of their adaptors
+```{bash}
+#direct cDNA nanopore seq use the  LSK-114 kit
+direct_cDNA_Directory=$(/bioinformatics/ryley/Library_Benchmark/raw_files/Huh7_Library_Comparison_direct_cDNA/)
+
+for reads in $(${direct_cDNA_Directory}*/*/F*fastq.gz); do
+output_prefix=$(basename ${reads} .fastq.gz)
+/opt/dorado-0.9.0-linux-x64/bin/dorado trim --sequencing-kit SQK_LSK_114 --emit-fastq ${reads} > ${direct_cDNA_Directory}_dorado_trimmed_${output_prefix}.fastq
+gzip ${direct_cDNA_Directory}_dorado_trimmed_${output_prefix}.fastq &
+done
+
+#PCR cDNA nanopore seq use the LSK-114 kit
+PCR_cDNA_Directory=$(/bioinformatics/ryley/Library_Benchmark/raw_files/Huh-7_Library_Comparision_PCR-cDNA/)
+
+for reads in $(${PCR_cDNA_Directory}*/*/F*fastq.gz); do
+output_prefix=$(basename ${reads} .fastq.gz)
+/opt/dorado-0.9.0-linux-x64/bin/dorado trim --sequencing-kit SQK_PCS114 --emit-fastq ${reads} > ${PCR_cDNA_Directory}_dorado_trimmed_${output_prefix}.fastq
+gzip ${PCR_cDNA_Directory}_dorado_trimmed_${output_prefix}.fastq &
+done
+
+#direct RNA seq trims reads and primers while it is sequencing, so we do not need to trim here
+```
+
+Filtering Nanopore Reads for lengths greater than 100bp, Quality is 8 or greater
+```{bash}
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Preprocessing/Filter_NanoporeReads_Chopper.sh
+```
+Trim adapter sequences and poly_g, and quality filter by Q15 or greater using fastp on Illumina Sequencing Data
+```{bash}
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Preprocessing/Fastp_trim_and_filter.sh
+```
+
+Using JAFFAL to find fusions in the long read Huh-7 Data, and JAFFA_direct to find fusions in the short-read Huh-7 Data
+```{bash}
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/RunJAFFAL.sh
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Run_JAFFAdirect.sh
+```
+
+```{bash}
+
+```
+
+
 ```{bash}
 #conda create --name STAR_env bioconda::star
 ##Need to choose a different aligner for aligning short reads
@@ -45,22 +88,8 @@ done
 
 samtools index -@ 8 -M -b /bioinformatics/ryley/Library_Benchmark/*.sorted.bam 
 
-
 ```
 
-```{bash}
-#conda create --name Subread_env bioconda::subread
-conda activate Subread_env
-featureCounts -v
-featureCounts -a ~/reference_files/gencode.v47.annotation.gtf -o LongReadLibraries.counts.txt -M -O -T 8 -g gene_id -L /bioinformatics/ryley/Library_Benchmark/*.sorted.bam 
-
-#featureCounts -a ~/reference_files/gencode.v47.annotation.gtf -o ShortReadLibraries.counts.txt -M -O -T 8 -g gene_id -p --countReadPairs  /bioinformatics/ryley/Library_Benchmark/*Illumina*.sorted.bam
-conda deactivate Subread_env
-```
-
-```{r}
-source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Run_featureCounts.R")
-```
 
 ```{bash}
 for input_file in /bioinformatics/ryley/Library_Benchmark/*.sorted.bam; do
@@ -75,13 +104,12 @@ multiqc /bioinformatics/ryley/Library_Benchmark/
 echo -e "file\tread_length\tcount" > ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/library_read_length_summary.tsv
 
 # Loop through each *.stats file and extract RL lines
-for file in /bioinformatics/ryley/Library_Benchmark/*stats*; do
+for file in /bioinformatics/ryley/Library_Benchmark/bam_and_sam_files/*stats*; do
   grep "^RL" "$file" | cut -f 2- | while read -r length count; do
     file_prefix=$(basename "$file" .stats )
     echo -e "${file_prefix}\t${length}\t${count}" >> ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/library_read_length_summary.tsv
   done
 done
-
 ```
 
 ```{r}
@@ -96,51 +124,5 @@ Longlibrary_read_lengths <- read.delim("library_read_length_summary.tsv", header
          Alignment = case_when(grepl('transcriptome', file)  ~  "transcriptome", 
                                grepl('stranded', file)  ~  "stranded_genome",
                                TRUE ~ "genome"))
-
-
 ```
-
-```{bash}
-wget http://bioinfo-sysu.com/fpia/public/static/data/FPIA_tcga_fusion.csv -O /home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/FPIA_tcga_fusion.csv
-```
-
-
-```{r}
-library(tidyverse)
-library(dplyr)
-library(tidyr)
-library(readr)
-library(readxl)
-#Import data of known fusions
-ChimerDB_KB <- read_excel('/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/ChimerKB4.xlsx') %>% mutate(database = "ChimerDBv4", subdatabase ="ChimerKB" ) %>%
-  mutate(order = case_when(Disease %in% c("hepatocellular carcinoma" , "hepatocellular carcinoma (HCC)" , "neoplasm, LCC(HCC)") ~ "HCC",
-                           TRUE ~ "All_Fusions"))
-ChimerDB_Pub4 <- read_excel('/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/ChimerPub4.xlsx') %>% mutate(database = "ChimerDBv4", subdatabase ="ChimerPub" ) %>%
-  mutate(order = case_when(Disease %in% c("hepatocellular carcinoma","hepatocellular carcinoma (HCC)","neoplasm, LCC(HCC)") ~ "HCC",
-                           Disease == "intrahepatic cholangiocarcinoma (ICC)" ~ "Liver",
-                           TRUE ~ "All_Fusions"))
-ChimerDB_Seq4 <- read_excel('/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/ChimerSeq4.xlsx') %>% mutate(database = "ChimerDBv4", subdatabase ="ChimerSeq" ) %>%
-  mutate(order = case_when(Cancertype == "LIHC" ~ "HCC",
-                           Cancertype == "CHOL" ~ "Liver",
-                           TRUE ~ "All_Fusions"))
-
-DepMap_OmicsFusionFiltered <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/DepMap_OmicsFusionFiltered.csv")  %>% mutate(database = "DepMap", subdatabase ="OmicsFiltered")
-DepMap_Model_metadata <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Model.csv")
-DepMap <- left_join(DepMap_OmicsFusionFiltered, DepMap_Model_metadata)
-DepMap_Liver <- DepMap %>% filter(OncotreeLineage == "Liver") %>% mutate(order = "Liver")
-DepMap_HCC <- DepMap %>% filter(OncotreeCode =="HCC") %>% mutate(order = "HCC")
-DepMap_Huh7 <- DepMap %>% filter(CellLineName == "HuH-7" | StrippedCellLineName == "Huh7") %>% mutate(order = "Huh7")
-
-mitelmandb_genefusion <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/mitelmandb_genefusion.csv") %>% mutate(database = "Mitelman", subdatabase = "DataBrowser") %>%
-  mutate(order = case_when(`Tumor Location`== "Liver" ~ "Liver",
-                           TRUE ~ "All_Fusions"))
-FPIA_tcga_fusion <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/FPIA_tcga_fusion.csv") %>% mutate(database = "FPIA", subdatabase ="TCGA")%>%
-  mutate(order = case_when(cancer == "LIHC" ~ "HCC",
-                           TRUE ~ "All_Fusions"))
-Cosmic_Liver_Fusion<- read_tsv("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Cosmic_Liver_Fusion_Tsv_v102_GRCh38.tsv") %>% mutate(database = "Cosmic", subdatabase ="Liver_v102")
-Cosmic_Fusion<- read_tsv("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Cosmic_Fusion_v102_GRCh38.tsv")%>% mutate(database = "Cosmic") %>% left_join(Cosmic_Liver_Fusion[c(1:3,8,9,17,18, 27, 28)]) %>% mutate(order = case_when(subdatabase =="Liver_v102" ~ "Liver", 
-                          TRUE ~ "All_Fusions" )) #Cosmic has no fusions in HCC
-  
-```
-
 

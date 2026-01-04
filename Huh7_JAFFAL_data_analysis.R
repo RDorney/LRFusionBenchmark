@@ -1,6 +1,6 @@
 ####Huh7 Sequencing Library JAFFAL results analysis####
 #Author: Ryley Dorney
-#Date July 2-25
+#Date Dec 30-25
 #####
 #Load R libraries
 library(dplyr)
@@ -9,40 +9,31 @@ library(ggplot2)
 library(ggbreak)
 library(ComplexUpset)
 #Load JAFFAL data into R
-Nanopore_sequencing <- read.csv("/bioinformatics/ryley/Library_Benchmark/Nanopore_Huh7_fusions/jaffa_results.csv", header = TRUE) %>% 
-  mutate(library_type = case_when(grepl('FBA22517|FBA22660', sample)  ~ "direct_RNA",
-                                  grepl('FBA43334|FBA62655', sample)  ~ "direct_cDNA",
-                                  grepl('FAZ', sample)  ~ "PCR_cDNA"),
-         RNA_sample = case_when(grepl('FBA62655|FBA22660|FAZ80247', sample)  ~ "Huh7_p9_8_7_B1", 
-                                grepl('FBA22517|FAZ83542|FBA43334', sample) ~ "Huh7_p9_8_7_B2"), 
-         Platform = "ONT")
-
-Illumina_sequencing_IllHB1<- read.csv("/bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7B1_JAFFA_direct_analysis/jaffa_direct_Huh7B1.csv", header = TRUE) %>% 
+LR_sequencing <- read.csv("/bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_gv43/JAFFAL_Huh7_genCode43/jaffa_results.csv", header = TRUE) %>% 
+  mutate(library_type = case_when(grepl('FBA22517|FBA22660|dRNA', sample)  ~ "direct_RNA",
+                                  grepl('FBA43334|FBA62655|dcDNA', sample)  ~ "direct_cDNA",
+                                  grepl('FAZ|PCR|FLNCcDNA', sample)  ~ "PCR_cDNA"),
+         RNA_sample = case_when(grepl('FBA62655|FBA22660|FAZ80247|B1', sample)  ~ "B1", 
+                                grepl('FBA22517|FAZ83542|FBA43334|B2', sample) ~ "B2"), 
+         Platform = case_when(grepl('Nano', sample)  ~ "ONT",
+                              grepl('PB', sample)  ~ "PacBio"),
+         Cell_Line = "Huh7")
+  
+Illumina_sequencing_IllHB1<- read.csv("/bioinformatics/ryley/Library_Benchmark/JAFFA_direct_gencode43/Huh7B1/jaffa_results_Huh7B1.csv", header = TRUE) %>% 
   mutate(library_type = "PCR_cDNA",           
          RNA_sample = "Huh7_p9_8_7_B1",
         Platform = "Illumina")
-Illumina_sequencing_IllHB2<- read.csv("/bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/JAFFA_direct_analysis/Huh7B2_direct/jaffa_direct_Huh7B2.csv", header = TRUE) %>% 
+Illumina_sequencing_IllHB2<- read.csv("/bioinformatics/ryley/Library_Benchmark/JAFFA_direct_gencode43/Huh7B2/jaffa_results_Huh7B2.csv", header = TRUE) %>% 
   mutate(library_type = "PCR_cDNA",
          RNA_sample = "Huh7_p9_8_7_B2",
          Platform = "Illumina")
 Illumina_sequencing <- rbind(Illumina_sequencing_IllHB1, Illumina_sequencing_IllHB2)
 
-PacBio_Sequencing <- read.csv("/bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/PacBio_Revio_full_length_cDNA/jaffa_results.csv", header = TRUE) %>% 
-  mutate(library_type = "PCR_cDNA", 
-         RNA_sample = case_when(grepl('B1', sample)  ~ "Huh7_p9_8_7_B1", 
-                                grepl('B2', sample)  ~  "Huh7_p9_8_7_B2"), 
-         Platform = "PacBio")
 
-Huh7_JAFFAL <- rbind(Illumina_sequencing, Nanopore_sequencing, PacBio_Sequencing)#import tri-gene results
-PacBio_Sequencing_3Gene <- rbind(mutate(read.table("/bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/PacBio_Revio_full_length_cDNA/PB1_FLNCcDNA.fastq/PB1_FLNCcDNA.fastq.3gene_summary", header = TRUE), sample = "PB1_FLNCcDNA.fastq") , 
-                                 mutate(read.table("/bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/PacBio_Revio_full_length_cDNA/PB2_FLNCcDNA.fastq/PB2_FLNC.fastq.3gene_summary", header = TRUE), sample = "PB2_FLNCcDNA.fastq" ))%>% 
-  mutate(library_type = "PCR_cDNA", 
-         RNA_sample = case_when(grepl('B1', sample)  ~ "Huh7_p9_8_7_B1", 
-                                grepl('B2', sample)  ~  "Huh7_p9_8_7_B2"), 
-         Platform = "PacBio")
+Huh7_JAFFAL <- rbind(Illumina_sequencing, LR_sequencing)#import tri-gene results
 
 ##load tri gene results
-Tri_gene <- list.files(path="/bioinformatics/ryley/Library_Benchmark", pattern = "3gene_summary", full.names = TRUE, recursive = TRUE) 
+LRTri_gene <- list.files(path="/bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_gv43/", pattern = "3gene_summary", full.names = TRUE, recursive = TRUE) 
 Nano_3gene <- Tri_gene[grepl("Nanopore_Huh7_fusionschopper_filtered", Tri_gene)]
 name <- 0
 for (location in Nano_3gene){
@@ -360,6 +351,54 @@ visIgraph(fusion_partners_graph)
 
 
 #number of previously identified fusions in Huh7
+####Format Identified Fusions in Huh7####
+# seperate fusion genes into partner genes
+filtered_Huh7_JAFFAL_partner_genes <- filter(filtered_Huh7_JAFFAL, spanning.reads>=2) %>% separate(fusion.genes, into = c("gene1", "gene2"), sep = ":", remove = FALSE)
+
+# Search for the gene IDs based on gene name
+gene_info <- rbind(getBM(
+  attributes = c('ensembl_gene_id', 'external_gene_name', "external_synonym", "chromosome_name"),
+  filters = 'external_gene_name',
+  values = unique(c(filtered_Huh7_JAFFAL_partner_genes$gene1, filtered_Huh7_JAFFAL_partner_genes$gene2)),
+  mart = ensembl
+), getBM(
+  attributes = c('ensembl_gene_id', 'external_gene_name', "external_synonym", "chromosome_name"),
+  filters = "external_synonym",
+  values = unique(c(filtered_Huh7_JAFFAL_partner_genes$gene1, filtered_Huh7_JAFFAL_partner_genes$gene2)),
+  mart = ensembl
+),getBM(
+  attributes = c('ensembl_gene_id', 'external_gene_name', "external_synonym", "chromosome_name"),
+  filters = 'external_gene_name',
+  values = unique(c(filtered_Huh7_JAFFAL_partner_genes$gene1, filtered_Huh7_JAFFAL_partner_genes$gene2)),
+  mart = ensemblv113
+), getBM(
+  attributes = c('ensembl_gene_id', 'external_gene_name', "external_synonym", "chromosome_name"),
+  filters = "external_synonym",
+  values = unique(c(filtered_Huh7_JAFFAL_partner_genes$gene1, filtered_Huh7_JAFFAL_partner_genes$gene2)),
+  mart = ensemblv113
+))%>% filter(!str_detect(chromosome_name, "PATCH|HSCHR")) %>% pivot_longer(cols = external_gene_name:external_synonym, names_to = "name_type", values_to = "gene_names")%>%
+  unique()
+
+# assign geneIDs to gene name
+filtered_Huh7_JAFFAL_partner_genes$chrom1 <- str_remove(filtered_Huh7_JAFFAL_partner_genes$chrom1, "chr")
+filtered_Huh7_JAFFAL_partner_genes$chrom2 <- str_remove(filtered_Huh7_JAFFAL_partner_genes$chrom2, "chr")
+filtered_Huh7_JAFFAL_with_GeneID <- left_join(filtered_Huh7_JAFFAL_partner_genes, gene_info, join_by("gene1"=="gene_names", "chrom1"=="chromosome_name")) %>%
+  left_join(gene_info, join_by("gene2"=="gene_names", "chrom2"=="chromosome_name")) 
+
+filtered_Huh7_JAFFAL_with_GeneID <- filtered_Huh7_JAFFAL_with_GeneID %>%
+  mutate(ensembl_gene_id.x = ifelse(ensembl_gene_id.x == "" | is.na(ensembl_gene_id.x), gene1, ensembl_gene_id.x))%>%
+  mutate(ensembl_gene_id.y = ifelse(ensembl_gene_id.y == "" | is.na(ensembl_gene_id.y), gene2, ensembl_gene_id.y))
+
+#check all values in ensembl gene ID columns ARE ACTUALLY GENE IDs!
+filtered_Huh7_JAFFAL_with_GeneID %>% filter(!str_detect(ensembl_gene_id.x, "ENSG"))
+filtered_Huh7_JAFFAL_with_GeneID %>% filter(!str_detect(ensembl_gene_id.y, "ENSG"))
+
+
+
+
+
+
+
 
 #number of previously identified fusions in HCC
 #number of previously identified fusions in Liver Cancer
@@ -368,13 +407,6 @@ visIgraph(fusion_partners_graph)
 ##Mitelman database
 
 #number of reads for each library vs read lengths for each library vs read depth for each library (table)
-
-
-
-
-
-
-
 
 
 

@@ -1,0 +1,59 @@
+---
+title: "collate_known_fusions_Huh7-to-Cancer"
+author: "Ryley Dorney"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Download TCGA known fusions from public database
+```{bash}
+wget http://bioinfo-sysu.com/fpia/public/static/data/FPIA_tcga_fusion.csv -O /home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/FPIA_tcga_fusion.csv
+```
+
+Import files containing known fusions that have come from different databases into R
+```{r}
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(readxl)
+#Import data of known fusions
+ChimerDB_KB <- read_excel('/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/ChimerKB4.xlsx') %>% mutate(database = "ChimerDBv4", subdatabase ="ChimerKB" ) %>%
+  mutate(order = case_when(Disease %in% c("hepatocellular carcinoma" , "hepatocellular carcinoma (HCC)" , "neoplasm, LCC(HCC)") ~ "HCC",
+                           TRUE ~ "All_Fusions"))
+ChimerDB_Pub4 <- read_excel('/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/ChimerPub4.xlsx') %>% mutate(database = "ChimerDBv4", subdatabase ="ChimerPub" ) %>%
+  mutate(order = case_when(Disease %in% c("hepatocellular carcinoma","hepatocellular carcinoma (HCC)","neoplasm, LCC(HCC)") ~ "HCC",
+                           Disease == "intrahepatic cholangiocarcinoma (ICC)" ~ "Liver",
+                           TRUE ~ "All_Fusions"))
+ChimerDB_Seq4 <- read_excel('/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/ChimerSeq4.xlsx') %>% mutate(database = "ChimerDBv4", subdatabase ="ChimerSeq" ) %>%
+  mutate(order = case_when(Cancertype == "LIHC" ~ "HCC",
+                           Cancertype == "CHOL" ~ "Liver",
+                           TRUE ~ "All_Fusions"))
+
+DepMap_OmicsFusionFiltered <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/DepMap_OmicsFusionFiltered.csv")  %>% mutate(database = "DepMap", subdatabase ="OmicsFiltered")
+DepMap_Model_metadata <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Model.csv")
+DepMap <- left_join(DepMap_OmicsFusionFiltered, DepMap_Model_metadata)
+DepMap_Liver <- DepMap %>% filter(OncotreeLineage == "Liver") %>% mutate(order = "Liver")
+DepMap_HCC <- DepMap %>% filter(OncotreeCode =="HCC") %>% mutate(order = "HCC")
+DepMap_Huh7 <- DepMap %>% filter(CellLineName == "HuH-7" | StrippedCellLineName == "Huh7") %>% mutate(order = "Huh7")
+
+mitelmandb_genefusion <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/mitelmandb_genefusion.csv") %>% mutate(database = "Mitelman", subdatabase = "DataBrowser") %>%
+  mutate(order = case_when(`Tumor Location`== "Liver" ~ "Liver",
+                           TRUE ~ "All_Fusions"))
+FPIA_tcga_fusion <- read_csv("/home/ryleyd/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/FPIA_tcga_fusion.csv") %>% mutate(database = "FPIA", subdatabase ="TCGA")%>%
+  mutate(order = case_when(cancer == "LIHC" ~ "HCC",
+                           TRUE ~ "All_Fusions"))
+Cosmic_Liver_Fusion<- read_tsv("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Cosmic_Liver_Fusion_Tsv_v102_GRCh38.tsv") %>% mutate(database = "Cosmic", subdatabase ="Liver_v102")
+Cosmic_Fusion<- read_tsv("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Cosmic_Fusion_v102_GRCh38.tsv")%>% mutate(database = "Cosmic") %>% left_join(Cosmic_Liver_Fusion[c(1:3,8,9,17,18, 27, 28)]) %>% mutate(order = case_when(subdatabase =="Liver_v102" ~ "Liver", 
+                          TRUE ~ "All_Fusions" )) #Cosmic has no fusions in HCC
+```
+Create a dataframe which contains fusions from all dataframes, and gather the gene IDs
+```{r}
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Known_Fusions/make_Known_Fusions_dataframe.R")
+```
+
+
