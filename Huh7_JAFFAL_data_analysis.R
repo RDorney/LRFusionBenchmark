@@ -1,4 +1,4 @@
-####Huh7 Sequencing Library JAFFAL results analysis####
+####Huh7 Sequencing Library JAFFAL results formatting####
 #Author: Ryley Dorney
 #Date Dec 30-25
 #####
@@ -8,6 +8,7 @@ library(tidyr)
 library(ggplot2)
 library(ggbreak)
 library(ComplexUpset)
+library(biomaRt)
 #Load JAFFAL data into R
 LR_sequencing <- read.csv("/bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_gv43/JAFFAL_Huh7_genCode43/jaffa_results.csv", header = TRUE) %>% 
   mutate(library_type = case_when(grepl('FBA22517|FBA22660|dRNA', sample)  ~ "direct_RNA",
@@ -30,25 +31,30 @@ Illumina_sequencing_IllHB2<- read.csv("/bioinformatics/ryley/Library_Benchmark/J
 Illumina_sequencing <- rbind(Illumina_sequencing_IllHB1, Illumina_sequencing_IllHB2)
 
 
-Huh7_JAFFAL <- rbind(Illumina_sequencing, LR_sequencing)#import tri-gene results
+Huh7_JAFFAL <- rbind(Illumina_sequencing, LR_sequencing)
 
 ##load tri gene results
-LRTri_gene <- list.files(path="/bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_gv43/", pattern = "3gene_summary", full.names = TRUE, recursive = TRUE) 
-Nano_3gene <- Tri_gene[grepl("Nanopore_Huh7_fusionschopper_filtered", Tri_gene)]
+LRTri_gene <- list.files(path="/bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_gv43", pattern = "3gene_summary", full.names = TRUE, recursive = TRUE) 
 name <- 0
-for (location in Nano_3gene){
+for (location in LRTri_gene){
   name <- name + 1
-  assign(paste0("file_", name), mutate(read.table(location, header = TRUE), sample = location, library_type = case_when(grepl('FBA22517|FBA22660', sample)  ~ "direct_RNA",
-                                                                                                                        grepl('FAZ', sample)  ~ "PCR_cDNA",
-                                                                                                                        grepl('FBA62655|FBA43334', sample)  ~ "direct_cDNA"),
-                                       RNA_sample = case_when(grepl('FAZ80247|FBA62655|FBA22660', sample)  ~ "Huh7_p9_8_7_B1",
-                                                              grepl('FBA22517|FAZ83542|FBA43334', sample) ~ "Huh7_p9_8_7_B2"),
-                                       Platform = "ONT"))
+  assign(paste0("file_", name), mutate(read.table(location, header = TRUE), 
+                                       sample = location, 
+                                       library_type = case_when(grepl('FBA22517|FBA22660|dRNA', sample)  ~ "direct_RNA",
+                                                                grepl('FBA43334|FBA62655|dcDNA', sample)  ~ "direct_cDNA",
+                                                                grepl('FAZ|PCR|FLNCcDNA', sample)  ~ "PCR_cDNA"),
+                                       RNA_sample = case_when(grepl('FBA62655|FBA22660|FAZ80247|B1', sample)  ~ "B1", 
+                                                              grepl('FBA22517|FAZ83542|FBA43334|B2', sample) ~ "B2"), 
+                                       Platform = case_when(grepl('Nano', sample)  ~ "ONT",
+                                                            grepl('PB', sample)  ~ "PacBio"),
+                                       Cell_Line = "Huh7"))
 } 
 
-Nanopore_sequencing_3Gene <- rbind(file_1, file_2, file_3, file_4, file_5, file_6)
+LRsequencing_3Gene <- rbind(file_1, file_2, 
+                            file_3, file_4, 
+                            file_5, file_6,
+                            file_7, file_8)
 
-Huh7_JAFFAL_3Gene <- rbind(PacBio_Sequencing_3Gene, Nanopore_sequencing_3Gene)
 
 Huh7_JAFFAL$library_type <- factor(
   Huh7_JAFFAL$library_type,
