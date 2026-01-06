@@ -69,6 +69,10 @@ Huh7_JAFFAL$RNA_sample <- factor(
   levels = c("Huh7_p9_8_7_B2", "Huh7_p9_8_7_B1"))
 
 #filtering out rRNA fusions and low read support fusions
+olc <- LR_sequencing %>%
+  filter(!grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y)", chrom1) | #non-genomic chromosomes and scaffolds
+           !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y)", chrom2))
+
 obvious_library_chimeras <- Huh7_JAFFAL %>%
   filter(!grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y)", chrom1) | #non-genomic chromosomes and scaffolds
            !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y)", chrom2)) 

@@ -46,7 +46,7 @@ Using JAFFAL to find fusions in the long read Huh-7 Data, and JAFFA_direct to fi
 bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/RunJAFFAL.sh
 bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Run_JAFFAdirect.sh
 ```
-
+Use Genion, FusionSeeker & LongGF to find more fusions??
 ```{bash}
 
 ```
