@@ -10,6 +10,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(readr)
 library(dplyr)
 library(ggplot2)
 library(ggh4x)
@@ -171,9 +172,8 @@ Repeat pre-processing steps for Genion
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/PreprocessGenion.R") 
 ```
 Repeat pre-processing steps for CTAT-LR 
-```{bash}
-head /bioinformatics/siyuan/ctat_lr_results/simulated/*/*abridge*tsv 
-myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/JAFFAL/", pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
+```{r}
+source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/PreprocessCTAT-LR.R")
 ```
 
 
@@ -230,12 +230,22 @@ Annot_FusionSeeker_Sim <- Annot_FusionSeeker_Sim %>%
     grepl("90", Source) ~ "90%",
     grepl("85", Source) ~ "85%" # Keep original value if no match
   ))
-
+Annot_CTATLR_Sim <- Annot_CTATLR_Sim %>%
+  mutate(depth = case_when(
+    grepl("100GB", Source) ~ "100GB",
+    grepl("10GB", Source) ~ "10GB",
+    grepl("1GB", Source) ~ "1GB"  # Keep original value if no match
+  ), Sequence_Identity = case_when(
+    grepl("95", Source) ~ "95%",
+    grepl("90", Source) ~ "90%",
+    grepl("85", Source) ~ "85%" # Keep original value if no match
+  ))
 Annot_LongGF_Sim$Algorithm <- "LongGF"
 Annot_JAFFAL_Sim$Algorithm <- "JAFFAL"
 Annot_JAFFAL_3Gene_Sim$Algorithm <- "JAFFAL"
 Annot_Genion_Sim$Algorithm <- "Genion"
 Annot_FusionSeeker_Sim$Algorithm <- "FusionSeeker"
+Annot_CTATLR_Sim$Algorithm <- "CTAT-LR-Fusion"
 ```
 Label fusions as False Calls, Partial Real and True Recall in Genion and JAFFAL datasets
 ```{r}
