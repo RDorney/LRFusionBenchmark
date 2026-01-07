@@ -36,13 +36,6 @@ CTATLR_SIM_a2 <- CTATLR_SIM_a1 %>%
   unite("fusion.gene.id" , c(Gene1_ensembl_ID, Gene2_ensembl_ID), sep = ":", remove= FALSE)
    
 Annot_CTATLR_Sim <- CTATLR_SIM_a2 %>% left_join(Simulated_Fusion_Info_2, by = 'fusion.gene.id') 
-#Assign label to false fusions or partially recalled fusions
-Annot_CTATLR_Sim <- Annot_CTATLR_Sim
-  mutate(fusionType = case_when(
-    is.na(fusionType) ~ paste0("chromosomal_misalignment:",first(na.omit(fusionType))),  # Only update NA values
-    .default = fusionType  # Keep existing values unchanged
-  ))%>% ungroup()%>%
-  replace_with_na(replace = list(fusionType = "chromosomal_misalignment:NA"))
 
 Annot_CTATLR_Sim$fusionType <- mapply(function(g1, g2, Gen1, Gen2, current_type, chr1, chr2) {
   # Check if the current fusionType is empty
@@ -70,9 +63,9 @@ Annot_CTATLR_Sim$fusionType <- mapply(function(g1, g2, Gen1, Gen2, current_type,
     }
   }
   return(current_type)
-}, Annot_CTATLR_Sim$Gene1_alternative_ID.x, Annot_CTATLR_Sim$Gene2_alternative_ID.x,
-Annot_CTATLR_Sim$Gene1, Annot_CTATLR_Sim$Gene2, 
-Annot_CTATLR_Sim$fusionType, Annot_CTATLR_Sim$Chrom1, Annot_CTATLR_Sim$Chrom2)
+}, Annot_CTATLR_Sim$Gene1_ensembl_ID, Annot_CTATLR_Sim$Gene2_ensembl_ID,
+Annot_CTATLR_Sim$LeftGene, Annot_CTATLR_Sim$RightGene, 
+Annot_CTATLR_Sim$fusionType, Annot_CTATLR_Sim$chrom1, Annot_CTATLR_Sim$chrom2)
 
-setdiff(unique(c(ogFusionSeeker$ID, ogFusionSeeker$Source)), unique(c(Annot_CTATLR_Sim$ID, Annot_CTATLR_Sim$Source)))
+setdiff(unique(c(ogCTATLR$ID, ogCTATLR$Source)), unique(c(Annot_CTATLR_Sim$ID, Annot_CTATLR_Sim$Source)))
 
