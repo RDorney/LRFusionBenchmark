@@ -4,7 +4,7 @@ set -e
 # Configuration
 ############################
 #set directory names
-REF_DIR=/home/ryley/reference_files
+REF_DIR=/bioinformatics/ryley/Gencode44/reference_v44
 DATA_DIR=/bioinformatics/ryley/Algorithm_Benchmark
 cd ${DATA_DIR}
 
@@ -23,11 +23,12 @@ min_read_supp=2
 ############################
 # Reference files
 ############################
-reference_genome=${REF_DIR}/GRCh38.p13.genome.fa 
-input_gtf=${REF_DIR}/gencode.v43.chr_patch_hapl_scaff.annotation.gtf
-annotation=${REF_DIR}/Homo_sapiens.GRCh38.109.chr_patch_hapl_scaff.gtf
-genomicSuperDups=${REF_DIR}/genion_reference_files/genomicSuperDups.txt
-cdna_self=${REF_DIR}/genion_reference_files/cdna.GRCh38.selfalign.tsv
+reference_genome=${REF_DIR}/GRCh38.primary_assembly.genome.fa.gz 
+input_gtf=${REF_DIR}/gencode.v44.annotation.gtf
+#specific to Genion
+genomicSuperDups=${REF_DIR}/genomicSuperDups.txt
+annotation=${REF_DIR}/Homo_sapiens.GRCh38.110.chr.gtf
+cdna_self=${REF_DIR}cdna.GRCh38v110.selfalign.tsv
 
 ############################
 # Tool runners
@@ -66,7 +67,7 @@ run_fusionseeker () {
 run_jaffal () {
   /opt/JAFFA-version-2.3/tools/bin/bpipe run -n "$threads" \
     -p genome=hg38 \
-    -p annotation=genCode43 \
+    -p annotation=genCode44 \
     -p exclude=NoSupport \
     -p jaffa_output="jaffal_results_${output_prefix}" \
     /opt/JAFFA-version-2.3/JAFFAL.groovy \
