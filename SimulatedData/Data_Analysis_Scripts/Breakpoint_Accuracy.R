@@ -2,8 +2,17 @@
 # Assess the Acuracy of predicted breakpoints #
 ###############################################
 Simulated_BreakPoint <- Simulated_Fusion_Info_3 
-JAFFAL_BreakPoint <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>% distinct() %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), spanning.reads >= 2) 
+
+################################################################
+# Testing the code on one fusion gene to check expected output #
+################################################################
+JAFFAL_BreakPoint <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>%
+  distinct() %>%
+  filter(control == "positive",
+         !grepl("false|wrong|truncated|reverse|chromosomal_misalignment",
+                fusionType), spanning.reads >= 2) 
 #chrom1, base1, chrom2, base2
+
 SB <- subset(Simulated_BreakPoint, fusion.gene.id == "ENSG00000009830:ENSG00000087258")
 J <- subset(JAFFAL_BreakPoint, fusion.gene.id == "ENSG00000009830:ENSG00000087258" & depth == "100GB" & Sequence_Identity == "95%")
 gene_names <- str_split("ENSG00000009830:ENSG00000087258", pattern = ":")[[1]] 
@@ -20,13 +29,46 @@ list(c(gene1, gene2) , c(SB1, SB2) , c(JB1, JB2))
 
 nrow(distinct(Breakpoint_Accuracy))
 
-Genion_BreakPoint <- Annot_Genion_Sim[c(1:27, 37, 44:46)] %>% distinct() %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) %>% separate(V8, into = c("Gene1", "Gene2", "Gene3"), sep = ";") %>% 
-  separate(Gene1, into = c("Gene1.exonStarts", "Gene1.exonEnds"), sep = "-") %>% separate(Gene2, into = c("Gene2.exonStarts", "Gene2.exonEnds"), sep = "-") %>% separate(Gene3, into = c("Gene3.exonStarts", "Gene3.exonEnds"), sep = "-") %>%
-  separate(Gene1.exonStarts, into=c("C1", "Gene1.exonStarts")) %>% separate(Gene2.exonStarts, into=c("C2", "Gene2.exonStarts")) %>% separate(Gene3.exonStarts, into=c("C3", "Gene3.exonStarts")) %>% mutate_at(vars(C1, C2, C3), funs(paste0("chr", .)))# "C1",  "Gene1.2", "C2", "Gene2.1", "Gene2.2", "C3", "Gene3.1" 
+Genion_BreakPoint <- Annot_Genion_Sim[c(1:27, 37, 44:46)] %>% 
+  distinct() %>% 
+  filter(control == "positive", 
+         !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) %>%
+  separate(V8, into = c("Gene1", "Gene2", "Gene3"), sep = ";") %>% 
+  separate(Gene1, into = c("Gene1.exonStarts", "Gene1.exonEnds"), sep = "-") %>% 
+  separate(Gene2, into = c("Gene2.exonStarts", "Gene2.exonEnds"), sep = "-") %>% 
+  separate(Gene3, into = c("Gene3.exonStarts", "Gene3.exonEnds"), sep = "-") %>%
+  separate(Gene1.exonStarts, into=c("C1", "Gene1.exonStarts")) %>% 
+  separate(Gene2.exonStarts, into=c("C2", "Gene2.exonStarts")) %>% 
+  separate(Gene3.exonStarts, into=c("C3", "Gene3.exonStarts")) %>% 
+  mutate_at(vars(C1, C2, C3), funs(paste0("chr", .)))# "C1",  "Gene1.2", "C2", "Gene2.1", "Gene2.2", "C3", "Gene3.1" 
 
-JAFFAL_BreakPoint <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>% distinct() %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), spanning.reads >= 2) #chrom1, base1, chrom2, base2
-LongGF_BreakPoint <- Annot_LongGF_Sim[c(1:24, 34, 41:43)] %>% distinct() %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) #chrom1, breakpoint1, chrom2, base2
-FusionSeeker_BreakPoint <- Annot_FusionSeeker_Sim[c(1:28, 38, 45:47)] %>% distinct() %>% filter(control == "positive", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType)) #Chrom1, Breakpoint1, Chrom2, Base2
+#################################
+# Assess Breakpoint differences #
+#################################
+
+JAFFAL_BreakPoint <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>%
+  distinct() %>%
+  filter(control == "positive",
+         !grepl("false|wrong|truncated|reverse|chromosomal_misalignment",
+                fusionType), spanning.reads >= 2) #chrom1, base1, chrom2, base2
+
+LongGF_BreakPoint <- Annot_LongGF_Sim[c(1:24, 34, 41:43)] %>%
+  distinct() %>%
+  filter(control == "positive", 
+         !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", 
+                fusionType)) #chrom1, breakpoint1, chrom2, base2
+
+FusionSeeker_BreakPoint <- Annot_FusionSeeker_Sim[c(1:28, 38, 45:47)] %>%
+  distinct() %>%
+  filter(control == "positive", 
+         !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", 
+                fusionType)) #Chrom1, Breakpoint1, Chrom2, Base2
+
+CTAT_LR_Breakpoint <- Annot_CTATLR_Sim[c(1:25, 43, 50:52)]%>%
+  distinct() %>%
+  filter(control == "positive",
+         !grepl("false|wrong|truncated|reverse|chromosomal_misalignment",
+                fusionType), spanning.reads >= 2) #chrom1, base1, chrom2, base2
 
 JAFFAL_BreakPoint_Accuracy <-  data.frame(matrix(nrow = 0, ncol = length(c('seq_depth', 'seq_id', 'gene_fusion', 'JB1', 'JB2'))))
 colnames(JAFFAL_BreakPoint_Accuracy) <- c('seq_depth', 'seq_id', 'gene_fusion','JB1', 'JB2')
