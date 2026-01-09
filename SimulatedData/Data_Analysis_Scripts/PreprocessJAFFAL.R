@@ -1,4 +1,4 @@
-myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/JAFFAL/", pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
+myfiles<-list.files(path = "/bioinformatics/ryley/Gencode44/Algorithms/JAFFAL", pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
 JAFFAL_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = ",") %>%
     mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", sample), "positive", "negative"))
@@ -11,19 +11,18 @@ ogJAFFAL <-  do.call(rbind, lapply(myfiles, function(filename) {
 getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name", "hgnc_symbol"),
       filters = "external_gene_name",
       values = "CBY3",
-      mart = ensemblv109) 
+      mart = ensemblv110) 
 getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name", "hgnc_symbol"),
       filters = "external_gene_name",
       values = "CBY3",
-      mart = ensembljul2023) 
+      mart = ensemblv109) 
 # fusion.genes = fusion gene name : 
-Gene_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                       filters = "external_gene_name",
-                       values = unique(c(JAFFAL_Sim$Gene1, JAFFAL_Sim$Gene2)),
-                       mart = ensembljul2023) , getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                                                      filters = "external_gene_name",
-                                                      values = unique(c(JAFFAL_Sim$Gene1, JAFFAL_Sim$Gene2)),
-                                                      mart = ensemblv109)) %>% unique()
+Gene_Name<-getBM(attributes = c("external_gene_name", 
+                                "ensembl_gene_id", 
+                                "chromosome_name"),
+                 filters = "external_gene_name",
+                 values = unique(c(JAFFAL_Sim$Gene1, JAFFAL_Sim$Gene2)),
+                 mart = ensemblv110) %>% unique()
 Gene_Name$chromosome_name <- paste0("chr", Gene_Name$chromosome_name)
 
 JAFFAL_Sim_ensembl <- left_join(JAFFAL_Sim, Gene_Name, by= c('Gene1'='external_gene_name')) %>% 
@@ -89,19 +88,15 @@ Annot_JAFFAL_Sim$fusionType <- mapply(function(g1, g2, Gen1, Gen2, current_type,
 }, Annot_JAFFAL_Sim$ensembl_gene1, Annot_JAFFAL_Sim$ensembl_gene2, Annot_JAFFAL_Sim$Gene1, Annot_JAFFAL_Sim$Gene2, Annot_JAFFAL_Sim$fusionType, Annot_JAFFAL_Sim$chrom1, Annot_JAFFAL_Sim$chrom2)
 
 #JAFFAL_3Gene_Sim 
-myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/JAFFAL/", pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE)
+myfiles<-list.files(path = "/bioinformatics/ryley/Gencode44/Algorithms/JAFFAL", pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE)
 JAFFAL_3Gene_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = "\t") %>%
     mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
 })) %>% separate(Fusion, into = c("Gene1", "Gene2", "Gene3"), sep = ":", remove = FALSE)
-Gene_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+Gene_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
                        filters = "external_gene_name",
                        values = unique(c(JAFFAL_3Gene_Sim$Gene1, JAFFAL_3Gene_Sim$Gene2, JAFFAL_3Gene_Sim$Gene3)),
-                       mart = ensembljul2023) ,
-                 getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                       filters = "external_gene_name",
-                       values = unique(c(JAFFAL_3Gene_Sim$Gene1, JAFFAL_3Gene_Sim$Gene2, JAFFAL_3Gene_Sim$Gene3)),
-                       mart = ensemblv109))
+                       mart = ensemblv110)
 
 JAFFAL_3Gene_Sim <- left_join(JAFFAL_3Gene_Sim, Gene_Name, by= c('Gene1'='external_gene_name')) %>%
   left_join(Gene_Name, by= c('Gene2'='external_gene_name')) %>%

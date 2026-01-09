@@ -1,5 +1,5 @@
 ---
-title: "simulated_data_analysis"
+title: "Simulated_Data_Analysis"
 author: "Ryley Dorney"
 date: "`r Sys.Date()`"
 output:
@@ -31,10 +31,9 @@ The 'biomarRt' package is used to help identify corresponding gene ids to gene n
 
 ```{r}
 ensembl_current <-  useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl")
-#the below ensembl versions best correlate to gencode version 44
+#the below ensembl versions best correlate to gencode version 43 and 44
 ensemblv109 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 109)
 ensemblv110 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 110)
-ensembljul2023 <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://jul2023.archive.ensembl.org")
 ```
 
 Here we read in the data table containing information about the fusions generated with Fusim to be spiked in. We then modify the table to have separate columns for partner genes. We then use biomart to find the corresponding gene names/ids. This helps find potential alternative names/ids for gene fusions recalled.
@@ -44,12 +43,14 @@ source("~/LongReadFusionCallerBenchmark/SimulatedData/simulated_data_info/Simula
 
 LongGF suggests to extract the called fusions form the output log using 'grep SumGF'.
 ```{bash}
+LONGGF_DIR=/bioinformatics/ryley/Gencode44/Algorithms/LongGF
+RPROJ_DIR=/home/ryleyd/LongReadFusionCallerBenchmark
 pwd
 #change to folder contain LongGF fusion calls
-cd /bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/LongGF/
+cd ${LONGGF_DIR}
 #grep the results from the calls and create a tsv in the home directory
-grep SumGF LongGF*Spiked*.log > /home/ryleyd/LongReadFusionCallerBenchmark/LongGF_Spiked.tsv
-grep SumGF *Adapter_Simulated*.log > /home/ryleyd/LongReadFusionCallerBenchmark/LongGF_Negative_Control.tsv
+grep SumGF LongGF*Spiked*.log > ${RPROJ_DIR}/LongGF_Spiked.tsv
+grep SumGF *Adapter_Simulated*.log > ${RPROJ_DIR}/LongGF_Negative_Control.tsv
 #return to home directory
 cd ~
 ```
@@ -80,11 +81,7 @@ BiomaRt is then used to find the corresponding gene names/ids for fusions called
 Gene_Name<-rbind (getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
                              filters = "external_gene_name",
                              values = unique(c(LongGF_Sim$Gene1, LongGF_Sim$Gene2)),
-                             mart = ensembljul2023),
-                  getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                             filters = "external_gene_name",
-                             values = unique(c(LongGF_Sim$Gene1, LongGF_Sim$Gene2)),
-                             mart = ensemblv109)) %>% unique()
+                             mart = ensemblv110)) %>% unique()
 Gene_Name$chromosome_name <- paste0("chr", Gene_Name$chromosome_name)
 
   

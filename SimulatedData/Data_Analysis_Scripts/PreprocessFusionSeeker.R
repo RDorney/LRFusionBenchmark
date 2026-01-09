@@ -1,6 +1,6 @@
 #FusionSeeker_Sim # Gene1 = Gene ID 1, Gene2 = Gene ID 2
 
-myfiles<-list.files(path = "/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/FusionSeeker", pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
+myfiles<-list.files(path = "/bioinformatics/ryley/Gencode44/Algorithms/FusionSeeker", pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
 FusionSeeker_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE) %>%
     mutate(Source = basename(dirname(filename)))%>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
@@ -20,30 +20,14 @@ PAR_Y_problem1 <- FusionSeeker_Sim %>%
 PAR_Y_problem2 <-  FusionSeeker_Sim %>%
   filter(grepl("PAR_Y", Gene2_vID, ignore.case = TRUE)) %>% select(Gene2)
 
-Gene_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+Gene_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
                        filters = "ensembl_gene_id",
                        values = (unique(c(PAR_Y_problem1$Gene1, PAR_Y_problem2$Gene2))),
-                       mart = ensembljul2023),
-                 getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                       filters = "ensembl_gene_id",
-                       values = (unique(c(PAR_Y_problem1$Gene1, PAR_Y_problem2$Gene2))),
-                       mart = ensemblv109),
-                 getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                       filters = "ensembl_gene_id",
-                       values = (unique(c(PAR_Y_problem1$Gene1, PAR_Y_problem2$Gene2))),
-                       mart = ensemblv110)) %>% unique()
-External_Gene_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "chromosome_name"),
+                       mart = ensemblv110) %>% unique()
+External_Gene_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version",  "chromosome_name"),
                                 filters = c("chromosome_name", "external_gene_name"),
                                 values = list("Y", unique(Gene_Name$external_gene_name)),
-                                mart = ensembljul2023), 
-                          getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "chromosome_name"),
-                                filters = c("chromosome_name", "external_gene_name"),
-                                values = list("Y", unique(Gene_Name$external_gene_name)),
-                                mart = ensemblv109), 
-                          getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version",  "chromosome_name"),
-                                filters = c("chromosome_name", "external_gene_name"),
-                                values = list("Y", unique(Gene_Name$external_gene_name)),
-                                mart = ensemblv110)) %>% unique()
+                                mart = ensemblv110) %>% unique()
 External_Gene_Name$chromosome_name <- paste0("chr", External_Gene_Name$chromosome_name)
 FusionSeeker_Sim_ensembl <- FusionSeeker_Sim %>% left_join(select((right_join(Gene_Name, External_Gene_Name, by= "external_gene_name")), c(ensembl_gene_id.x, ensembl_gene_id.y, ensembl_gene_id_version, chromosome_name)), by= c('Gene1'='ensembl_gene_id.x', 'Chrom1'='chromosome_name')) %>% 
   mutate(Gene1_alternative_ID= coalesce(ensembl_gene_id.y, Gene1), Gene1_alternative_vID= coalesce(ensembl_gene_id_version, Gene1_vID)) %>%
