@@ -19,6 +19,8 @@ library(biomaRt)
 library(UpSetR)
 library(ComplexUpset)
 library(patchwork)
+library(ggforce)
+library(ggpubr)
 ```
 
 ```{r}
@@ -29,7 +31,7 @@ The 'biomarRt' package is used to help identify corresponding gene ids to gene n
 
 ```{r}
 ensembl_current <-  useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl")
-#the below ensembl versions best correlate to gencode version 43
+#the below ensembl versions best correlate to gencode version 44
 ensemblv109 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 109)
 ensemblv110 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 110)
 ensembljul2023 <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://jul2023.archive.ensembl.org")
@@ -330,8 +332,5 @@ source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/Brea
 
 Make Figure 4 & Supplementary Figure 13
 ```{r}
-library(ggforce)
-library(ggpubr)
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Breakpoint_stat_plots.R")
 ```
-

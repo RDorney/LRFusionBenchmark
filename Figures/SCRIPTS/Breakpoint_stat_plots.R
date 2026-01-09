@@ -38,8 +38,10 @@ kruskal.test(Log1p_values ~ Algorithm, data = breakpoint1_stat_data)
 kruskal.test(Log1p_values ~ Algorithm, data = breakpoint2_stat_data)
 
 #Figure 4 ####
-Figure4 <- ggplot(filter(absolute_Breakpoint_Accuracy, seq_depth == "100GB", seq_id == "95%"), 
-                  aes(y = Distance_from_Simulated_Breakpoint, x = Breakpoint_number, color = Algorithm)) +
+Figure4 <- ggplot(filter(absolute_Breakpoint_Accuracy, 
+                         seq_depth == "100GB", seq_id == "95%"), 
+                  aes(y = Distance_from_Simulated_Breakpoint, x = Breakpoint_number, 
+                      color = Algorithm)) +
   geom_boxplot(outlier.shape = NA) +
   geom_sina(maxwidth = 0.8)+
   theme_minimal()+
@@ -51,15 +53,24 @@ Figure4 <- ggplot(filter(absolute_Breakpoint_Accuracy, seq_depth == "100GB", seq
         axis.text = element_text(size = 8),
         axis.title = element_text(size = 12))+ 
   scale_y_continuous(transform = scales::pseudo_log_trans(base=10) , 
-                     breaks = c(-1000000000, -100000000, -10000000, -1000000, -100000, -10000, -1000, -100, 
+                     breaks = c(-1000000000, -100000000, 
+                                -10000000, -1000000, -100000, 
+                                -10000, -1000, -100, 
                                 -10, -1, 
                                 0, 
-                                1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000),
-                     labels = c(expression(-10^9), expression(-10^8), expression(-10^7), expression(-10^6), expression(-10^5), expression(-10^4), expression(-10^3), expression(-10^2),
+                                1, 10, 
+                                100, 1000, 10000, 
+                                100000, 1000000, 10000000, 
+                                100000000, 1000000000),
+                     labels = c(expression(-10^9), expression(-10^8), 
+                                expression(-10^7), expression(-10^6), expression(-10^5), 
+                                expression(-10^4), expression(-10^3), expression(-10^2),
                                 expression(-10^1), "-1", 
                                 "0", 
                                 "1", expression(10^1), 
-                                expression(10^2), expression(10^3), expression(10^4), expression(10^5), expression(10^6), expression(10^7), expression(10^8), expression(10^9))
+                                expression(10^2), expression(10^3), expression(10^4), 
+                                expression(10^5), expression(10^6), expression(10^7), 
+                                expression(10^8), expression(10^9))
   )+   
   scale_x_discrete(labels = c("Breakpoint 1", "Breakpoint 2"))+
   labs(y = "Distance from simulated breakpoint",
@@ -76,10 +87,15 @@ supp_Figure13 <-ggplot(filter(absolute_Breakpoint_Accuracy), aes(y = Distance_fr
   geom_sina()+
   theme_minimal()+ 
   scale_y_continuous(transform = scales::pseudo_log_trans(base=10) , 
-                     breaks = c(-1000000000, -100000000, -10000000, -1000000, -100000, -10000, -1000, -100, 
+                     breaks = c(-1000000000, -100000000, 
+                                -10000000, -1000000, -100000, 
+                                -10000, -1000, -100, 
                                 -10, -1, 
                                 0, 
-                                1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000),
+                                1, 10, 
+                                100, 1000, 10000, 
+                                100000, 1000000, 10000000, 
+                                100000000, 1000000000),
                      labels = c(expression(-10^9), expression(-10^8), expression(-10^7), expression(-10^6), expression(-10^5), expression(-10^4), expression(-10^3), expression(-10^2),
                                 expression(-10^1), "-1", 
                                 "0", 
