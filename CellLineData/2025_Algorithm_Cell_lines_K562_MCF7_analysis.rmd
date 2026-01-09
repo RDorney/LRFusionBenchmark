@@ -17,75 +17,33 @@ library("viridis")
 library(UpSetR)
 library(ComplexUpset)
 library(biomaRt)
+library(readxl)
 ```
 
 The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa of our curated list of known gene fusions. 
 ```{r}
 Cell_line_data_directory <- "~/LongReadFusionCallerBenchmark/CellLineData/"
 known_fusions <- read.table(paste0(Cell_line_data_directory, "real_gene_fusions.tsv"), header=TRUE)
-ensembljul2023 <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://jul2023.archive.ensembl.org")
-ensemblv109 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 109)
 ensemblv110 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 110)
-gene_info_1 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+gene_info <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
                              filters = "external_gene_name",
-                             values = unique(known_fusions$Gene1),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                             filters = "external_gene_name",
-                             values = unique(known_fusions$Gene1),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                             filters = "external_gene_name",
-                             values = unique(known_fusions$Gene1),
-                             mart = ensemblv110)) %>% unique()
-gene_info_2 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                             filters = "external_gene_name",
-                             values = unique(known_fusions$Gene2),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                             filters = "external_gene_name",
-                             values = unique(known_fusions$Gene2),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                             filters = "external_gene_name",
-                             values = unique(known_fusions$Gene2),
-                             mart = ensemblv110)) %>% unique()
-known_fusions_biomart <- left_join(known_fusions,  gene_info_1, by  = c("Gene1"="external_gene_name")) %>% left_join(gene_info_2, by  = c("Gene2"="external_gene_name"))
+                             values = unique(c(known_fusions$Gene1, known_fusions$Gene2)),
+                             mart = ensemblv110) %>% unique()
+known_fusions_biomart <- left_join(known_fusions,  gene_info, by  = c("Gene1"="external_gene_name")) %>% left_join(gene_info, by  = c("Gene2"="external_gene_name"))
 write_csv(known_fusions_biomart, file="~/known_fusions_biomart.csv")
 ```
 
 Read in the manually curated excel spreadsheet of known gene fusions and use biomart to check gene IDs
 ```{r}
-library(readxl)
 known_fusions_manual_annotation <- read_excel("known_fusions_manual_annotation.xlsx")
 
-gene_info_1 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+gene_info <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
                              filters = "ensembl_gene_id",
-                             values = unique(known_fusions_manual_annotation$ensembl_gene_id.x),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                             filters = "ensembl_gene_id",
-                             values = unique(known_fusions_manual_annotation$ensembl_gene_id.x),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                             filters = "ensembl_gene_id",
-                             values = unique(known_fusions_manual_annotation$ensembl_gene_id.x),
-                             mart = ensemblv110)) %>% unique()
+                             values = unique(c(known_fusions_manual_annotation$ensembl_gene_id.x, known_fusions_manual_annotation$ensembl_gene_id.y)),
+                             mart = ensemblv110) %>% unique()
 
-gene_info_2 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                             filters = "ensembl_gene_id",
-                             values = unique(known_fusions_manual_annotation$ensembl_gene_id.y),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                             filters = "ensembl_gene_id",
-                             values = unique(known_fusions_manual_annotation$ensembl_gene_id.y),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                             filters = "ensembl_gene_id",
-                             values = unique(known_fusions_manual_annotation$ensembl_gene_id.y),
-                             mart = ensemblv110)) %>% unique()
 #make annotation of list of known fusions
-known_fusions_biomart <-known_fusions_manual_annotation %>% left_join(gene_info_1, by  = c("ensembl_gene_id.x"="ensembl_gene_id")) %>% left_join(gene_info_2, by  = c("ensembl_gene_id.y"="ensembl_gene_id")) %>% select(c(1:6, 9, 12:13))%>% 
+known_fusions_biomart <-known_fusions_manual_annotation %>% left_join(gene_info, by  = c("ensembl_gene_id.x"="ensembl_gene_id")) %>% left_join(gene_info_2, by  = c("ensembl_gene_id.y"="ensembl_gene_id")) %>% select(c(1:6, 9, 12:13))%>% 
   mutate(external_gene_name.y = coalesce(external_gene_name.y, Gene2), external_gene_name.x = coalesce(external_gene_name.x, Gene1), fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y) , fusionGene = paste0(external_gene_name.x, "::", external_gene_name.y))
 
 ```
@@ -97,40 +55,7 @@ LongGF_CellLine_Directory="/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files
 cd ${LongGF_CellLine_Directory}
 
 #find the longgf fusion genes and output to a tsv file
-grep SumGF LongGF.run.SGNex_K562_directcDNA_replicate_combined.log > LongGF.SGNex_K562_directcDNA_replicate_combined.tsv
-grep SumGF LongGF.run.SGNex_K562_directcDNA_1G_rasusa.log > LongGF.SGNex_K562_directcDNA_1G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_K562_directcDNA_2.5G_rasusa.log > LongGF.SGNex_K562_directcDNA_2.5G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_K562_directcDNA_5G_rasusa.log > LongGF.SGNex_K562_directcDNA_5G_rasusa.tsv
-
-grep SumGF LongGF.run.SGNex_K562_cDNA_combined.log > LongGF.SGNex_K562_cDNA_combined.tsv
-grep SumGF LongGF.run.SGNex_K562_PCRcDNA_combined_10G_rasusa.log > LongGF.SGNex_K562_PCRcDNA_combined_10G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_K562_PCRcDNA_combined_1G_rasusa.log > LongGF.SGNex_K562_PCRcDNA_combined_1G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_K562_PCRcDNA_combined_2.5G_rasusa.log > LongGF.SGNex_K562_PCRcDNA_combined_2.5G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_K562_PCRcDNA_combined_5G_rasusa.log > LongGF.SGNex_K562_PCRcDNA_combined_5G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_K562_PCRcDNA_combined_7.5G_rasusa.log > LongGF.SGNex_K562_PCRcDNA_combined_7.5G_rasusa.tsv
-
-grep SumGF LongGF.run.SGNex_K562_directRNA_replicate_combined.log > LongGF.SGNex_K562_directRNA_replicate_combined.tsv
-grep SumGF LongGF.run.SGNex_K562_directRNA_1G_rasusa.log > LongGF.SGNex_K562_directRNA_1G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_K562_directRNA_2.5G_rasusa.log > LongGF.SGNex_K562_directRNA_2.5G_rasusa.tsv
-
-grep SumGF LongGF.run.SGNex_MCF7_directcDNA_concatenated.log > LongGF.SGNex_MCF7_directcDNA_concatenated.tsv
-grep SumGF LongGF.run.SGNex_MCF7_directcDNA_1G_rasusa.log > LongGF.SGNex_MCF7_directcDNA_1G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_MCF7_directcDNA_2.5G_rasusa.log > LongGF.SGNex_MCF7_directcDNA_2.5G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_MCF7_directcDNA_5G_rasusa.log > LongGF.SGNex_MCF7_directcDNA_5G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_MCF7_directcDNA_7.5G_rasusa.log > LongGF.SGNex_MCF7_directcDNA_7.5G_rasusa.tsv
-
-grep SumGF LongGF.run.SGNex_MCF7_cDNA_combined.log > LongGF.SGNex_MCF7_cDNA_combined.tsv
-grep SumGF LongGF.run.SGNex_MCF7_PCRcDNA_combined_1G_rasusa.log > LongGF.SGNex_MCF7_PCRcDNA_combined_1G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_MCF7_PCRcDNA_combined_10G_rasusa.log > LongGF.SGNex_MCF7_PCRcDNA_combined_10G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_MCF7_PCRcDNA_combined_5G_rasusa.log > LongGF.SGNex_MCF7_PCRcDNA_combined_5G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_MCF7_PCRcDNA_combined_2.5G_rasusa.log > LongGF.SGNex_MCF7_PCRcDNA_combined_2.5G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_MCF7_PCRcDNA_combined_7.5G_rasusa.log > LongGF.SGNex_MCF7_PCRcDNA_combined_7.5G_rasusa.tsv
-
-grep SumGF LongGF.run.SGNex_MCF7_directRNA_replicate_concatenated.log > LongGF.SGNex_MCF7_directRNA_replicate_concatenated.tsv
-grep SumGF LongGF.run.SGNex_MCF7_directRNA_1G_rasusa.log > LongGF.SGNex_MCF7_directRNA_1G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_MCF7_directRNA_5G_rasusa.log > LongGF.SGNex_MCF7_directRNA_5G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_MCF7_directRNA_2.5G_rasusa.log > LongGF.SGNex_MCF7_directRNA_2.5G_rasusa.tsv
-grep SumGF LongGF.run.SGNex_MCF7_directRNA_7.5G_rasusa.log > LongGF.SGNex_MCF7_directRNA_7.5G_rasusa.tsv
+bash ~/LongReadFusionCallerBenchmark/CellLineData/LongGF_extractSumGF.sh
 ```
 
 Read in Data from fusioncalling output from different algorithms [LongGF, Genion, JAFFAL, FusionSeeker] performed on sequencing data from K562 and MCF7
@@ -357,128 +282,38 @@ Seperate fusion gene partners, make new dataframe (F)usion (SEP)arated Algorithm
 ```{r}
 fsep_LGcl <- filtered_LongGF_cell_lines %>% separate(V2, into = c('Gene1', 'Gene2'), sep = ":", remove = FALSE)
 #assign ensembl gene IDs to fusion gene partners
-gene_info_1 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+gene_info <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
                               filters = "external_gene_name",
-                             values = unique(fsep_LGcl$Gene1),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_LGcl$Gene1),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_LGcl$Gene1),
-                             mart = ensemblv110))
-gene_info_2 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_LGcl$Gene2),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_LGcl$Gene2),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_LGcl$Gene2),
-                             mart = ensemblv110))
-fsep_LGcl <-left_join(fsep_LGcl, gene_info_1, by  = c("Gene1"="external_gene_name")) %>% left_join(gene_info_2, by  = c("Gene2"="external_gene_name"))%>% 
+                             values = unique(c(fsep_LGcl$Gene1, fsep_LGcl$Gene2)),
+                             mart = ensemblv110)
+fsep_LGcl <-left_join(fsep_LGcl, gene_info, by  = c("Gene1"="external_gene_name")) %>% left_join(gene_info, by  = c("Gene2"="external_gene_name"))%>% 
   mutate(ensembl_gene_id.y = coalesce(ensembl_gene_id.y, Gene2), ensembl_gene_id.x = coalesce(ensembl_gene_id.x, Gene1)) %>%  unique()
 
 #repeat above for fusionseeker
 fsep_FScl <- filtered_FusionSeeker_cell_lines 
-gene_info_1 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version"),
+gene_info <- getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version"),
                               filters = "ensembl_gene_id_version",
-                             values = unique(fsep_FScl$Gene1),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version"),
-                              filters = "ensembl_gene_id_version",
-                             values = unique(fsep_FScl$Gene1),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version"),
-                              filters = "ensembl_gene_id_version",
-                             values = unique(fsep_FScl$Gene1),
-                             mart = ensemblv110))
-gene_info_2 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version"),
-                              filters = "ensembl_gene_id_version",
-                             values = unique(fsep_FScl$Gene2),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version"),
-                              filters = "ensembl_gene_id_version",
-                             values = unique(fsep_FScl$Gene2),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version"),
-                              filters = "ensembl_gene_id_version",
-                             values = unique(fsep_FScl$Gene2),
-                             mart = ensemblv110))
-fsep_FScl <- left_join(fsep_FScl, gene_info_1, by  = c("Gene1"="ensembl_gene_id_version")) %>% left_join(gene_info_2, by  = c("Gene2"="ensembl_gene_id_version")) %>%  unique() 
+                             values = unique(c(fsep_FScl$Gene1, fsep_FScl$Gene2)),
+                             mart = ensemblv110)
+fsep_FScl <- left_join(fsep_FScl, gene_info, by  = c("Gene1"="ensembl_gene_id_version")) %>% left_join(gene_info, by  = c("Gene2"="ensembl_gene_id_version")) %>%  unique() 
 
 #repeat above for JAFFAL
 fsep_JAFFALcl <- JAFFAL_cell_lines %>% separate(fusion.genes, into = c('Gene1', 'Gene2'), sep = ":", remove = FALSE)
-gene_info_1 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+gene_info <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
                               filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl$Gene1),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl$Gene1),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl$Gene1),
-                             mart = ensemblv110))
-gene_info_2 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl$Gene2),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl$Gene2),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl$Gene2),
-                             mart = ensemblv110))
-fsep_JAFFALcl <-left_join(fsep_JAFFALcl, gene_info_1, by  = c("Gene1"="external_gene_name")) %>% left_join(gene_info_2, by  = c("Gene2"="external_gene_name"))%>% 
+                             values = unique(c(fsep_JAFFALcl$Gene1, fsep_JAFFALcl$Gene2)),
+                             mart = ensemblv110)
+fsep_JAFFALcl <-left_join(fsep_JAFFALcl, gene_info, by = c("Gene1"="external_gene_name")) %>% 
+  left_join(gene_info, by  = c("Gene2"="external_gene_name"))%>% 
   mutate(ensembl_gene_id.y = coalesce(ensembl_gene_id.y, Gene2), ensembl_gene_id.x = coalesce(ensembl_gene_id.x, Gene1)) %>%  unique() 
 
 fsep_JAFFALcl_3Gene <- JAFFAL_cell_lines_3Gene %>% filter(Reads > 1) %>% separate(Fusion, into = c('Gene1', 'Gene2', 'Gene3'), sep = ":", remove = FALSE)
-gene_info_1 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+gene_info <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
                               filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl_3Gene$Gene1),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl_3Gene$Gene1),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl_3Gene$Gene1),
-                             mart = ensemblv110))
-gene_info_2 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl_3Gene$Gene2),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl_3Gene$Gene2),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl_3Gene$Gene2),
-                             mart = ensemblv110))
-gene_info_3 <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl_3Gene$Gene3),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl_3Gene$Gene3),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "external_gene_name",
-                             values = unique(fsep_JAFFALcl_3Gene$Gene3),
-                             mart = ensemblv110))
-fsep_JAFFALcl_3Gene <-left_join(fsep_JAFFALcl_3Gene, gene_info_1, by  = c("Gene1"="external_gene_name")) %>% left_join(gene_info_2, by  = c("Gene2"="external_gene_name"))%>% left_join(gene_info_3, by  = c("Gene3"="external_gene_name"))%>%
+                             values = unique(c(fsep_JAFFALcl_3Gene$Gene1, fsep_JAFFALcl_3Gene$Gene2, fsep_JAFFALcl_3Gene$Gene3)),
+                             mart = ensemblv110)
+
+fsep_JAFFALcl_3Gene <-left_join(fsep_JAFFALcl_3Gene, gene_info, by  = c("Gene1"="external_gene_name")) %>% left_join(gene_info, by  = c("Gene2"="external_gene_name"))%>% left_join(gene_info, by  = c("Gene3"="external_gene_name"))%>%
   mutate(ensembl_gene_id = coalesce(ensembl_gene_id, Gene3), ensembl_gene_id.y = coalesce(ensembl_gene_id.y, Gene2), ensembl_gene_id.x = coalesce(ensembl_gene_id.x, Gene1)) %>%  unique() 
 
 #separate fusion genes for Genion
@@ -712,18 +547,10 @@ MCF7_total_directcDNA <- Overlap_CellData_total %>% filter(Cell_Lines == "MCF7",
 shared_fusions_cell <- Overlap_CellData_algorithms %>% filter(Sequencing_Depth == "Total")%>%
   separate(fusionGeneID, into = c("Gene1","Gene2","Gene3"), sep="::", remove = FALSE)
 
-gene_names_shared_fusions_cell <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+gene_names_shared_fusions_cell <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
                               filters = "ensembl_gene_id",
                              values = unique(c(shared_fusions_cell$Gene1, shared_fusions_cell$Gene2, shared_fusions_cell$Gene3)),
-                             mart = ensembljul2023),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "ensembl_gene_id",
-                             values = unique(c(shared_fusions_cell$Gene1, shared_fusions_cell$Gene2, shared_fusions_cell$Gene3)),
-                             mart = ensemblv109),
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                              filters = "ensembl_gene_id",
-                             values = unique(c(shared_fusions_cell$Gene1, shared_fusions_cell$Gene2, shared_fusions_cell$Gene3)),
-                             mart = ensemblv110)) %>% unique()
+                             mart = ensemblv110) %>% unique()
 
 shared_fusions_cell <- left_join(shared_fusions_cell, gene_names_shared_fusions_cell, by = c("Gene1" = "ensembl_gene_id")) %>%
   left_join(gene_names_shared_fusions_cell, by = c("Gene2" = "ensembl_gene_id")) %>%

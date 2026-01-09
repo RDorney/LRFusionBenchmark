@@ -23,6 +23,13 @@ library(ggforce)
 library(ggpubr)
 ```
 
+Identify resource usage of each tool :)
+```{bash}
+bash ~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/ResourceUsage.sh
+```
+
+
+
 ```{r}
 Analysis_output_folder <- "/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/"
 ```
