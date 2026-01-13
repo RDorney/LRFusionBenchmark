@@ -1,4 +1,4 @@
-how is this? #!/bin/bash
+#!/bin/bash
 set -Eeuo pipefail
 trap 'echo "[ERROR] Script failed at line $LINENO"; exit 1' ERR
 shopt -s nullglob
@@ -32,7 +32,7 @@ METRICS_FILE="${LOGDIR}/benchmark_metrics.csv"
 # Initialize CSV if not exists
 init_metrics_csv() {
   if [[ ! -f "$METRICS_FILE" ]]; then
-    echo "sample_name,tool,dataset_type,input_size_bytes,input_size_gb,size_category,quality,spiked,wall_time_seconds,user_time_seconds,system_time_seconds,cpu_time_seconds,peak_ram_kb,peak_ram_gb,output_size_bytes,output_size_mb,exit_status,timestamp" > "$METRICS_FILE"
+    echo "sample_name,tool,dataset_type,input_size_bytes,input_size_gb,size_category,quality,spiked,wall_time_seconds,user_time_seconds,system_time_seconds,cpu_time_seconds,peak_ram_kb,peak_ram_gb,output_size_bytes,output_size_mb,exit_status,timestamp,threads" > "$METRICS_FILE"
     echo "Benchmark CSV initialized: $METRICS_FILE"
   fi
 }
@@ -117,7 +117,7 @@ write_metrics() {
   local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
   # Write to CSV
-  echo "${sample_name},${tool},${dataset_type},${input_size_bytes},${input_size_gb},${size_category},${quality},${spiked},${time_metrics},${output_size_bytes},${output_size_mb},${timestamp}" >> "$METRICS_FILE"
+  echo "${sample_name},${tool},${dataset_type},${input_size_bytes},${input_size_gb},${size_category},${quality},${spiked},${time_metrics},${output_size_bytes},${output_size_mb},${timestamp},${threading}" >> "$METRICS_FILE"
 }
 
 # Initialize CSV
@@ -193,10 +193,30 @@ run_jaffal () {
     unset JAVA_HOME
 
 }
+
+Bench_Tool() {
+  local tool="$1"
+  local output_prefix="$2"
+  local input_fastq="$3"
+  local threads="$4"
+
+  local stdout_log="${LOGDIR}/${tool}.${output_prefix}.out.log"
+  local stderr_log="${LOGDIR}/${tool}.${output_prefix}.err.log"
+  local time_log="${LOGDIR}/${tool}.${output_prefix}.time.log"
+  local output_dir="${tool}_results_${output_prefix}"
+
+  echo "[$(date)] Running ${tool} on ${output_prefix}"
+
+  /usr/bin/time -v -o "$time_log" run_${tool}
+
+  echo "[$(date)] Recording metrics for ${tool} on ${output_prefix}"
+  write_metrics "$output_prefix" "$tool" "$input_fastq" "$output_dir" "$time_log" "$threads"
+}
+
 #############################
 #Loop through tools and files
 #############################
-for depth in 1 10 ; do #
+for depth in 1 10 100; do #
   for seqid in 85 90 95; do #
     for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*Q${seqid}.fastq.gz; do
         
@@ -210,22 +230,11 @@ for depth in 1 10 ; do #
         [[ -f "$input_nbam" ]] || { echo "Missing name-sorted BAM: $input_nbam"; continue; }
         
         
-        (for tool in longgf genion fusionseeker jaffal; do
+          for tool in genion fusionseeker jaffal longgf; do
 
-          stdout_log="${LOGDIR}/${tool}.${output_prefix}.out.log"
-          stderr_log="${LOGDIR}/${tool}.${output_prefix}.err.log"
-          time_log="${LOGDIR}/${tool}.${output_prefix}.time.log"
-          output_dir="${tool}_results_${output_prefix}"
-
-          echo "[$(date)] Running ${tool} on ${output_prefix}"
-  
-          /usr/bin/time -v -o "$time_log" run_${tool}
-
-          # Write benchmark metrics to CSV
-          echo "[$(date)] Recording metrics for ${tool} on ${output_prefix}"
-          write_metrics "$output_prefix" "$tool" "$input_fastq" "$output_dir" "$time_log" "$threads"
-      done ) &
-      
+            Bench_Tool "$tool" "$output_prefix" "$input_fastq" "$threads" &
+          
+          done
       wait
       
     done
