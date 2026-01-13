@@ -1,5 +1,9 @@
-#!/bin/bash
-set -e
+how is this? #!/bin/bash
+set -Eeuo pipefail
+trap 'echo "[ERROR] Script failed at line $LINENO"; exit 1' ERR
+shopt -s nullglob
+source "$(conda info --base)/etc/profile.d/conda.sh"
+
 ############################
 # Configuration
 ############################
@@ -69,11 +73,12 @@ write_metrics() {
   local input_file="$3"
   local output_dir="$4"
   local time_file="$5"
+  local threading="$6"
 
   # Get input file size
   local input_size_bytes=$(stat -c%s "$input_file" 2>/dev/null || echo 0)
   local input_size_gb=$(echo "scale=2; $input_size_bytes / 1073741824" | bc)
-
+  
   # Determine size category, quality, and spiked status
   local size_category="NA"
   local quality="NA"
@@ -126,19 +131,23 @@ input_gtf=${REF_DIR}/gencode.v44.annotation.gtf
 #specific to Genion
 genomicSuperDups=${REF_DIR}/genomicSuperDups.txt
 annotation=${REF_DIR}/Homo_sapiens.GRCh38.110.chr.gtf
-cdna_self=${REF_DIR}cdna.GRCh38v110.selfalign.tsv
+cdna_self=${REF_DIR}/cdna.GRCh38v110.selfalign.tsv
 
 ############################
 # Tool runners
 ############################
 run_longgf () {
-  LongGF "$input_nbam" "$input_gtf" 100 50 200 \
+    conda run -n longgf \
+    LongGF "$input_nbam" "$input_gtf" \
+    100 50 200 \
     min_sup_read:"$min_read_supp" \
     > "$stdout_log" 2> "$stderr_log"
+
 }
 
 run_genion () {
-  genion -i "$input_fastq" \
+  conda run -n genion-env \
+  /opt/genion/genion -i "$input_fastq" \
          -d "$genomicSuperDups" \
          --gtf "$annotation" \
          -g "$input_paf" \
@@ -147,10 +156,13 @@ run_genion () {
          --non-coding \
          --min-support "$min_read_supp" \
          > "$stdout_log" 2> "$stderr_log"
+
 }
 
 run_fusionseeker () {
-  fusionseeker \
+  conda run -n FusionSeeker \
+  
+  /opt/FusionSeeker/fusionseeker \
     --bam "$input_bam" \
     -o "fusionseeker_${output_prefix}" \
     --datatype nanopore \
@@ -160,9 +172,14 @@ run_fusionseeker () {
     --thread "$threads" \
     --minsupp "$min_read_supp" \
     > "$stdout_log" 2> "$stderr_log"
+
 }
 
 run_jaffal () {
+    local OLD_PATH="$PATH"
+    export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+    export PATH="$JAVA_HOME/bin:$PATH"
+
   /opt/JAFFA-version-2.3/tools/bin/bpipe run -n "$threads" \
     -p genome=hg38 \
     -p annotation=genCode44 \
@@ -171,6 +188,10 @@ run_jaffal () {
     /opt/JAFFA-version-2.3/JAFFAL.groovy \
     "$input_fastq" \
     > "$stdout_log" 2> "$stderr_log"
+    
+    export PATH="$OLD_PATH"
+    unset JAVA_HOME
+
 }
 #############################
 #Loop through tools and files
@@ -178,13 +199,18 @@ run_jaffal () {
 for depth in 1 10 ; do #
   for seqid in 85 90 95; do #
     for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*Q${seqid}.fastq.gz; do
-      
+        
         output_prefix=$(basename "${input_fastq}" .fastq.gz)
         input_bam="${ALIGNED_DIR}/bam_files/${output_prefix}.sorted.bam"
         input_nbam="${ALIGNED_DIR}/bam_files/${output_prefix}.name.sorted.bam"
         input_paf="${ALIGNED_DIR}/paf_files/${output_prefix}.paf"
-      
-        for tool in longgf genion fusionseeker jaffal; do
+        
+        [[ -f "$input_bam" ]] || { echo "Missing BAM: $input_bam"; continue; }
+        [[ -f "$input_paf" ]] || { echo "Missing PAF: $input_paf"; continue; }
+        [[ -f "$input_nbam" ]] || { echo "Missing name-sorted BAM: $input_nbam"; continue; }
+        
+        
+        (for tool in longgf genion fusionseeker jaffal; do
 
           stdout_log="${LOGDIR}/${tool}.${output_prefix}.out.log"
           stderr_log="${LOGDIR}/${tool}.${output_prefix}.err.log"
@@ -193,23 +219,67 @@ for depth in 1 10 ; do #
 
           echo "[$(date)] Running ${tool} on ${output_prefix}"
   
-          /usr/bin/time -v -o "$time_log" bash -c "run_${tool}" &
+          /usr/bin/time -v -o "$time_log" run_${tool}
+
+          # Write benchmark metrics to CSV
+          echo "[$(date)] Recording metrics for ${tool} on ${output_prefix}"
+          write_metrics "$output_prefix" "$tool" "$input_fastq" "$output_dir" "$time_log" "$threads"
+      done ) &
+      
+      wait
+      
+    done
+  done
+done
+
+echo ""
+echo "============================================"
+echo "Single-Threading Benchmark complete!"
+echo "Metrics saved to: $METRICS_FILE"
+echo "Continue on to threads = 10 Benchmark "
+echo "============================================"
+
+############################
+# Multi-threading enabled  #
+############################
+#thread
+threads=10
+for depth in 1 10 ; do #
+  for seqid in 85 90 95; do #
+    for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*Q${seqid}.fastq.gz; do
+      
+        output_prefix=$(basename "${input_fastq}" .fastq.gz)
+        input_bam="${ALIGNED_DIR}/bam_files/${output_prefix}.sorted.bam"
+        input_nbam="${ALIGNED_DIR}/bam_files/${output_prefix}.name.sorted.bam"
+        input_paf="${ALIGNED_DIR}/paf_files/${output_prefix}.paf"
+        
+        [[ -f "$input_bam" ]] || { echo "Missing BAM: $input_bam"; continue; }
+        [[ -f "$input_paf" ]] || { echo "Missing PAF: $input_paf"; continue; }
+        [[ -f "$input_nbam" ]] || { echo "Missing name-sorted BAM: $input_nbam"; continue; }
+
+      
+        for tool in fusionseeker jaffal; do
+
+          stdout_log="${LOGDIR}/${tool}.${output_prefix}.out.log"
+          stderr_log="${LOGDIR}/${tool}.${output_prefix}.err.log"
+          time_log="${LOGDIR}/${tool}.${output_prefix}.time.log"
+          output_dir="${tool}_results_${output_prefix}"
+
+          echo "[$(date)] Running ${tool} on ${output_prefix}"
   
-          PID=$!
-  
-          wait "$PID"
+          /usr/bin/time -v -o "$time_log" run_${tool} 
+
           
           # Write benchmark metrics to CSV
           echo "[$(date)] Recording metrics for ${tool} on ${output_prefix}"
-          write_metrics "$output_prefix" "$tool" "$input_fastq" "$output_dir" "$time_log"
+          write_metrics "$output_prefix" "$tool" "$input_fastq" "$output_dir" "$time_log" "$threads"
       done
     done
   done
 done
 
-
 echo ""
 echo "============================================"
-echo "Benchmark complete!"
+echo "Multi-threading Benchmark complete!"
 echo "Metrics saved to: $METRICS_FILE"
 echo "============================================"
