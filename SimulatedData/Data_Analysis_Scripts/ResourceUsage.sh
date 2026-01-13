@@ -32,7 +32,7 @@ METRICS_FILE="${LOGDIR}/benchmark_metrics.csv"
 # Initialize CSV if not exists
 init_metrics_csv() {
   if [[ ! -f "$METRICS_FILE" ]]; then
-    echo "sample_name,tool,dataset_type,input_size_bytes,input_size_gb,size_category,quality,spiked,wall_time_seconds,user_time_seconds,system_time_seconds,cpu_time_seconds,peak_ram_kb,peak_ram_gb,output_size_bytes,output_size_mb,exit_status,timestamp,threads" > "$METRICS_FILE"
+    echo "sample_name,tool,dataset_type,input_size_bytes,input_size_gb,size_category,quality,spiked,wall_time_seconds,user_time_seconds,system_time_seconds,cpu_time_seconds,peak_ram_kb,peak_ram_gb,exit_status,output_size_bytes,output_size_mb,timestamp,threads" > "$METRICS_FILE"
     echo "Benchmark CSV initialized: $METRICS_FILE"
   fi
 }
