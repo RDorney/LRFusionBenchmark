@@ -1,4 +1,5 @@
-myfiles<- list.files(path = "/bioinformatics/ryley/Gencode44/Algorithms/Genion", pattern = "*_genion$", full.names = TRUE)
+GENION_DIR<-"/bioinformatics/ryley/Gencode44/Algorithms/Genion"
+myfiles<- list.files(path = GENION_DIR , pattern = "*_genion$", full.names = TRUE)
 Genion_Sim<- do.call(rbind, lapply(myfiles, function(filename) {
   if (file.info(filename)$size > 0) {
     read.table(filename) %>%

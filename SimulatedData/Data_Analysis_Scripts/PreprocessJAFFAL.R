@@ -1,4 +1,5 @@
-myfiles<-list.files(path = "/bioinformatics/ryley/Gencode44/Algorithms/JAFFAL", pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
+JAF_DIR<-"/bioinformatics/ryley/Gencode44/Algorithms/JAFFAL" 
+myfiles<-list.files(path = JAF_DIR, pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
 JAFFAL_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = ",") %>%
     mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", sample), "positive", "negative"))
@@ -88,7 +89,7 @@ Annot_JAFFAL_Sim$fusionType <- mapply(function(g1, g2, Gen1, Gen2, current_type,
 }, Annot_JAFFAL_Sim$ensembl_gene1, Annot_JAFFAL_Sim$ensembl_gene2, Annot_JAFFAL_Sim$Gene1, Annot_JAFFAL_Sim$Gene2, Annot_JAFFAL_Sim$fusionType, Annot_JAFFAL_Sim$chrom1, Annot_JAFFAL_Sim$chrom2)
 
 #JAFFAL_3Gene_Sim 
-myfiles<-list.files(path = "/bioinformatics/ryley/Gencode44/Algorithms/JAFFAL", pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE)
+myfiles<-list.files(path = JAF_DIR, pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE)
 JAFFAL_3Gene_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = "\t") %>%
     mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))

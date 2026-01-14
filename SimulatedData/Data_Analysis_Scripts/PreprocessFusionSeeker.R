@@ -1,6 +1,6 @@
 #FusionSeeker_Sim # Gene1 = Gene ID 1, Gene2 = Gene ID 2
-
-myfiles<-list.files(path = "/bioinformatics/ryley/Gencode44/Algorithms/FusionSeeker", pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
+FS_DIR<-"/bioinformatics/ryley/Gencode44/Algorithms/FusionSeeker"
+myfiles<-list.files(path = FS_DIR, pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
 FusionSeeker_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE) %>%
     mutate(Source = basename(dirname(filename)))%>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))

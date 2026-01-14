@@ -10,10 +10,9 @@ source "$(conda info --base)/etc/profile.d/conda.sh"
 #set directory names
 REF_DIR=/bioinformatics/ryley/Gencode44/reference_v44
 DATA_DIR=/bioinformatics/ryley/Algorithm_Benchmark
-cd ${DATA_DIR}
 
 INPUT_DIR=${DATA_DIR}/Adapter_porechop_trimmed
-ALIGNED_DIR=${INPUT_DIR}/alignment_and_samtools
+ALIGNED_DIR=/bioinformatics/ryley/Gencode44/Sim_Data/aligned_files
 
 LOGDIR="resource_logs"
 mkdir -p "$LOGDIR"
@@ -230,7 +229,7 @@ for depth in 1 10 100; do #
         [[ -f "$input_nbam" ]] || { echo "Missing name-sorted BAM: $input_nbam"; continue; }
         
         
-          for tool in genion fusionseeker jaffal longgf; do
+          for tool in jaffal genion fusionseeker longgf; do
 
             Bench_Tool "$tool" "$output_prefix" "$input_fastq" "$threads" &
           
@@ -267,7 +266,7 @@ for depth in 1 10 ; do #
         [[ -f "$input_nbam" ]] || { echo "Missing name-sorted BAM: $input_nbam"; continue; }
 
       
-        for tool in fusionseeker jaffal; do
+        for tool in jaffal fusionseeker; do
 
           stdout_log="${LOGDIR}/${tool}.${output_prefix}.out.log"
           stderr_log="${LOGDIR}/${tool}.${output_prefix}.err.log"

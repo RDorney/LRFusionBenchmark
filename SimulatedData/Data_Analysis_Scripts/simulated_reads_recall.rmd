@@ -34,7 +34,7 @@ bash ~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/Resourc
 Analysis_output_folder <- "/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/"
 ```
 
-The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa. Whilst gencode version 43 was used for this study, we also check the current ensembl version for where ensembl IDs may have been assigned a gene name in the newer version for comparing with literature.
+The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa. 
 
 ```{r}
 ensembl_current <-  useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl")
@@ -52,26 +52,24 @@ LongGF suggests to extract the called fusions form the output log using 'grep Su
 ```{bash}
 LONGGF_DIR=/bioinformatics/ryley/Gencode44/Algorithms/LongGF
 RPROJ_DIR=/home/ryleyd/LongReadFusionCallerBenchmark
-pwd
-#change to folder contain LongGF fusion calls
-cd ${LONGGF_DIR}
+
 #grep the results from the calls and create a tsv in the home directory
-grep SumGF LongGF*Spiked*.log > ${RPROJ_DIR}/LongGF_Spiked.tsv
-grep SumGF *Adapter_Simulated*.log > ${RPROJ_DIR}/LongGF_Negative_Control.tsv
-#return to home directory
-cd ~
+grep SumGF ${LONGGF_DIR}/LongGF*Spiked*.log > ${RPROJ_DIR}/LongGF_Spiked.tsv
+grep SumGF ${LONGGF_DIR}/*Adapter_Simulated*.log > ${RPROJ_DIR}/LongGF_Negative_Control.tsv
+
 ```
 
 Read in the LongGF fusions into RStudio and separate components of output by partner genes. 
 ```{r}
 #LongGF data wrangling
+RPROJ_DIR<-"/home/ryleyd/LongReadFusionCallerBenchmark"
 #list files
-my_files <- list.files(path = "/home/ryleyd/LongReadFusionCallerBenchmark", pattern = "LongGF", full.names=TRUE)
+my_files <- list.files(path = RPROJ_DIR, pattern = "LongGF", full.names=TRUE)
 all_tsv <-lapply(my_files, read.table)
-names <- gsub(".tsv","", list.files(path = "/home/ryleyd/LongReadFusionCallerBenchmark", pattern = "LongGF",full.names = FALSE),fixed = TRUE)
+names <- gsub(".tsv","", list.files(path = RPROJ_DIR, pattern = "LongGF",full.names = FALSE),fixed = TRUE)
 #assign each longGF file
 for(i in names){
-  assign(i, read.table(paste0("/home/ryleyd/LongReadFusionCallerBenchmark/", i, ".tsv")))
+  assign(i, read.table(paste0(RPROJ_DIR,"/", i, ".tsv")))
 }
 #seperate columns to more easily identify information correlating to each gene partner
 LongGF_Sim <- rbind(LongGF_Negative_Control, LongGF_Spiked)%>%
