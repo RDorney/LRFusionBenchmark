@@ -296,13 +296,9 @@ source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Make_SupFig11.R")
 ```
 
 Generate upset plots to see the total number of overlapping fusions between fusion callers
-```{r}
-source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/Overlap_sets.R")
-```
-
 Make Figure 1H: True Calls Overlap
 ```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/TrueCalls_Overlap.R")
+source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/TrueCalls_Overlap.R")
 ```
 Create Compound Figure 1:
 ```{r}

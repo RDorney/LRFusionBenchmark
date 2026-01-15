@@ -19,7 +19,7 @@ Fusion_overlap_matrix <- as.data.frame(lapply(Fusion_overlap_matrix, as.integer)
 
 # Generate the UpSet plot using ComplexUpset
 False_Overlap <- ComplexUpset::upset(
-  Fusion_overlap_matrix, names(Fusion_overlap_matrix)[1:4],  # First four sets
+  Fusion_overlap_matrix, names(Fusion_overlap_matrix)[1:5],  # First four sets
   width_ratio=0.1, sort_intersections_by='degree',
   queries=list(upset_query(intersect=c("JAFFAL", "Genion", "LongGF", "FusionSeeker", "CTAT-LR-Fusion"), color='blue')),
   base_annotations = list(
@@ -43,9 +43,9 @@ Fusion_Simulated_Fusion_overlap_sets <- list(
 Fusion_overlap <- fromList(Fusion_Simulated_Fusion_overlap_sets)
 # Generate an upset plot without specifying intersect, which uses the default behavior
 PartialCall_Overlap <- ComplexUpset::upset(
-  Fusion_overlap, intersect = names(Fusion_Simulated_Fusion_overlap_sets[1:4]),
+  Fusion_overlap, intersect = names(Fusion_Simulated_Fusion_overlap_sets[1:5]),
   width_ratio=0.1, sort_intersections_by='degree',
-  queries=list(upset_query(intersect=c("JAFFAL", "Genion", "LongGF", "FusionSeeker"), color='blue')),
+  queries=list(upset_query(intersect=c("JAFFAL", "Genion", "LongGF", "FusionSeeker", "CTAT-LR-Fusion"), color='blue')),
   base_annotations = list(
     'Intersection size'=(intersection_size(
       text_colors=c(on_background='black', on_bar='black'),

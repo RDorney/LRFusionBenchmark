@@ -50,7 +50,8 @@ calculate_read_filt_statistics <- function(data, min_read_supp) {
               True_Point = sum(CALL_COUNT[stat_category == "TRUE_CALL"], na.rm = TRUE)) %>%
     left_join(Spiked_Counts_wo_SF[c(2:4)])%>%
     # Compute final statistics
-    mutate(FDR = False_Point / (False_Point + True_Point),
+    mutate(minimum_read_support = min_read_supp,
+           FDR = False_Point / (False_Point + True_Point),
            Precision = True_Point / (True_Point + False_Point),
            Recall = True_Point / Spiked_Number,  
            F1 = (2 * (Precision * Recall)) / (Precision + Recall),

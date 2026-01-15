@@ -50,7 +50,7 @@ supp_Figure15C <-ggplot(filter(JAFFAL_scoring, control =="positive", depth == "1
         axis.title = element_text(size = 12))+
   labs(subtitle = "JAFFAL's 'Potential Readthrough' recall classification", x="", y="")+
   ylim(c(0,20))
-supp_Figure15 <- supp_Figure15A/(supp_Figure15B + supp_Figure15C)+
+supp_Figure15 <- Supp_Figure15A/(Supp_Figure15B + supp_Figure15C)+
   plot_annotation(theme = theme(plot.title = element_text(size = 14, face = "bold")),
                   tag_levels = "A")
 supp_Figure15
