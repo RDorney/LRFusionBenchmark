@@ -127,7 +127,7 @@ init_metrics_csv
 reference_genome=${REF_DIR}/GRCh38.primary_assembly.genome.fa.gz 
 input_gtf=${REF_DIR}/gencode.v44.annotation.gtf
 #specific to Genion
-genomicSuperDups=${REF_DIR}/genomicSuperDups.txt
+genomicSuperDups=/home/ryleyd/reference_files/genion_reference_files/genomicSuperDups.txt
 annotation=${REF_DIR}/Homo_sapiens.GRCh38.110.chr.gtf
 cdna_self=${REF_DIR}/cdna.GRCh38v110.selfalign.tsv
 
@@ -209,7 +209,7 @@ Bench_Tool() {
   local output_dir="${tool}_results_${output_prefix}"
 
   echo "[$(date)] Running ${tool} on ${output_prefix}"
-
+  export output_prefix input_fastq input_bam input_nbam input_paf threads
   /usr/bin/time -v -o "$time_log" bash -c "
 $(declare -f run_${tool})
 
