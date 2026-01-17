@@ -210,7 +210,7 @@ Bench_Tool() {
 
   echo "[$(date)] Running ${tool} on ${output_prefix}"
 
-  /usr/bin/time -v -o "$time_log" bash -c run_${tool}
+  /usr/bin/time -v -o "$time_log" bash -c "run_${tool}"
 
   echo "[$(date)] Recording metrics for ${tool} on ${output_prefix}"
   write_metrics "$output_prefix" "$tool" "$input_fastq" "$output_dir" "$time_log" "$threads"
@@ -271,21 +271,8 @@ for depth in 1 10 ; do #
 
       
         for tool in jaffal fusionseeker; do
-
-          stdout_log="${LOGDIR}/${tool}.${output_prefix}.out.log"
-          stderr_log="${LOGDIR}/${tool}.${output_prefix}.err.log"
-          time_log="${LOGDIR}/${tool}.${output_prefix}.time.log"
-          output_dir="${tool}_results_${output_prefix}"
-
-          echo "[$(date)] Running ${tool} on ${output_prefix}"
-  
-          /usr/bin/time -v -o "$time_log" run_${tool}
-
-          
-          # Write benchmark metrics to CSV
-          echo "[$(date)] Recording metrics for ${tool} on ${output_prefix}"
-          write_metrics "$output_prefix" "$tool" "$input_fastq" "$output_dir" "$time_log" "$threads"
-      done
+          Bench_Tool "$tool" "$output_prefix" "$input_fastq" "$threads" &
+        done
     done
   done
 done
