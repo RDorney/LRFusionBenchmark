@@ -192,10 +192,10 @@ run_jaffal () {
 
 }
 
-export run_jaffal
-export run_genion
-export run_longgf
-export run_fusionseeker
+export -f run_jaffal
+export -f run_genion
+export -f run_longgf
+export -f run_fusionseeker
 
 Bench_Tool() {
   local tool="$1"
@@ -210,24 +210,44 @@ Bench_Tool() {
 
   echo "[$(date)] Running ${tool} on ${output_prefix}"
 
-  /usr/bin/time -v -o "$time_log" bash -c "run_${tool}"
+  /usr/bin/time -v -o "$time_log" bash -c "
+$(declare -f run_${tool})
+
+input_fastq='$input_fastq'
+input_bam='$input_bam'
+input_nbam='$input_nbam'
+input_paf='$input_paf'
+stdout_log='$stdout_log'
+stderr_log='$stderr_log'
+threads='$threads'
+min_read_supp='$min_read_supp'
+reference_genome='$reference_genome'
+input_gtf='$input_gtf'
+genomicSuperDups='$genomicSuperDups'
+annotation='$annotation'
+cdna_self='$cdna_self'
+
+run_${tool}
+"
 
   echo "[$(date)] Recording metrics for ${tool} on ${output_prefix}"
   write_metrics "$output_prefix" "$tool" "$input_fastq" "$output_dir" "$time_log" "$threads"
 }
 
+
 #############################
 #Loop through tools and files
 #############################
-for depth in 1 10 100; do #
-  for seqid in 85 90 95; do #
-    for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*Q${seqid}.fastq.gz; do
+for depth in 1G 10G 100G; do #
+  for seqid in Q85 Q90 Q95; do #
+    for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*${seqid}.fastq.gz; do
         
         output_prefix=$(basename "${input_fastq}" .fastq.gz)
         input_bam="${ALIGNED_DIR}/${output_prefix}.sorted.bam"
         input_nbam="${ALIGNED_DIR}/${output_prefix}.name.sorted.bam"
         input_paf="${ALIGNED_DIR}/${output_prefix}.paf"
         
+        [[ -f "$input_fastq" ]] || { echo "Missing fastq: $input_fastq"; continue; }
         [[ -f "$input_bam" ]] || { echo "Missing BAM: $input_bam"; continue; }
         [[ -f "$input_paf" ]] || { echo "Missing PAF: $input_paf"; continue; }
         [[ -f "$input_nbam" ]] || { echo "Missing name-sorted BAM: $input_nbam"; continue; }
@@ -256,7 +276,7 @@ echo "============================================"
 ############################
 #thread
 threads=10
-for depth in 1 10 ; do #
+for depth in 1G 10G ; do #
   for seqid in 85 90 95; do #
     for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*Q${seqid}.fastq.gz; do
       
