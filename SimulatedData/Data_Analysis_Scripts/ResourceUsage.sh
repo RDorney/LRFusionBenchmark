@@ -2,7 +2,6 @@
 set -Eeuo pipefail
 trap 'echo "[ERROR] Script failed at line $LINENO"; exit 1' ERR
 shopt -s nullglob
-source "$(conda info --base)/etc/profile.d/conda.sh"
 
 ############################
 # Configuration
@@ -181,7 +180,7 @@ run_jaffal () {
 
   /opt/JAFFA-version-2.3/tools/bin/bpipe run -n "$threads" \
     -p genome=hg38 \
-    -p annotation=genCode44 \
+    -p annotation=genCode43 \
     -p exclude=NoSupport \
     -p jaffa_output="jaffal_results_${output_prefix}" \
     /opt/JAFFA-version-2.3/JAFFAL.groovy \
@@ -192,6 +191,11 @@ run_jaffal () {
     unset JAVA_HOME
 
 }
+
+export run_jaffal
+export run_genion
+export run_longgf
+export run_fusionseeker
 
 Bench_Tool() {
   local tool="$1"
@@ -206,7 +210,7 @@ Bench_Tool() {
 
   echo "[$(date)] Running ${tool} on ${output_prefix}"
 
-  /usr/bin/time -v -o "$time_log" run_${tool}
+  /usr/bin/time -v -o "$time_log" bash -c run_${tool}
 
   echo "[$(date)] Recording metrics for ${tool} on ${output_prefix}"
   write_metrics "$output_prefix" "$tool" "$input_fastq" "$output_dir" "$time_log" "$threads"
@@ -220,9 +224,9 @@ for depth in 1 10 100; do #
     for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*Q${seqid}.fastq.gz; do
         
         output_prefix=$(basename "${input_fastq}" .fastq.gz)
-        input_bam="${ALIGNED_DIR}/bam_files/${output_prefix}.sorted.bam"
-        input_nbam="${ALIGNED_DIR}/bam_files/${output_prefix}.name.sorted.bam"
-        input_paf="${ALIGNED_DIR}/paf_files/${output_prefix}.paf"
+        input_bam="${ALIGNED_DIR}/${output_prefix}.sorted.bam"
+        input_nbam="${ALIGNED_DIR}/${output_prefix}.name.sorted.bam"
+        input_paf="${ALIGNED_DIR}/${output_prefix}.paf"
         
         [[ -f "$input_bam" ]] || { echo "Missing BAM: $input_bam"; continue; }
         [[ -f "$input_paf" ]] || { echo "Missing PAF: $input_paf"; continue; }
@@ -257,9 +261,9 @@ for depth in 1 10 ; do #
     for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*Q${seqid}.fastq.gz; do
       
         output_prefix=$(basename "${input_fastq}" .fastq.gz)
-        input_bam="${ALIGNED_DIR}/bam_files/${output_prefix}.sorted.bam"
-        input_nbam="${ALIGNED_DIR}/bam_files/${output_prefix}.name.sorted.bam"
-        input_paf="${ALIGNED_DIR}/paf_files/${output_prefix}.paf"
+        input_bam="${ALIGNED_DIR}/${output_prefix}.sorted.bam"
+        input_nbam="${ALIGNED_DIR}/${output_prefix}.name.sorted.bam"
+        input_paf="${ALIGNED_DIR}/${output_prefix}.paf"
         
         [[ -f "$input_bam" ]] || { echo "Missing BAM: $input_bam"; continue; }
         [[ -f "$input_paf" ]] || { echo "Missing PAF: $input_paf"; continue; }
@@ -275,7 +279,7 @@ for depth in 1 10 ; do #
 
           echo "[$(date)] Running ${tool} on ${output_prefix}"
   
-          /usr/bin/time -v -o "$time_log" run_${tool} 
+          /usr/bin/time -v -o "$time_log" run_${tool}
 
           
           # Write benchmark metrics to CSV
