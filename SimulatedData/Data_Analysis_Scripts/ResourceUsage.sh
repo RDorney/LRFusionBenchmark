@@ -159,7 +159,6 @@ run_genion () {
 
 run_fusionseeker () {
   conda run -n FusionSeeker \
-  
   /opt/FusionSeeker/fusionseeker \
     --bam "$input_bam" \
     -o "fusionseeker_${output_prefix}" \
@@ -226,6 +225,7 @@ input_gtf='$input_gtf'
 genomicSuperDups='$genomicSuperDups'
 annotation='$annotation'
 cdna_self='$cdna_self'
+output_prefix='$output_prefix'
 
 run_${tool}
 "
