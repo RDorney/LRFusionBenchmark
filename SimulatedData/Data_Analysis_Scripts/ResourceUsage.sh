@@ -7,14 +7,20 @@ shopt -s nullglob
 # Configuration
 ############################
 #set directory names
+START_DIR=$(pwd)
 REF_DIR=/bioinformatics/ryley/Gencode44/reference_v44
 DATA_DIR=/bioinformatics/ryley/Algorithm_Benchmark
 
 INPUT_DIR=${DATA_DIR}/Adapter_porechop_trimmed
 ALIGNED_DIR=/bioinformatics/ryley/Gencode44/Sim_Data/aligned_files
 
-LOGDIR="resource_logs"
+LOGDIR="${START_DIR}/resource_logs"
 mkdir -p "$LOGDIR"
+
+SINGLE_DIR="${START_DIR}/SINGLE_THREADED"
+mkdir -p "$SINGLE_DIR"
+MULTI_DIR="${START_DIR}/MULTI_THREADED"
+mkdir -p "$MULTI_DIR"
 
 #thread
 threads=1
@@ -125,10 +131,11 @@ init_metrics_csv
 # Reference files
 ############################
 reference_genome=${REF_DIR}/GRCh38.primary_assembly.genome.fa.gz 
-input_gtf=${REF_DIR}/gencode.v44.annotation.gtf
+gencode_gtf=${REF_DIR}/gencode.v44.annotation.gtf
+
 #specific to Genion
 genomicSuperDups=/home/ryleyd/reference_files/genion_reference_files/genomicSuperDups.txt
-annotation=${REF_DIR}/Homo_sapiens.GRCh38.110.chr.gtf
+ensembl_gtf=${REF_DIR}/Homo_sapiens.GRCh38.110.chr.gtf 
 cdna_self=${REF_DIR}/cdna.GRCh38v110.selfalign.tsv
 
 ############################
@@ -136,18 +143,18 @@ cdna_self=${REF_DIR}/cdna.GRCh38v110.selfalign.tsv
 ############################
 run_longgf () {
     conda run -n longgf \
-    LongGF "$input_nbam" "$input_gtf" \
+    LongGF "$input_nbam" "$gencode_gtf" \
     100 50 200 \
     min_sup_read:"$min_read_supp" \
-    > "$stdout_log" 2> "$stderr_log"
-
+    | tee "LongGF.run.on.${output_prefix}.$(date +%Y%m%d_%H%M%S).log" \
+    > "$stdout_log" 2> "$stderr_log" 
 }
 
 run_genion () {
   conda run -n genion-env \
   /opt/genion/genion -i "$input_fastq" \
          -d "$genomicSuperDups" \
-         --gtf "$annotation" \
+         --gtf "$ensembl_gtf" \
          -g "$input_paf" \
          -s "$cdna_self" \
          -o "${output_prefix}_genion" \
@@ -158,18 +165,24 @@ run_genion () {
 }
 
 run_fusionseeker () {
-  conda run -n FusionSeeker \
-  /opt/FusionSeeker/fusionseeker \
+  source "$(conda info --base)/etc/profile.d/conda.sh"
+  conda activate FusionSeeker 
+  local OLD_PATH="$PATH"
+  export PATH="/opt/FusionSeeker:/opt/FusionSeeker/bsalign:$PATH"
+
+  fusionseeker \
     --bam "$input_bam" \
     -o "fusionseeker_${output_prefix}" \
     --datatype nanopore \
     --ref "$reference_genome" \
-    --gtf "$input_gtf" \
+    --gtf "$gencode_gtf" \
     --geneid \
     --thread "$threads" \
     --minsupp "$min_read_supp" \
     > "$stdout_log" 2> "$stderr_log"
-
+    
+    export PATH="$OLD_PATH"
+    conda deactivate
 }
 
 run_jaffal () {
@@ -196,6 +209,9 @@ export -f run_genion
 export -f run_longgf
 export -f run_fusionseeker
 
+############################
+# Set up benchmarker
+############################
 Bench_Tool() {
   local tool="$1"
   local output_prefix="$2"
@@ -210,34 +226,34 @@ Bench_Tool() {
   echo "[$(date)] Running ${tool} on ${output_prefix}"
   export output_prefix input_fastq input_bam input_nbam input_paf threads
   /usr/bin/time -v -o "$time_log" bash -c "
-$(declare -f run_${tool})
-
-input_fastq='$input_fastq'
-input_bam='$input_bam'
-input_nbam='$input_nbam'
-input_paf='$input_paf'
-stdout_log='$stdout_log'
-stderr_log='$stderr_log'
-threads='$threads'
-min_read_supp='$min_read_supp'
-reference_genome='$reference_genome'
-input_gtf='$input_gtf'
-genomicSuperDups='$genomicSuperDups'
-annotation='$annotation'
-cdna_self='$cdna_self'
-output_prefix='$output_prefix'
-
-run_${tool}
-"
+    $(declare -f run_${tool})
+    
+    input_fastq='$input_fastq'
+    input_bam='$input_bam'
+    input_nbam='$input_nbam'
+    input_paf='$input_paf'
+    stdout_log='$stdout_log'
+    stderr_log='$stderr_log'
+    threads='$threads'
+    min_read_supp='$min_read_supp'
+    reference_genome='$reference_genome'
+    gencode_gtf='$gencode_gtf'
+    genomicSuperDups='$genomicSuperDups'
+    ensembl_gtf='$ensembl_gtf'
+    cdna_self='$cdna_self'
+    output_prefix='$output_prefix'
+    
+    run_${tool}
+    "
 
   echo "[$(date)] Recording metrics for ${tool} on ${output_prefix}"
   write_metrics "$output_prefix" "$tool" "$input_fastq" "$output_dir" "$time_log" "$threads"
 }
 
-
 #############################
 #Loop through tools and files
 #############################
+cd "$SINGLE_DIR"
 for depth in 1G 10G 100G; do #
   for seqid in Q85 Q90 Q95; do #
     for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*${seqid}.fastq.gz; do
@@ -274,8 +290,9 @@ echo "============================================"
 ############################
 # Multi-threading enabled  #
 ############################
-#thread
 threads=10
+cd "$MULTI_DIR"
+
 for depth in 1G 10G ; do #
   for seqid in 85 90 95; do #
     for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*Q${seqid}.fastq.gz; do
