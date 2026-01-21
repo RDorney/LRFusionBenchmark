@@ -134,7 +134,7 @@ reference_genome=${REF_DIR}/GRCh38.primary_assembly.genome.fa.gz
 gencode_gtf=${REF_DIR}/gencode.v44.annotation.gtf
 
 #specific to Genion
-genomicSuperDups=/home/ryleyd/reference_files/genion_reference_files/genomicSuperDups.txt
+genomicSuperDups=/bioinformatics/ryley/reference_files/genion_reference_files/genomicSuperDups.txt
 ensembl_gtf=${REF_DIR}/Homo_sapiens.GRCh38.110.chr.gtf 
 cdna_self=${REF_DIR}/cdna.GRCh38v110.selfalign.tsv
 
@@ -218,9 +218,9 @@ Bench_Tool() {
   local input_fastq="$3"
   local threads="$4"
 
-  local stdout_log="${LOGDIR}/${tool}.${output_prefix}.out.log"
-  local stderr_log="${LOGDIR}/${tool}.${output_prefix}.err.log"
-  local time_log="${LOGDIR}/${tool}.${output_prefix}.time.log"
+  local stdout_log="${LOGDIR}/${tool}.${output_prefix}.${threads}.out.log"
+  local stderr_log="${LOGDIR}/${tool}.${output_prefix}.${threads}.err.log"
+  local time_log="${LOGDIR}/${tool}.${output_prefix}.${threads}.time.log"
   local output_dir="${tool}_results_${output_prefix}"
 
   echo "[$(date)] Running ${tool} on ${output_prefix}"
