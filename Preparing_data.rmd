@@ -11,25 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Trimming Nanopore reads of their adaptors
 ```{bash}
-#direct cDNA nanopore seq use the  LSK-114 kit
-direct_cDNA_Directory=$(/bioinformatics/ryley/Library_Benchmark/raw_files/Huh7_Library_Comparison_direct_cDNA/)
-
-for reads in $(${direct_cDNA_Directory}*/*/F*fastq.gz); do
-output_prefix=$(basename ${reads} .fastq.gz)
-/opt/dorado-0.9.0-linux-x64/bin/dorado trim --sequencing-kit SQK_LSK_114 --emit-fastq ${reads} > ${direct_cDNA_Directory}_dorado_trimmed_${output_prefix}.fastq
-gzip ${direct_cDNA_Directory}_dorado_trimmed_${output_prefix}.fastq &
-done
-
-#PCR cDNA nanopore seq use the LSK-114 kit
-PCR_cDNA_Directory=$(/bioinformatics/ryley/Library_Benchmark/raw_files/Huh-7_Library_Comparision_PCR-cDNA/)
-
-for reads in $(${PCR_cDNA_Directory}*/*/F*fastq.gz); do
-output_prefix=$(basename ${reads} .fastq.gz)
-/opt/dorado-0.9.0-linux-x64/bin/dorado trim --sequencing-kit SQK_PCS114 --emit-fastq ${reads} > ${PCR_cDNA_Directory}_dorado_trimmed_${output_prefix}.fastq
-gzip ${PCR_cDNA_Directory}_dorado_trimmed_${output_prefix}.fastq &
-done
-
-#direct RNA seq trims reads and primers while it is sequencing, so we do not need to trim here
+~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Preprocessing/DoradoTrimAdaptor.sh
 ```
 
 Filtering Nanopore Reads for lengths greater than 100bp, Quality is 8 or greater
@@ -46,50 +28,10 @@ Using JAFFAL to find fusions in the long read Huh-7 Data, and JAFFA_direct to fi
 bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/RunJAFFAL.sh
 bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Run_JAFFAdirect.sh
 ```
-Use Genion, FusionSeeker & LongGF to find more fusions??
+Use Genion, FusionSeeker & LongGF to find more fusions
 ```{bash}
-
+~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Run_GFSLGF.sh
 ```
-
-
-```{bash}
-#conda create --name STAR_env bioconda::star
-##Need to choose a different aligner for aligning short reads
-#/opt/JAFFA-version-2.3/tools/bin/bowtie2 --very-fast -p 10 -x /opt/JAFFA-version-2.3/hg38_genCode47 -1 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B1_22T7FFLT3_CATTAGTGCG-TGACTACATA_R1.fastq.gz -2 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B1_22T7FFLT3_CATTAGTGCG-TGACTACATA_R2.fastq.gz -S /bioinformatics/ryley/Library_Benchmark/Huh7_B1_Illumina.sam
-#samtools view -@ 4 -bS /bioinformatics/ryley/Library_Benchmark/Huh7_B1_Illumina.sam | samtools sort -@ 4 -o /bioinformatics/ryley/Library_Benchmark/Huh7_B1_Illumina.sorted.bam &
-
-#/opt/JAFFA-version-2.3/tools/bin/bowtie2 --very-fast -p 10 -x /opt/JAFFA-version-2.3/hg38_genCode47 -1 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B2_22T7FFLT3_ACGGTCAGGA-CGGCCTCGTT_R1.fastq.gz -2 /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/Illumina_NovaSeq/fastp_trimmed/Huh7_B2_22T7FFLT3_ACGGTCAGGA-CGGCCTCGTT_R2.fastq.gz -S /bioinformatics/ryley/Library_Benchmark/Huh7_B2_Illumina.sam
-#samtools view -@ 4 -bS /bioinformatics/ryley/Library_Benchmark/Huh7_B2_Illumina.sam | samtools sort -@ 4 -o /bioinformatics/ryley/Library_Benchmark/Huh7_B2_Illumina.sorted.bam 
-
-#wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.annotation.gtf.gz -O ~/reference_files/gencode.v47.annotation.gtf.gz
-#gunzip ~/reference_files/gencode.v47.annotation.gtf.gz
-```
-
-```{bash Aligning Reads}
-#need to rerun
-#align long reads to genome
-for input_file in /bioinformatics/ryley/Library_Benchmark/Huh-7_Library_Comparison/*/*/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/Huh-7_Library_Comparision_PCR-cDNA/*/*/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/Huh7_Library_Comparison_direct_cDNA/*/*/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/PacBio_Revio_full_length_cDNA/*.fastq.gz; do
-  file_prefix=$(basename "$input_file" .fastq.gz); /opt/JAFFA-version-2.3/tools/bin/minimap2 -t 4 -ax splice /opt/JAFFA-version-2.3/hg38.fa $input_file | samtools view -@ 8 -b | samtools sort -@ 8 -o /bioinformatics/ryley/Library_Benchmark/${file_prefix}.sorted.bam 
-done
-
-#wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.transcripts.fa.gz 
-#align stranded reads against genome
-for input_file in /bioinformatics/ryley/Library_Benchmark/Huh-7_Library_Comparison/*/*/*.fastq.gz; do
-  file_prefix=$(basename "$input_file" .fastq.gz)
-  /opt/JAFFA-version-2.3/tools/bin/minimap2 -t 4 -ax splice -uf -k14 /opt/JAFFA-version-2.3/hg38.fa $input_file | samtools view -@ 8 -b | samtools sort -@ 8 -o /bioinformatics/ryley/Library_Benchmark/${file_prefix}.stranded.sorted.bam 
-done
-
-wait
-#align  reads against transcriptome
-for input_file in /bioinformatics/ryley/Library_Benchmark/Huh-7_Library_Comparision_PCR-cDNA/*/*/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/Huh7_Library_Comparison_direct_cDNA/*/*/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/AGRF_Sequencing_Data/PacBio_Revio_full_length_cDNA/*.fastq.gz /bioinformatics/ryley/Library_Benchmark/Huh-7_Library_Comparison/*/*/*.fastq.gz; do
-  file_prefix=$(basename "$input_file" .fastq.gz)
-  /opt/JAFFA-version-2.3/tools/bin/minimap2 -t 4 -ax lr:hq ~/reference_files/gencode.v47.transcripts.fa.gz $input_file | samtools view -@ 8 -b | samtools sort -@ 8 -o /bioinformatics/ryley/Library_Benchmark/${file_prefix}.transcriptome.sorted.bam 
-done
-
-samtools index -@ 8 -M -b /bioinformatics/ryley/Library_Benchmark/*.sorted.bam 
-
-```
-
 
 ```{bash}
 for input_file in /bioinformatics/ryley/Library_Benchmark/*.sorted.bam; do
@@ -99,6 +41,7 @@ done
 multiqc /bioinformatics/ryley/Library_Benchmark/
 
 ```
+
 ```{bash}
 # Create an read lengths data file
 echo -e "file\tread_length\tcount" > ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/library_read_length_summary.tsv

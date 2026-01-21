@@ -13,13 +13,13 @@ ln -sf ${RAW_FILES}/Huh7_Library_Comparison_direct_cDNA/Huh7_p9_8-7_B2/20241209_
 ln -sf ${RAW_FILES}/Huh-7_Library_Comparison/Huh7_p9_8-7_B1/20240919_1733_MN44892_FBA22660_d1e1158a/chopperfiltered_FBA22660_pass_d1e1158a_77e47f3b_concatenated.fastq.gz ~/Nano_reads/Nano_dRNA_B1.fastq.gz
 ln -sf ${RAW_FILES}/Huh-7_Library_Comparison/Huh7_p9_8-7_B2/20240924_1732_MN44892_FBA22517_d17fa1e0/chopperfiltered_FBA22517_pass_d17fa1e0_a6486b6e_concatenated.fastq.gz ~/Nano_reads/Nano_dRNA_B2.fastq.gz
 
-mkdir -p /bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_gv44/
-ln -sf /bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_gv44/ ~/JAFL_H7_g44
-OUTPUT_DIR=~/JAFL_H7_g44
+mkdir -p /bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_gv43/
+ln -sf /bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_gv43/ ~/JAFL_H7_g43
+OUTPUT_DIR=~/JAFL_H7_g43
 
 JAFFA_DIR=/opt/JAFFA-version-2.3
 
 ${JAFFA_DIR}/tools/bin/bpipe run -p genome=hg38 -p annotation=genCode44 -p exclude="NoSupport" \
--p jaffa_output="${OUTPUT_DIR}/JAFFAL_Huh7_genCode44" \
+-p jaffa_output="${OUTPUT_DIR}/JAFFAL_Huh7_genCode43" \
 ${JAFFA_DIR}/JAFFAL.groovy \
  ~/Nano_reads/Nano*fastq.gz ~/PacBio_reads/*fastq.gz
