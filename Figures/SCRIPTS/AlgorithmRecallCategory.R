@@ -3,13 +3,13 @@ Genion_Fffscores <- Annot_Genion_Sim[c(1:27, 37, 44:46)]%>%
     grepl("false", fusionType) ~ "False_Call",
     grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
     TRUE ~ "True_Recall"))%>%
-  select(Source, V4, V3.x, recall_category, control, depth, Sequence_Identity, fusionType, V7) %>% unique() #remove duplicate rows of true fusions
+  dplyr::select(Source, V4, V3.x, recall_category, control, depth, Sequence_Identity, fusionType, V7) %>% unique() #remove duplicate rows of true fusions
 JAFFAL_scoring <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>% unique() %>%  
   mutate(recall_category = case_when(
     grepl("false", fusionType) ~ "False_Call",
     grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
     TRUE ~ "True_Recall")) %>%
-  select(sample, contig, fusion.genes, spanning.reads, classification, recall_category, control, depth, Sequence_Identity, fusionType) %>% unique()
+  dplyr::select(sample, contig, fusion.genes, spanning.reads, classification, recall_category, control, depth, Sequence_Identity, fusionType) %>% unique()
 #Check if JAFFAL's classification correlates to recall category. 
 #Make Supplementary Figure 15
 Supp_Figure15A <- ggplot(filter(JAFFAL_scoring, control =="positive", depth == "100GB", Sequence_Identity == "95%"),

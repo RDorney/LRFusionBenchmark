@@ -6,7 +6,7 @@
 combined_data_with_heuristic <- filter(combined_data, read_supp >= 2) %>%  
   mutate(stat_category = case_when(
     grepl("false_fusion:mitochondrial|false_fusion:self_misalignment", fusionType) ~ "obvious_false",
-    TRUE ~ "other")) %>% filter(stat_category == "other") %>% select(-'stat_category')
+    TRUE ~ "other")) %>% filter(stat_category == "other") %>% dplyr::select(-'stat_category')
 
 Fusion_Simulated_Fusion_overlap_sets <- list(
   JAFFAL = unique(filter(combined_data_with_heuristic, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "JAFFAL", !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType), read_supp >= 2)$fusion.gene.id),

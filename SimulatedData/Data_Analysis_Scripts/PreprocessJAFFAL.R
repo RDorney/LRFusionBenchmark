@@ -1,4 +1,4 @@
-JAF_DIR<-"/bioinformatics/ryley/Gencode44/Algorithms/JAFFAL" 
+JAF_DIR<-"/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/JAFFAL/" 
 myfiles<-list.files(path = JAF_DIR, pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
 JAFFAL_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = ",") %>%
@@ -9,21 +9,13 @@ ogJAFFAL <-  do.call(rbind, lapply(myfiles, function(filename) {
     mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", sample), "positive", "negative"))
 }))
 
-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name", "hgnc_symbol"),
-      filters = "external_gene_name",
-      values = "CBY3",
-      mart = ensemblv110) 
-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name", "hgnc_symbol"),
-      filters = "external_gene_name",
-      values = "CBY3",
-      mart = ensemblv109) 
 # fusion.genes = fusion gene name : 
 Gene_Name<-getBM(attributes = c("external_gene_name", 
                                 "ensembl_gene_id", 
                                 "chromosome_name"),
                  filters = "external_gene_name",
                  values = unique(c(JAFFAL_Sim$Gene1, JAFFAL_Sim$Gene2)),
-                 mart = ensemblv110) %>% unique()
+                 mart = ensemblv109) %>% unique()
 Gene_Name$chromosome_name <- paste0("chr", Gene_Name$chromosome_name)
 
 JAFFAL_Sim_ensembl <- left_join(JAFFAL_Sim, Gene_Name, by= c('Gene1'='external_gene_name')) %>% 
@@ -46,7 +38,7 @@ JAFFAL_Sim_ensembl <- left_join(JAFFAL_Sim, Gene_Name, by= c('Gene1'='external_g
     grepl("PATCH|HSCHR", chromosome_name.y) & !grepl("^chr([1-9]|1[0-9]|2[0-2]|X|Y|M)$", chrom2) ~ TRUE,
     TRUE ~ FALSE # Remove rows that don't meet the above conditions
   )) %>%  
-  select(-c("ensembl_gene_id.x", "chromosome_name.x", "ensembl_gene_id.y", "chromosome_name.y")) %>% unique()
+  dplyr::select(-c("ensembl_gene_id.x", "chromosome_name.x", "ensembl_gene_id.y", "chromosome_name.y")) %>% unique()
 
 setdiff(unique(JAFFAL_Sim_ensembl$fusion.genes), unique(ogJAFFAL$fusion.genes))
 
@@ -97,7 +89,7 @@ JAFFAL_3Gene_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
 Gene_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
                        filters = "external_gene_name",
                        values = unique(c(JAFFAL_3Gene_Sim$Gene1, JAFFAL_3Gene_Sim$Gene2, JAFFAL_3Gene_Sim$Gene3)),
-                       mart = ensemblv110)
+                       mart = ensemblv109)
 
 JAFFAL_3Gene_Sim <- left_join(JAFFAL_3Gene_Sim, Gene_Name, by= c('Gene1'='external_gene_name')) %>%
   left_join(Gene_Name, by= c('Gene2'='external_gene_name')) %>%

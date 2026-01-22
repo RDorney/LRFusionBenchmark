@@ -5,7 +5,7 @@
 manual_filtering <- filter(combined_data, read_supp >=2) %>%  
   mutate(stat_category = case_when(
     grepl("false_fusion:mitochondrial|false_fusion:self_misalignment", fusionType) ~ "obvious_false",
-    TRUE ~ "other")) %>% filter(stat_category == "other") %>% select(-'stat_category')%>%  
+    TRUE ~ "other")) %>% filter(stat_category == "other") %>% dplyr::select(-'stat_category')%>%  
   mutate(stat_category = case_when(
     grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType) ~ "FALSE_CALL",
     TRUE ~ "TRUE_CALL")) %>%
@@ -38,7 +38,7 @@ calculate_read_filt_statistics <- function(data, min_read_supp) {
     filter(read_supp > min_read_supp)  %>%  
     mutate(stat_category = case_when(
       grepl("false_fusion:mitochondrial|false_fusion:self_misalignment", fusionType) ~ "obvious_false",
-      TRUE ~ "other")) %>% filter(stat_category == "other") %>% select(-'stat_category') %>%  
+      TRUE ~ "other")) %>% filter(stat_category == "other") %>% dplyr::select(-'stat_category') %>%  
     mutate(stat_category = case_when(
       grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType) ~ "FALSE_CALL",
       TRUE ~ "TRUE_CALL")) %>%

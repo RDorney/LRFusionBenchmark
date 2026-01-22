@@ -4,6 +4,7 @@ author: "Ryley Dorney"
 date: "`r Sys.Date()`"
 output: html_document
 ---
+
 Here we perform a sanity check to ensure the simulated fusions are within our simulated fastq files.
 The fusion names will be within the headers of the fastq, all prefixed with "ref|", therefore we extract fusion names using this. 
 BadRead also simulates false chimeras, so I also need to remove fusions which were turned into false chimeras.

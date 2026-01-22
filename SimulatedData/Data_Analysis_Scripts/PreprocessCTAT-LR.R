@@ -4,7 +4,8 @@ CTATLR_SIM<- bind_rows(
   lapply(myfiles, function(filename) {
   if (file.info(filename)$size > 136) {
     read_tsv(filename,
-               col_names = TRUE) %>%
+               col_names = TRUE,
+             show_col_types = FALSE) %>%
       mutate(Source = basename(dirname(filename)),
              control = ifelse(grepl("Spiked", Source), "positive", "negative"))
     } else {
@@ -17,22 +18,18 @@ og_CTATLR <- CTATLR_SIM
 # Annotate
 CTATLR_SIM_a1 <- CTATLR_SIM %>% separate(LeftBreakpoint, into = c("chrom1", "base1", "strand1"), ":", remove=FALSE) %>% separate(RightBreakpoint, into = c("chrom2", "base2", "strand2"), ":", remove=FALSE)
 CTATLR_SIM_a1["#FusionName"] <- lapply(CTATLR_SIM_a1["#FusionName"], function(x) gsub("--", ":", x))
-Gene_Names<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
+Gene_Names<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
                        filters = "external_gene_name",
                        values = (unique(c(CTATLR_SIM_a1$LeftGene, CTATLR_SIM_a1$RightGene))),
-                       mart = ensemblv110),
-                  getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                        filters = "ensembl_gene_id",
-                        values = (unique(c(CTATLR_SIM_a1$LeftGene, CTATLR_SIM_a1$RightGene))),
-                        mart = ensemblv110))%>% unique()
+                       mart = ensemblv110)
 Gene_Names$chromosome_name <- paste0("chr", Gene_Names$chromosome_name)
 
 CTATLR_SIM_a2 <- CTATLR_SIM_a1 %>% 
   left_join(Gene_Names, by= c("LeftGene" ='external_gene_name', 'chrom1'='chromosome_name')) %>%
   mutate(Gene1_ensembl_ID= coalesce(ensembl_gene_id, LeftGene)) %>% 
-  select(-ensembl_gene_id)  %>% 
+  dplyr::select(-ensembl_gene_id)  %>% 
   left_join(Gene_Names, by= c("RightGene" ='external_gene_name', 'chrom2'='chromosome_name')) %>%
-  mutate(Gene2_ensembl_ID= coalesce(ensembl_gene_id, RightGene)) %>% select(-ensembl_gene_id) %>%
+  mutate(Gene2_ensembl_ID= coalesce(ensembl_gene_id, RightGene)) %>% dplyr::select(-ensembl_gene_id) %>%
   unite("fusion.gene.id" , c(Gene1_ensembl_ID, Gene2_ensembl_ID), sep = ":", remove= FALSE)
    
 Annot_CTATLR_Sim <- CTATLR_SIM_a2 %>% 

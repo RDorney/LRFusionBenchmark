@@ -52,13 +52,13 @@ JAFFAL_BreakPoint <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>%
          !grepl("false|wrong|truncated|reverse|chromosomal_misalignment",
                 fusionType), spanning.reads >= 2) #chrom1, base1, chrom2, base2
 
-LongGF_BreakPoint <- Annot_LongGF_Sim[c(1:24, 34, 41:43)] %>%
+LongGF_BreakPoint <- Annot_LongGF_Sim[c(1:24, 38, 45:47)] %>%
   distinct() %>%
   filter(control == "positive", 
          !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", 
                 fusionType)) #chrom1, breakpoint1, chrom2, base2
 
-FusionSeeker_BreakPoint <- Annot_FusionSeeker_Sim[c(1:28, 38, 45:47)] %>%
+FusionSeeker_BreakPoint <- Annot_FusionSeeker_Sim[c(1:23, 33, 40:42)] %>%
   distinct() %>%
   filter(control == "positive", 
          !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", 

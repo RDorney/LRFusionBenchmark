@@ -1,4 +1,4 @@
-simulated_fusions <- read.table(file = "~/benchmark_data_analysis/FUSIM_benchmark_fusions.txt", header=TRUE, sep= "\t")
+simulated_fusions <- read.table(file = "/home/ryleyd/LongReadFusionCallerBenchmark/SimulatedData/simulated_data_info/FUSIM_benchmark_fusions.txt", header=TRUE, sep= "\t")
 #convert from txt to tsv and save file
 write_tsv(simulated_fusions, file="~/simulated_fusion_info.tsv")
 
@@ -35,7 +35,7 @@ Alternative_Names_Gene_Fusion$chromosome_name <- paste0("chr", Alternative_Names
 
 Sim_Info_Names <- left_join(Simulated_Fusion_Info, Alternative_Names_Gene_Fusion[c(1,2)], by = c("geneName"="ensembl_gene_id"))%>% 
   left_join(Alternative_Names_Gene_Fusion, by = c("external_gene_name", "chrom" = "chromosome_name")) %>% mutate(
-    alternative_ID = coalesce(ensembl_gene_id, geneName)) %>% select(-c(ensembl_gene_id))
+    alternative_ID = coalesce(ensembl_gene_id, geneName)) %>% dplyr::select(-c(ensembl_gene_id))
 
 #create a dataframe inclusive of alternative fusion gene names as gene names can be variable.  
 Simulated_Fusion_Info_2<-Sim_Info_Names %>%
@@ -46,7 +46,7 @@ Simulated_Fusion_Info_2<-Sim_Info_Names %>%
   unnest_longer(Gene2_alternative_ID) %>%
   unnest_longer(Gene3_alternative_ID, keep_empty = TRUE)%>%
   unite("fusion.gene.id" , c(Gene1_alternative_ID, Gene2_alternative_ID, Gene3_alternative_ID), sep = ":", remove= FALSE, na.rm = TRUE) %>%
-  select(-c(alternative_ID)) %>% unique() %>%
+  dplyr::select(-c(alternative_ID)) %>% unique() %>%
   unite("original.fusion.gene.id", c(V1, V2), sep=":", remove= FALSE, na.rm = TRUE)
 
 Simulated_Fusion_Info_3<-Sim_Info_Names %>%
