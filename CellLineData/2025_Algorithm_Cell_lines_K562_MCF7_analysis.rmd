@@ -4,19 +4,23 @@ author: "Ryley Dorney"
 date: "`r Sys.Date()`"
 output: html_document
 ---
-
+Load relevant R libraries for data analysis
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-Load relevant R libraries for data analysis
-```{r}
 library(tidyverse)
+library(tidyr)
+library(naniar)
+library(readr)
 library(dplyr)
 library(ggplot2)
-library("viridis")  
+library(ggh4x)
+library(biomaRt)
 library(UpSetR)
 library(ComplexUpset)
-library(biomaRt)
+library(patchwork)
+library(ggforce)
+library(ggpubr)
+library("viridis")  
 library(readxl)
 ```
 
@@ -31,10 +35,7 @@ gene_info <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
                              mart = ensemblv110) %>% unique()
 known_fusions_biomart <- left_join(known_fusions,  gene_info, by  = c("Gene1"="external_gene_name")) %>% left_join(gene_info, by  = c("Gene2"="external_gene_name"))
 write_csv(known_fusions_biomart, file="~/known_fusions_biomart.csv")
-```
 
-Read in the manually curated excel spreadsheet of known gene fusions and use biomart to check gene IDs
-```{r}
 known_fusions_manual_annotation <- read_excel("known_fusions_manual_annotation.xlsx")
 
 gene_info <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
@@ -50,226 +51,24 @@ known_fusions_biomart <-known_fusions_manual_annotation %>% left_join(gene_info,
 
 Extract fusion genes called by longgf and output to a tsv file
 ```{bash}
-#change to directory contain LongGF results of cell line data
-LongGF_CellLine_Directory="/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/LongGF/"
-cd ${LongGF_CellLine_Directory}
+SGNEX_DIR=/bioinformatics/ryley/Gencode44/SGNex_Fusionv44/
 
 #find the longgf fusion genes and output to a tsv file
 bash ~/LongReadFusionCallerBenchmark/CellLineData/LongGF_extractSumGF.sh
 ```
 
-Read in Data from fusioncalling output from different algorithms [LongGF, Genion, JAFFAL, FusionSeeker] performed on sequencing data from K562 and MCF7
+Read in Data from fusioncalling output from different algorithms [LongGF, Genion, JAFFAL, FusionSeeker, CTAT-LR and GFSeeler] performed on sequencing data from K562 and MCF7
 ```{r}
 ####Read in Data from fusioncalling output from different algorithms on K562 and MCF7
-#LongGF
-LongGF_CellLine_Directory<-"/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/LongGF/"
-my_files <- list.files(path = LongGF_CellLine_Directory, pattern = "tsv", full.names=TRUE)
-all_tsv <-lapply(my_files, read.table)
-names(all_tsv) <- gsub(".tsv","",list.files(path = LongGF_CellLine_Directory, pattern = "tsv",full.names = FALSE),fixed = TRUE)
-names <- gsub(".tsv","",list.files(path = LongGF_CellLine_Directory, pattern = "tsv",full.names = FALSE),fixed = TRUE)
-for(i in names){
-  assign(i, read.table(paste0(LongGF_CellLine_Directory, i, ".tsv")))
-}
-LongGF_cell_lines <- do.call(rbind, lapply(my_files, function(filename) {
-  read.table(filename) %>%
-    mutate(Source = basename(filename))
-}))
-
-#Genion
-Genion_CellLine_Directory <- "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/Genion"
-myfiles<- list.files(path = Genion_CellLine_Directory, pattern = "*_genion", full.names = TRUE)
-Genion_cell_lines<- do.call(rbind, lapply(myfiles, function(filename) {
-  if (file.info(filename)$size > 0) {
-    read.table(filename) %>%
-      mutate(Source = sub("_genion$", "", basename(filename)))
-  } else {
-    NULL
-  }
-}))
-
-#JAFFAL
-CellLine_Directory <- "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files"
-myfiles<-list.files(path = CellLine_Directory, pattern = "jaffa_results.csv", full.names = TRUE, recursive = TRUE)
-JAFFAL_cell_lines <-  do.call(rbind, lapply(myfiles, function(filename) {
-  read.table(filename, header = TRUE, sep = ",") %>%
-    mutate(Source =  sub(".fastq$", "",sample))
-}))
-#JAFFAL_3Gene 
-myfiles<-list.files(path = CellLine_Directory, pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE) 
-
-JAFFAL_cell_lines_3Gene <- do.call(rbind, lapply(myfiles, function(filename) {
-  read.table(filename, header = TRUE, sep = "\t") %>%
-    mutate(Source = sub(".fastq$", "", basename(dirname(filename))))
-}))
-
-#fusionseeker
-FusionSeeker_CellLine_Directory <- "/bioinformatics/ryley/Algorithm_Benchmark/SGNEx_files/FusionSeeker"
-
-myfiles<-list.files(path = FusionSeeker_CellLine_Directory, pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
-FusionSeeker_cell_lines <- do.call(rbind, lapply(myfiles, function(filename){
-  read.table(filename, header = TRUE) %>% mutate(Source = sub("^fusionseeker_", "", basename(dirname(filename))))
-}))
+source("~/LongReadFusionCallerBenchmark/CellLineData/PreprocessSGNexFusions.R")
 ```
 
-Make a column to indicate which cell line the fusion was found in, and a column to indicate what tool was used, and column to indicate the sequencing depth and library type
-```{r}
-LongGF_cell_lines <- LongGF_cell_lines %>%
-  mutate(Cell_Lines = case_when(
-    grepl("K562", Source, ignore.case = TRUE) ~ "K562",
-    grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7"
-  ), Algorithm = "LongGF",
-  Sequencing_Depth = case_when(
-    grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
-    grepl("10G", Source, ignore.case = TRUE) ~ "10Gb",
-    grepl("_5G", Source, ignore.case = TRUE) ~ "5Gb",
-    grepl("2.5G", Source, ignore.case = TRUE) ~ "2.5Gb",
-    grepl("7.5G", Source, ignore.case = TRUE) ~ "7.5Gb",
-    .default = "Total"),
-  Library = case_when(
-    grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
-    grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",
-    .default = "PCR-cDNA"))
-
-Genion_cell_lines <- Genion_cell_lines%>%
-  mutate(Cell_Lines = case_when(
-    grepl("K562", Source, ignore.case = TRUE) ~ "K562",
-    grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7",# Keep original value if no match
-  ), Algorithm = "Genion",
-  Sequencing_Depth = case_when(
-    grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
-    grepl("10G", Source, ignore.case = TRUE) ~ "10Gb",
-    grepl("_5G", Source, ignore.case = TRUE) ~ "5Gb",
-    grepl("2.5G", Source, ignore.case = TRUE) ~ "2.5Gb",
-    grepl("7.5G", Source, ignore.case = TRUE) ~ "7.5Gb",
-    .default = "Total"),
-  Library = case_when(
-    grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
-    grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",
-    .default = "PCR-cDNA"))
-
-FusionSeeker_cell_lines <- FusionSeeker_cell_lines %>%
-  mutate(Cell_Lines = case_when(
-    grepl("K562", Source, ignore.case = TRUE) ~ "K562",
-    grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7",# Keep original value if no match
-  ), Algorithm = "FusionSeeker",
-  Sequencing_Depth = case_when(
-    grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
-    grepl("10G", Source, ignore.case = TRUE) ~ "10Gb",
-    grepl("_5G", Source, ignore.case = TRUE) ~ "5Gb",
-    grepl("2.5G", Source, ignore.case = TRUE) ~ "2.5Gb",
-    grepl("7.5G", Source, ignore.case = TRUE) ~ "7.5Gb",
-    .default = "Total"),
-  Library = case_when(
-    grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
-    grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",
-    .default = "PCR-cDNA"))
-
-JAFFAL_cell_lines <- JAFFAL_cell_lines%>%
-  mutate(Cell_Lines = case_when(
-    grepl("K562", sample, ignore.case = TRUE) ~ "K562",
-    grepl("MCF7", sample, ignore.case = TRUE) ~ "MCF7"),# Keep original value if no match
-  Sequencing_Depth = case_when(
-    grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
-    grepl("10G", Source, ignore.case = TRUE) ~ "10Gb",
-    grepl("_5G", Source, ignore.case = TRUE) ~ "5Gb",
-    grepl("2.5G", Source, ignore.case = TRUE) ~ "2.5Gb",
-    grepl("7.5G", Source, ignore.case = TRUE) ~ "7.5Gb",
-    .default = "Total"), Algorithm = "JAFFAL",
-  Library = case_when(
-    grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
-    grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",
-    .default = "PCR-cDNA"))
-
-JAFFAL_cell_lines_3Gene <- JAFFAL_cell_lines_3Gene %>%
-  mutate(Cell_Lines = case_when(
-    grepl("K562", Source, ignore.case = TRUE) ~ "K562",
-    grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7"# Keep original value if no match
-  ), Sequencing_Depth = case_when(
-    grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
-    grepl("10G", Source, ignore.case = TRUE) ~ "10Gb",
-    grepl("_5G", Source, ignore.case = TRUE) ~ "5Gb",
-    grepl("2.5G", Source, ignore.case = TRUE) ~ "2.5Gb",
-    grepl("7.5G", Source, ignore.case = TRUE) ~ "7.5Gb",
-    .default = "Total"), Algorithm = "JAFFAL",
-  Library = case_when(
-    grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
-    grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",
-    .default = "PCR-cDNA"))
-```
-
-Find "Mitochondrial:Genomic" fusions chrM x genomic genes, and "Mitochondrial" chimeras
-```{r}
-#find "Mitochondrial:Genomic" fusions chrM x genomic genes, and "Mitochondrial" chimeras
-mitochondrial_genomic_FusionSeeker_cell_lines <- subset(FusionSeeker_cell_lines, (Chrom1 == "chrM" & Chrom2 != "chrM") | (Chrom1 != "chrM" & Chrom2 == "chrM")) %>% mutate(fusionType = "Mitochondrial:Genomic")
-
-mitochondrial_genomic_LongGF_cell_lines <- filter(LongGF_cell_lines, (grepl("chrM:", V4, ignore.case = TRUE) & !grepl("chrM:", V5, ignore.case = TRUE)) | (!grepl("chrM:", V4, ignore.case = TRUE) & grepl("chrM:", V5, ignore.case = TRUE))) %>% mutate(fusionType = "Mitochondrial:Genomic")
-
-mito_chimeras_FusionSeeker_cell_lines <- subset(FusionSeeker_cell_lines, (Chrom1 == "chrM" & Chrom2 == "chrM")) %>% mutate(fusionType = "Mitochondrial")
-
-mito_chimeras_LongGF_cell_lines <- filter(LongGF_cell_lines, (grepl("chrM:", V4, ignore.case = TRUE) & grepl("chrM:", V5, ignore.case = TRUE))) %>% mutate(fusionType = "Mitochondrial")
-
-mito_chimeras_Genion_cell_lines <- filter(Genion_cell_lines, grepl("M:", V8, ignore.case = TRUE)) #nothing observed
-
-mito_chimeras_JAFFAL_cell_lines <- subset(JAFFAL_cell_lines, (chrom1=="chrM" | chrom2=="chrM")) #nothing observed
-#combine into one data frame
-mito_chimeras_cell_line <- rbind(mitochondrial_genomic_LongGF_cell_lines[c(3, 6:11)], mito_chimeras_LongGF_cell_lines[c(3, 6:11)])
-mito_chimeras_cell_line$NumSupp <-mito_chimeras_cell_line$V3
-mito_chimeras_cell_line <-mito_chimeras_cell_line[c(2:8)] %>% rbind(mito_chimeras_FusionSeeker_cell_lines[c(4,10:15)], mitochondrial_genomic_FusionSeeker_cell_lines[c(4,10:15)])
-
-mito_chimeras_cell_line$Sequencing_Depth<- factor(mito_chimeras_cell_line$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
-mito_chimeras_cell_line$Library<- factor(mito_chimeras_cell_line$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
-#plot the mito_chimeras_cell_line data
-ggplot(filter(mito_chimeras_cell_line, NumSupp >=2), aes(x = Sequencing_Depth, fill = fusionType)) +
-  geom_bar() +
-  theme_minimal() +
-  labs(title = "False calls by each algorithm", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  facet_grid(Library+Cell_Lines~Algorithm) +
-  scale_y_log10()
-
-ggplot(filter(mito_chimeras_cell_line, NumSupp >=2), aes(x = Sequencing_Depth, y = NumSupp)) +
-  geom_boxplot(aes(fill = fusionType)) +
-  labs(title = "Distribution of Read Support for false chimeras",
-       x = "Read Depth",
-       y = "Read Support") +
-  theme_minimal() +
-  facet_grid(Library+Cell_Lines~ Algorithm) +  
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
+Find "Mitochondrial:Genomic" fusions chrM x genomic genes, and "Mitochondrial" chimeras and 
 filter misalignments and fusions between self, e.g. paralogus genes fused 
 ```{r}
-self_alignment_LongGF_cell_lines <- LongGF_cell_lines %>% separate(V2, into = c("V2.1","V2.2"), sep=":", remove = FALSE) %>%  subset(V2.1 == V2.2) %>% rename("NumSupp"="V3")
-self_alignment_FusionSeeker_cell_lines <- FusionSeeker_cell_lines %>%
-  subset((Gene1 == Gene2) | 
-         mapply(grepl, pattern = paste0(Gene1, "_PAR_Y"), x = Gene2) | 
-         mapply(grepl, pattern = paste0(Gene2, "_PAR_Y"), x = Gene1))
-self_alignment_Genion_cell_lines <- Genion_cell_lines %>% separate(V1, into = c("V1.1","V1.2"), sep="::", remove = FALSE) %>%  subset((V1.1 == V1.2) | mapply(grepl, pattern = paste0(V1.1, "_PAR_Y"), x = V1.2) | 
-         mapply(grepl, pattern = paste0(V1.2, "_PAR_Y"), x = V1.1))
-self_alignment_JAFFAL_cell_lines <- JAFFAL_cell_lines %>% separate(fusion.genes, into = c("V1.1","V1.2"), sep=":", remove = FALSE) %>% subset(V1.1 == V1.2)
-
-
-self_alignment_results <- rbind(self_alignment_LongGF_cell_lines[c(5, 8:12)], self_alignment_FusionSeeker_cell_lines[c(4,10:14)]) %>% mutate(fusionType = "Self-Misalignment")
+source("~/LongReadFusionCallerBenchmark/CellLineData/Mito_Chimeras_SGNex.R")
 ```
 
-combine paralogous gene fusions and mitochondrial chimeras into a dataframe containing obvious false_chimeras
-```{r}
-false_chimeras <- rbind(self_alignment_results, mito_chimeras_cell_line)
-false_chimeras$Sequencing_Depth<- factor(false_chimeras$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
-false_chimeras$Library<- factor(false_chimeras$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
-
-supp_Figure14 <-ggplot(filter(false_chimeras, NumSupp >=2, Sequencing_Depth == c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb")), aes(x = Sequencing_Depth, fill = fusionType)) +
-  geom_bar() +
-  theme_minimal() +
-  labs(title = "False calls by each algorithm", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(Library+Cell_Lines~Algorithm) +
-  scale_y_log10()+
-  labs(fill = "Fusion Type") 
-ggsave("supp_Figure14.png", plot = supp_Figure14,  width = 210, height =297  , unit ="mm")
-```
 
 Filter out the obvious false chimeras from the original dataframe and assign ensembl gene IDs to fusion gene partners
 ```{r}

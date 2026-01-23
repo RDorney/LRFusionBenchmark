@@ -4,6 +4,7 @@
 .Ruserdata
 .png
 .pdf
+.tsv
 .fastq
 .fastq.gz
 .fasta
