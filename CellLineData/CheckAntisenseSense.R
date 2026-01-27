@@ -113,7 +113,7 @@ CTATLR_sensecheck_annotated <- CTATLR_sensecheck %>%
       NA_character_
     )
   )
-# Annotate with mitochondrial fusions
+# Annotate with mitochondrial and self fusions
 CTATLR_sensemito_annotated <- CTATLR_sensecheck_annotated %>%
   mutate(
     fusionType = case_when(
@@ -146,21 +146,38 @@ Genion_antisense_df <- bind_rows(Genion_antisense_list, .id = "query_gene_index"
 Genion_antisense_df$query_gene <- genes_to_check[as.integer(Genion_antisense_df$query_gene_index)]
 Genion_antisense_df$query_gene_index <- NULL
 
+antisense_pairs <- Genion_antisense_df %>%
+  dplyr::select(query_gene, gene_name) %>%
+  distinct()
+
 Genion_sensecheck_annotated <- Genion_sensecheck %>%
   mutate(
     fusionType = if_else(
-      # Left = query_gene AND Right = gene_name
       paste(V1.1, V1.2) %in% 
         paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
       | 
         paste(V1.2, V1.1) %in% 
         paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
-      "sense-antisense",
+      "Sense-Antisense",
       NA_character_
     )
   )
-
-
+# Annotate with mitochondrial and self fusions
+Genion_sensemito_annotated <- Genion_sensecheck_annotated %>%
+  mutate(
+    fusionType = case_when(
+      grepl("M:", chr1,  ignore.case = TRUE) &
+        grepl("M:", chr2, ignore.case = TRUE) 
+      ~ "Mitochondrial:Mitochondrial",
+      xor(
+        grepl("M:", chr1,  ignore.case = TRUE),
+        grepl("M:", chr2, ignore.case = TRUE),
+        grepl("M:", chr3, ignore.case = TRUE)
+      ) ~ "Mitochondrial:Genomic",
+      (V1.1 == V1.2) ~ "Self-Misalignment",
+      TRUE ~ fusionType
+    )
+  )
 
 ###########################
 # Check FusionSeeker
@@ -178,6 +195,35 @@ FusionSeeker_antisense_df <- bind_rows(FusionSeeker_antisense_list, .id = "query
 # add the original gene names
 FusionSeeker_antisense_df$query_gene <- genes_to_check[as.integer(FusionSeeker_antisense_df$query_gene_index)]
 FusionSeeker_antisense_df$query_gene_index <- NULL
+
+antisense_pairs <- FusionSeeker_antisense_df %>%
+  dplyr::select(query_gene, gene_name) %>%
+  distinct()
+
+FusionSeeker_sensecheck_annotated <- FusionSeeker_sensecheck %>%
+  mutate(
+    fusionType = if_else(
+      paste(Gene1, Gene2) %in% 
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+      | 
+        paste(Gene2, Gene1) %in% 
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
+      "Sense-Antisense",
+      NA_character_
+    )
+  )
+# Annotate with mitochondrial and self fusions
+FusionSeeker_sensemito_annotated <- FusionSeeker_sensecheck_annotated %>%
+  mutate(
+    fusionType = case_when(
+      (Chrom1 == "chrM" & Chrom2 != "chrM") 
+      ~ "Mitochondrial:Mitochondrial",
+      xor(("chrM" = Chrom1), ("chrM" = Chrom2)) ~ "Mitochondrial:Genomic",
+      (Gene1 == Gene2) ~ "Self-Misalignment",
+      TRUE ~ fusionType
+    )
+  )
+
 ###########################
 # Check LongGF
 ###########################
