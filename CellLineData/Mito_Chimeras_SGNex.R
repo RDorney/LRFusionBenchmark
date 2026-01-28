@@ -74,17 +74,6 @@ false_chimeras <- rbind(self_alignment_results, mito_chimeras_cell_line, )
 false_chimeras$Sequencing_Depth<- factor(false_chimeras$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
 false_chimeras$Library<- factor(false_chimeras$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
 
-supp_Figure14 <-ggplot(filter(false_chimeras, NumSupp >=2, Sequencing_Depth == c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb")), aes(x = Sequencing_Depth, fill = fusionType)) +
-  geom_bar() +
-  theme_minimal() +
-  labs(title = "False calls by each algorithm", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(Library+Cell_Lines~Algorithm) +
-  scale_y_log10()+
-  labs(fill = "Fusion Type") 
-ggsave("supp_Figure14.png", plot = supp_Figure14,  width = 210, height =297  , unit ="mm")
 
 
 

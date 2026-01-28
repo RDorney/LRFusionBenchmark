@@ -11,7 +11,12 @@ Genion_Sim<- do.call(rbind, lapply(myfiles, function(filename) {
 og_Genion <-Genion_Sim
 
 # Annotate
-Annot_Genion_Sim <- Genion_Sim %>% separate(V1, into = c("V1.1", "V1.2", "V1.3"), "::", remove=FALSE) %>% separate(V2, into = c("V2.1", "V2.2", "V2.3"), "::", remove=FALSE) %>% separate(V8, into = c("chr1", "chr2", "chr3"), ";", remove=FALSE)
+Annot_Genion_Sim <- Genion_Sim %>%
+  filter(V5 >= 2) %>% 
+  separate(V1, into = c("V1.1", "V1.2", "V1.3"), "::", remove=FALSE) %>% 
+  separate(V2, into = c("V2.1", "V2.2", "V2.3"), "::", remove=FALSE) %>% 
+  separate(V8, into = c("chr1", "chr2", "chr3"), ";", remove=FALSE)
+
 Annot_Genion_Sim[c("V1", "V2")] <- lapply(Genion_Sim[c("V1", "V2")], function(x) gsub("::", ":", x))
 Annot_Genion_Sim <- Annot_Genion_Sim %>% left_join(Simulated_Fusion_Info_2, by = c('V1'='fusion.gene.id')) 
 Annot_Genion_Sim$fusionType <- mapply(function(g1, g2, g3, current_type, chr1, chr2, chr3, gene_name1, gene_name2) {

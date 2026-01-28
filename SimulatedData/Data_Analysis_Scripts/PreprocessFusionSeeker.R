@@ -14,9 +14,31 @@ FusionSeeker_Sim <- FusionSeeker_Sim %>%
   unite("fusionGene", c(Gene1, Gene2), sep="::", remove= FALSE, na.rm = TRUE)%>%
   mutate(across(c(Gene1, Gene2), ~ gsub("\\..*","", .)))%>%
   separate(fusionGene, into= c('Gene1_vID','Gene2_vID'), sep = "::", remove = FALSE) %>%
-  unite("fusion.gene.id", c(Gene1, Gene2), sep=":", remove= FALSE, na.rm = TRUE)
+  unite("fusion.gene.id", c(Gene1, Gene2), sep=":", remove= FALSE, na.rm = TRUE) %>%
+  filter(NumSupp >= 2)
+###########################
+# Check FusionSeeker
+###########################
+# get unique genes from both columns
+genes_to_check <- unique(c(FusionSeeker_Sim$Gene1, FusionSeeker_Sim$Gene2))
 
+# run get_antisense_overlaps on each gene
+FusionSeeker_antisense_list <- lapply(genes_to_check, 
+                                      function(g) get_antisense_overlaps(g, genes, id_type = "gene_id"))
+
+# combine into a single data frame
+FusionSeeker_antisense_df <- bind_rows(FusionSeeker_antisense_list, .id = "query_gene_index")
+
+# add the original gene names
+FusionSeeker_antisense_df$query_gene <- genes_to_check[as.integer(FusionSeeker_antisense_df$query_gene_index)]
+FusionSeeker_antisense_df$query_gene_index <- NULL
+
+antisense_pairs <- FusionSeeker_antisense_df %>%
+  dplyr::select(query_gene, gene_name) %>%
+  distinct()
+#############################################################
 #Assign label to false fusions or partially recalled fusions
+#############################################################
 Annot_FusionSeeker_Sim <- FusionSeeker_Sim %>%
   left_join(Simulated_Fusion_Info_2, by = 'fusion.gene.id')%>%
   group_by(fusionGene.x) %>%
@@ -47,6 +69,10 @@ Annot_FusionSeeker_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1,
       return("false_fusion:mitochondrial") 
     }else if (((g1 == g2)) & (chr1 != chr2)){
       return("false_fusion:self_misalignment") 
+    }else if (paste(gene_name1, gene_name2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+              | 
+              paste(gene_name2, gene_name1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
+      return("false_fusion:Sense-Antisense") 
     }else {
       return("false_fusion")
     }

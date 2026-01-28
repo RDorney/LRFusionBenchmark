@@ -1,5 +1,5 @@
 ---
-title: "Cell line algorithm analysis"
+title: "SGNex algorithm analysis"
 author: "Ryley Dorney"
 date: "`r Sys.Date()`"
 output: html_document
@@ -63,12 +63,30 @@ Read in Data from fusioncalling output from different algorithms [LongGF, Genion
 source("~/LongReadFusionCallerBenchmark/CellLineData/PreprocessSGNexFusions.R")
 ```
 
+
+```{r}
+############################
+# set up dataframes to check
+############################
+CTATLR_sensecheck <- CTATLR_SGNex
+JAFFAL_sensecheck <- JAFFAL_SGNex
+Genion_sensecheck <- Genion_SGNex
+FusionSeeker_sensecheck <- FusionSeeker_SGNex
+LongGF_sensecheck <- LongGF_SGNex
+
+#######################################
+# Run check atypical and false fusions
+#######################################
+source("~/LongReadFusionCallerBenchmark/CellLineData/CheckAtypicalFusions.R")
+
+
+```
+
 Find "Mitochondrial:Genomic" fusions chrM x genomic genes, and "Mitochondrial" chimeras and 
 filter misalignments and fusions between self, e.g. paralogus genes fused 
 ```{r}
 source("~/LongReadFusionCallerBenchmark/CellLineData/Mito_Chimeras_SGNex.R")
 ```
-
 
 Filter out the obvious false chimeras from the original dataframe and assign ensembl gene IDs to fusion gene partners
 ```{r}

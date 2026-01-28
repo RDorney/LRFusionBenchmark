@@ -9,6 +9,9 @@ ogJAFFAL <-  do.call(rbind, lapply(myfiles, function(filename) {
     mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", sample), "positive", "negative"))
 }))
 
+JAFFAL_Sim <- JAFFAL_Sim %>%
+  filter(spanning.reads >= 2)
+
 # fusion.genes = fusion gene name : 
 Gene_Name<-getBM(attributes = c("external_gene_name", 
                                 "ensembl_gene_id", 
@@ -84,8 +87,12 @@ Annot_JAFFAL_Sim$fusionType <- mapply(function(g1, g2, Gen1, Gen2, current_type,
 myfiles<-list.files(path = JAF_DIR, pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE)
 JAFFAL_3Gene_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
   read.table(filename, header = TRUE, sep = "\t") %>%
-    mutate(Source = basename(dirname(filename))) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
-})) %>% separate(Fusion, into = c("Gene1", "Gene2", "Gene3"), sep = ":", remove = FALSE)
+    mutate(Source = basename(dirname(filename))) %>% 
+    mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))
+})) %>% 
+  separate(Fusion, into = c("Gene1", "Gene2", "Gene3"), sep = ":", remove = FALSE) %>%
+  filter(Reads >= 2)
+
 Gene_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
                        filters = "external_gene_name",
                        values = unique(c(JAFFAL_3Gene_Sim$Gene1, JAFFAL_3Gene_Sim$Gene2, JAFFAL_3Gene_Sim$Gene3)),

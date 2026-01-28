@@ -7,14 +7,6 @@ library(GenomicRanges)
 library(dplyr)
 #load relevant gtf file
 gencodev44gtf <- import("/bioinformatics/ryley/Gencode44/reference_v44/gencode.v44.annotation.gtf")
-############################
-# set up dataframes to check
-############################
-CTATLR_sensecheck <- CTATLR_SGNex
-JAFFAL_sensecheck <- JAFFAL_SGNex
-Genion_sensecheck <- Genion_SGNex
-FusionSeeker_sensecheck <- FusionSeeker_SGNex
-LongGF_sensecheck <- LongGF_SGNex
 
 ########################################
 # Make function to find antisense genes
@@ -169,11 +161,11 @@ Genion_sensemito_annotated <- Genion_sensecheck_annotated %>%
       grepl("M:", chr1,  ignore.case = TRUE) &
         grepl("M:", chr2, ignore.case = TRUE) 
       ~ "Mitochondrial:Mitochondrial",
-      xor(
-        grepl("M:", chr1,  ignore.case = TRUE),
-        grepl("M:", chr2, ignore.case = TRUE),
+      (
+        grepl("M:", chr1,  ignore.case = TRUE) +
+        grepl("M:", chr2, ignore.case = TRUE) +
         grepl("M:", chr3, ignore.case = TRUE)
-      ) ~ "Mitochondrial:Genomic",
+      ) == 1 ~ "Mitochondrial:Genomic",
       (V1.1 == V1.2) ~ "Self-Misalignment",
       TRUE ~ fusionType
     )
@@ -216,10 +208,9 @@ FusionSeeker_sensecheck_annotated <- FusionSeeker_sensecheck %>%
 FusionSeeker_sensemito_annotated <- FusionSeeker_sensecheck_annotated %>%
   mutate(
     fusionType = case_when(
-      (Chrom1 == "chrM" & Chrom2 != "chrM") 
-      ~ "Mitochondrial:Mitochondrial",
-      xor(("chrM" = Chrom1), ("chrM" = Chrom2)) ~ "Mitochondrial:Genomic",
-      (Gene1 == Gene2) ~ "Self-Misalignment",
+      Chrom1 == "chrM" & Chrom2 == "chrM" ~ "Mitochondrial:Mitochondrial",
+      xor("chrM" == Chrom1 , "chrM" == Chrom2) ~ "Mitochondrial:Genomic",
+      Gene1 == Gene2 ~ "Self-Misalignment",
       TRUE ~ fusionType
     )
   )
@@ -240,6 +231,33 @@ LongGF_antisense_df <- bind_rows(LongGF_antisense_list, .id = "query_gene_index"
 # add the original gene names
 LongGF_antisense_df$query_gene <- genes_to_check[as.integer(LongGF_antisense_df$query_gene_index)]
 LongGF_antisense_df$query_gene_index <- NULL
+
+antisense_pairs <- LongGF_antisense_df %>%
+  dplyr::select(query_gene, gene_name) %>%
+  distinct()
+
+LongGF_sensecheck_annotated <- LongGF_sensecheck %>%
+  mutate(
+    fusionType = if_else(
+      paste(Gene1, Gene2) %in% 
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+      | 
+        paste(Gene2, Gene1) %in% 
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
+      "Sense-Antisense",
+      NA_character_
+    )
+  )
+# Annotate with mitochondrial and self fusions
+LongGF_sensemito_annotated <- LongGF_sensecheck_annotated %>%
+  mutate(
+    fusionType = case_when(
+      chromosome1 == "chrM" & chromosome2 == "chrM" ~ "Mitochondrial:Mitochondrial",
+      xor("chrM" == chromosome1, "chrM" == chromosome2) ~ "Mitochondrial:Genomic",
+      Gene1 == Gene2 ~ "Self-Misalignment",
+      TRUE ~ fusionType
+    )
+  )
 
 ##################################
 # Check JAFFAL and update function
@@ -320,3 +338,72 @@ JAFFAL_antisense_df <- bind_rows(JAFFAL_antisense_list, .id = "query_gene_index"
 # add the original gene names
 JAFFAL_antisense_df$query_gene <- genes_to_check[as.integer(JAFFAL_antisense_df$query_gene_index)]
 JAFFAL_antisense_df$query_gene_index <- NULL
+
+antisense_pairs <- JAFFAL_antisense_df %>%
+  dplyr::select(query_gene, gene_name) %>%
+  distinct()
+
+JAFFAL_sensecheck_annotated <- JAFFAL_sensecheck %>%
+  mutate(
+    fusionType = if_else(
+      paste(Gene1, Gene2) %in% 
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+      | 
+        paste(Gene2, Gene1) %in% 
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
+      "Sense-Antisense",
+      NA_character_
+    )
+  )
+# Annotate with mitochondrial and self fusions
+JAFFAL_sensemito_annotated <- JAFFAL_sensecheck_annotated %>%
+  mutate(
+    fusionType = case_when(
+      chrom1 == "chrM" & chrom2 == "chrM" ~ "Mitochondrial:Mitochondrial",
+      xor("chrM" == chrom1, "chrM" == chrom2) ~ "Mitochondrial:Genomic",
+      (Gene1 == Gene2) ~ "Self-Misalignment",
+      TRUE ~ fusionType
+    )
+  )
+
+###########################
+# combined dataframes
+###########################
+sensemito_fusions <- rbind(dplyr::select(CTATLR_sensemito_annotated, 
+                                         c("Source", "Cell_Lines", 
+                                           "Algorithm", "Sequencing_Depth",    
+                                           "Library", "fusionType")),
+                           dplyr::select(Genion_sensemito_annotated, 
+                                         c("Source", "Cell_Lines", 
+                                           "Algorithm", "Sequencing_Depth",    
+                                           "Library", "fusionType")),
+                           dplyr::select(LongGF_sensemito_annotated, 
+                                         c("Source", "Cell_Lines", 
+                                           "Algorithm", "Sequencing_Depth",    
+                                           "Library", "fusionType")), 
+                           dplyr::select(FusionSeeker_sensemito_annotated, 
+                                         c("Source", "Cell_Lines", 
+                                           "Algorithm", "Sequencing_Depth",    
+                                           "Library", "fusionType")),
+                           dplyr::select(JAFFAL_sensemito_annotated, 
+                                         c("Source", "Cell_Lines", 
+                                           "Algorithm", "Sequencing_Depth",    
+                                           "Library", "fusionType")))
+
+################
+# plots
+################
+
+ggplot(filter(sensemito_fusions, Sequencing_Depth == c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb")), 
+       aes(x = Sequencing_Depth, fill = fusionType)) +
+  geom_bar() +
+  theme_minimal() +
+  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))+
+  facet_grid(Library+Cell_Lines~Algorithm) +
+  scale_y_log10()+
+  labs(fill = "Fusion Type") 
+
+
