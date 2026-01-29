@@ -3,33 +3,33 @@
 dLGF<- Annot_LongGF_Sim[c(1:24, 38, 45:47)] %>% 
   unique()%>% #remove duplicate values
   dplyr::select(c(5, 13, 18, 25:28))%>%#select only columns needed for downstream analysis
-  rename(read_supp = V3.x)
+  dplyr::rename(read_supp = V3.x)
 
 dJF <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>% 
   unique()%>% #remove duplicate values
   dplyr::select(c(13, 22, 23, 26:29)) %>% #select only columns needed for downstream analysis
-  rename(read_supp = spanning.reads)
+  dplyr::rename(read_supp = spanning.reads)
 
 dJF3 <- Annot_JAFFAL_3Gene_Sim[c(1:21, 32, 39:41)] %>%
   unique()%>% #remove duplicate values
   dplyr::select(c(5, 10, 11, 22:25))%>% #extract only columns needed for downstream analysis
-  rename(read_supp = Reads)
+  dplyr::rename(read_supp = Reads)
 
 dGen <- Annot_Genion_Sim[c(1:27, 37, 44:46)]%>%
   unique()%>% #remove duplicate values
   dplyr::select(c(1, 11, 19, 28:31))%>% #extract only columns needed for downstream analysis
-  rename(read_supp = V5,
+  dplyr::rename(read_supp = V5,
          fusion.gene.id = V1)
 
 dFS <- Annot_FusionSeeker_Sim[c(1:23, 33, 40:42)]%>%
   unique()%>% 
   dplyr::select(c(8, 15, 5, 24, 25:27))%>%
-  rename(read_supp = NumSupp)
+  dplyr::rename(read_supp = NumSupp)
 
 dCTAT_LR<- Annot_CTATLR_Sim[c(1:25, 43, 50:52)] %>% 
   unique()%>% #remove duplicate values
   dplyr::select(c(2, 22, 23, 26:29))%>%#select only columns needed for downstream analysis
-  rename(read_supp = num_LR)
+  dplyr::rename(read_supp = num_LR)
 
 combined_data <- rbind(dLGF, dJF, dJF3, dGen, dFS, dCTAT_LR)
 combined_data$read_supp <- as.numeric(combined_data$read_supp)

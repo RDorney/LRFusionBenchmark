@@ -135,7 +135,7 @@ Annot_JAFFAL_Sim <- JAFFAL_Sim_ensembl %>%
   left_join(Simulated_Fusion_Info_2, by = c('fusion.gene.id')) %>% unique()%>%
   group_by(fusion.genes) %>%
   mutate(fusionType = case_when(
-    is.na(fusionType) ~ paste0("chromosomal_misalignment:",first(na.omit(fusionType))),  # Only update NA values
+    is.na(fusionType) ~ paste0("chromosomal_misalignment:", dplyr::first(na.omit(fusionType))),  # Only update NA values
     .default = fusionType  # Keep existing values unchanged
   ))%>% ungroup()%>%
   replace_with_na(replace = list(fusionType = "chromosomal_misalignment:NA")) 
@@ -161,16 +161,19 @@ Annot_JAFFAL_Sim$fusionType <- mapply(function(g1, g2, Gen1, Gen2, current_type,
       return("false_fusion:mitochondrial") 
     }else if (((g1 == g2)|(Gen1 == Gen2)) & (chr1 != chr2)){
       return("false_fusion:self_misalignment") 
-    }else if (paste(gene_name1, gene_name2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+    }else if (paste(Gen1, Gen2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
               | 
-              paste(gene_name2, gene_name1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
+              paste(Gen2, Gen1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
       return("false_fusion:Sense-Antisense") 
     }else {
       return("false_fusion")
     }
   }
   return(current_type)
-}, Annot_JAFFAL_Sim$ensembl_gene1, Annot_JAFFAL_Sim$ensembl_gene2, Annot_JAFFAL_Sim$Gene1, Annot_JAFFAL_Sim$Gene2, Annot_JAFFAL_Sim$fusionType, Annot_JAFFAL_Sim$chrom1, Annot_JAFFAL_Sim$chrom2)
+}, Annot_JAFFAL_Sim$ensembl_gene1, Annot_JAFFAL_Sim$ensembl_gene2, 
+Annot_JAFFAL_Sim$Gene1, Annot_JAFFAL_Sim$Gene2, 
+Annot_JAFFAL_Sim$fusionType, 
+Annot_JAFFAL_Sim$chrom1, Annot_JAFFAL_Sim$chrom2)
 
 #JAFFAL_3Gene_Sim 
 myfiles<-list.files(path = JAF_DIR, pattern = ".3gene_summary", full.names = TRUE, recursive = TRUE)
@@ -209,10 +212,6 @@ Annot_JAFFAL_3Gene_Sim$fusionType <- mapply(function(g1, g2, g3, current_type) {
             str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g1, ":", g3, ":", g2))| 
             str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1, ":", g3)))) {
       return("wrong_order:tri_fusion")
-    }else if (paste(gene_name1, gene_name2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
-              | 
-              paste(gene_name2, gene_name1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
-      return("false_fusion:Sense-Antisense") 
     }else {
       return("false_fusion")
     }

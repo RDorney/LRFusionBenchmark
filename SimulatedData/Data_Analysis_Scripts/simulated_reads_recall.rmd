@@ -33,6 +33,22 @@ Identify resource usage of each tool :)
 Analysis_output_folder <- "/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/"
 
 standard_chrs <- paste0("chr", c(1:22, "X", "Y", "M"))
+#load relevant gtf file
+gencodev44gtf <- import("/bioinformatics/ryley/Gencode44/reference_v44/gencode.v44.annotation.gtf")
+
+########################################
+# Make function to find antisense genes
+########################################
+genes <- gencodev44gtf %>%
+  as.data.frame() %>%
+  filter(type == "gene") %>%
+  makeGRangesFromDataFrame(
+    seqnames.field = "seqnames",
+    start.field = "start",
+    end.field = "end",
+    strand.field = "strand",
+    keep.extra.columns = TRUE
+  )
 ```
 
 The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa. 

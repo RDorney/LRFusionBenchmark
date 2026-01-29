@@ -94,6 +94,16 @@ get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gen
 ###########################
 # Check CTAT-LR for antisense genes
 ###########################
+genes <- gencodev44gtf %>%
+  as.data.frame() %>%
+  filter(type == "gene") %>%
+  makeGRangesFromDataFrame(
+    seqnames.field = "seqnames",
+    start.field = "start",
+    end.field = "end",
+    strand.field = "strand",
+    keep.extra.columns = TRUE
+  )
 # get unique genes from both columns
 genes_to_check <- unique(c(CTATLR_SIM$LeftGene, CTATLR_SIM$RightGene))
 
@@ -157,9 +167,9 @@ Annot_CTATLR_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2,
       return("false_fusion:mitochondrial") 
     }else if ((gene_name1 == gene_name2) & (chr1 != chr2)){
       return("false_fusion:self_misalignment") 
-    }else if (paste(gene_name1, gene_name2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+    }else if (paste(g1, g2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
               | 
-              paste(gene_name2, gene_name1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
+              paste(g2, g1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
       return("false_fusion:Sense-Antisense") 
     }else {
       return("false_fusion")

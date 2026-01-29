@@ -19,6 +19,16 @@ FusionSeeker_Sim <- FusionSeeker_Sim %>%
 #########################################
 # Check FusionSeeker for antisense genes
 #########################################
+genes <- gencodev44gtf %>%
+  as.data.frame() %>%
+  filter(type == "gene") %>%
+  makeGRangesFromDataFrame(
+    seqnames.field = "seqnames",
+    start.field = "start",
+    end.field = "end",
+    strand.field = "strand",
+    keep.extra.columns = TRUE
+  )
 # get unique genes from both columns
 genes_to_check <- unique(c(FusionSeeker_Sim$Gene1, FusionSeeker_Sim$Gene2))
 
@@ -44,7 +54,7 @@ Annot_FusionSeeker_Sim <- FusionSeeker_Sim %>%
   left_join(Simulated_Fusion_Info_2, by = 'fusion.gene.id')%>%
   group_by(fusionGene.x) %>%
   mutate(fusionType = case_when(
-    is.na(fusionType) ~ paste0("chromosomal_misalignment:",first(na.omit(fusionType))),  # Only update NA values
+    is.na(fusionType) ~ paste0("chromosomal_misalignment:", dplyr::first(na.omit(fusionType))),  # Only update NA values
     .default = fusionType  # Keep existing values unchanged
   ))%>% ungroup()%>%
   replace_with_na(replace = list(fusionType = "chromosomal_misalignment:NA"))
@@ -70,9 +80,9 @@ Annot_FusionSeeker_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1,
       return("false_fusion:mitochondrial") 
     }else if (((g1 == g2)) & (chr1 != chr2)){
       return("false_fusion:self_misalignment") 
-    }else if (paste(gene_name1, gene_name2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+    }else if (paste(g1, g2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
               | 
-              paste(gene_name2, gene_name1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
+              paste(g2, g1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
       return("false_fusion:Sense-Antisense") 
     }else {
       return("false_fusion")
