@@ -265,7 +265,7 @@ Breakpoint_Accuracy <- full_join(FusionSeeker_Breakpoint_Accuracy, LongGF_Breakp
 Breakpoint_Accuracy[is.na(Breakpoint_Accuracy)] <- "NA"
 
 Breakpoint_Accuracy <- Breakpoint_Accuracy %>% filter(!if_all(FSB1:JB2, ~ .x == "NA")) %>%
-  pivot_longer(cols = FSB1:JB2, names_to =  "Tool_Breakpoint", values_to = "Distance_from_Simulated_Breakpoint") %>%
+  pivot_longer(cols = 4:ncol(Breakpoint_Accuracy), names_to =  "Tool_Breakpoint", values_to = "Distance_from_Simulated_Breakpoint") %>%
   mutate(Algorithm = case_when(
     grepl("^GB", Tool_Breakpoint) ~ "Genion",
     grepl("^JB", Tool_Breakpoint) ~ "JAFFAL",

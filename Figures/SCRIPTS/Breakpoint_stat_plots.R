@@ -102,7 +102,7 @@ supp_Figure13 <-ggplot(filter(absolute_Breakpoint_Accuracy), aes(y = Distance_fr
                                 "1", expression(10^1), 
                                 expression(10^2), expression(10^3), expression(10^4), expression(10^5), expression(10^6), expression(10^7), expression(10^8), expression(10^9))
   )+   
-  scale_x_discrete(labels = c("Breakpoint 1", "Breakpoint 2"))+
+  scale_x_discrete(labels = c("Breakpoint 1", "Breakpoint 2", "Breakpoint 3", "Breakpoint 4"))+
   labs(y = "Absolute distance from simulated breakpoint", x= "")+
   stat_compare_means(method = "kruskal.test", aes(group = Algorithm), label.y = 8.5 , show.legend = FALSE, label = "p.format",)+
   geom_pwc(method = "dunn_test", p.adjust.method = "bonferroni", hide.ns = TRUE, label = "p.adj.signif",

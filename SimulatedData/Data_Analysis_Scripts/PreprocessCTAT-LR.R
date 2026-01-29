@@ -91,9 +91,9 @@ get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gen
 #get_antisense_overlaps("MALAT1", genes) #check function works
 #get_antisense_overlaps("ENSG00000287557", genes) # check function works
 
-###########################
+####################################
 # Check CTAT-LR for antisense genes
-###########################
+####################################
 genes <- gencodev44gtf %>%
   as.data.frame() %>%
   filter(type == "gene") %>%
@@ -124,7 +124,8 @@ antisense_pairs <- CTATLR_antisense_df %>%
 
 # Annotate
 CTATLR_SIM_a1 <- CTATLR_SIM %>% separate(LeftBreakpoint, into = c("chrom1", "base1", "strand1"), ":", remove=FALSE) %>% separate(RightBreakpoint, into = c("chrom2", "base2", "strand2"), ":", remove=FALSE)
-CTATLR_SIM_a1["#FusionName"] <- lapply(CTATLR_SIM_a1["#FusionName"], function(x) gsub("--", ":", x))
+CTATLR_SIM_a1["#FusionName"] <- lapply(CTATLR_SIM_a1["#FusionName"], 
+                                       function(x) gsub("--", ":", x))
 Gene_Names<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
                        filters = "external_gene_name",
                        values = (unique(c(CTATLR_SIM_a1$LeftGene, CTATLR_SIM_a1$RightGene))),

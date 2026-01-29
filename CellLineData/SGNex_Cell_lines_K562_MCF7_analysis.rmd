@@ -1,0 +1,89 @@
+---
+title: "SGNex algorithm analysis"
+author: "Ryley Dorney"
+date: "`r Sys.Date()`"
+output: html_document
+---
+Load relevant R libraries for data analysis
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidyr)
+library(naniar)
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(ggh4x)
+library(biomaRt)
+library(UpSetR)
+library(ComplexUpset)
+library(patchwork)
+library(ggforce)
+library(ggpubr)
+library("viridis")  
+library(readxl)
+```
+
+The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa of our curated list of known gene fusions. 
+```{r}
+source("~/LongReadFusionCallerBenchmark/CellLineData/Known_K562_MCF7.R")
+```
+
+Extract fusion genes called by longgf and output to a tsv file
+```{bash}
+SGNEX_DIR=/bioinformatics/ryley/Gencode44/SGNex_Fusionv44/
+
+#find the longgf fusion genes and output to a tsv file
+bash ~/LongReadFusionCallerBenchmark/CellLineData/LongGF_extractSumGF.sh
+```
+
+Read in Data from fusioncalling output from different algorithms [LongGF, Genion, JAFFAL, FusionSeeker, CTAT-LR and GFSeeler] performed on sequencing data from K562 and MCF7
+```{r}
+####Read in Data from fusioncalling output from different algorithms on K562 and MCF7
+source("~/LongReadFusionCallerBenchmark/CellLineData/PreprocessSGNexFusions.R")
+```
+
+```{r}
+############################
+# set up dataframes to check
+############################
+CTATLR_sensecheck <- CTATLR_SGNex
+JAFFAL_sensecheck <- JAFFAL_SGNex
+Genion_sensecheck <- Genion_SGNex
+FusionSeeker_sensecheck <- FusionSeeker_SGNex
+LongGF_sensecheck <- LongGF_SGNex
+
+#######################################
+# Run check atypical and false fusions
+#######################################
+source("~/LongReadFusionCallerBenchmark/CellLineData/CheckAtypicalFusions.R")
+
+CTATLR_SGNex_msa_annot <- CTATLR_sensemito_annotated
+JAFFAL_SGNex_msa_annot <- JAFFAL_sensemito_annotated
+Genion_SGNex_msa_annot <- Genion_sensemito_annotated
+FusionSeeker_SGNex_msa_annot <- FusionSeeker_sensemito_annotated
+LongGF_SGNex_msa_annot <- LongGF_sensemito_annotated
+```
+
+Annotate other types of fusions
+```{r}
+source("~/LongReadFusionCallerBenchmark/CellLineData/Annotate_fusiontype_SGNex.R")
+```
+
+Seperate fusion gene partners, make new dataframe (F)usion (SEP)arated Algorithm (C)el(l)
+```{r}
+source("~/LongReadFusionCallerBenchmark/CellLineData/Reformatting_fusioncaller_output.R")
+```
+
+Check which known gene fusions have been re-discovered
+```{r}
+source("~/LongReadFusionCallerBenchmark/CellLineData/SGNex_DiscoveryNRecall.R")
+```
+
+Check how many fusions were found by more than one algorithm
+```{r}
+source("~/LongReadFusionCallerBenchmark/CellLineData/SGNex_Overlap_Fusions.R")
+```
+
+
+

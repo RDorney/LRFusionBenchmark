@@ -43,7 +43,11 @@ Genion_SGNex<- Genion_SGNex %>%
   separate(V1, into = c("V1.1", "V1.2", "V1.3"), "::", remove=FALSE) %>% 
   separate(V2, into = c("V2.1", "V2.2", "V2.3"), "::", remove=FALSE) %>% 
   separate(V8, into = c("chr1", "chr2", "chr3"), ";", remove=FALSE) %>%
+  separate(chr1, into = c("chr1", "gene1_range"), ":", remove=FALSE)%>%
+  separate(chr2, into = c("chr2", "gene2_range"), ":", remove=FALSE)%>%
+  separate(chr3, into = c("chr3", "gene3_range"), ":", remove=FALSE)%>%
   filter(V5 >= 2)
+
 ##############
 #JAFFAL
 ##############
@@ -122,7 +126,9 @@ CTATLR_SGNex<- bind_rows(
   }))
  
 CTATLR_SGNex <- CTATLR_SGNex  %>%
-  filter(num_LR >= 2)
+  filter(num_LR >= 2)%>% 
+  separate(LeftBreakpoint, into = c("chrom1", "base1", "strand1"), ":", remove=FALSE) %>% 
+  separate(RightBreakpoint, into = c("chrom2", "base2", "strand2"), ":", remove=FALSE)
   
 og_CTATLR_SGNex <- CTATLR_SGNex
 
