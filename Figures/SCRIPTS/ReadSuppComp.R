@@ -3,7 +3,8 @@
 ###########################
 #comparing read support for the same fusions as called by different algorithms
 
-Figure3B <-ggplot(filter(fusions_in_all_algorithms, depth == "100GB", Sequence_Identity == "95%", control == "positive", overlap == num_ALG), aes(x = fusion.gene.id, y = Algorithm, fill = Total_Read_Supp)) +
+Figure3B <-ggplot(filter(fusions_in_all_algorithms, depth == "100GB", 
+                         Sequence_Identity == "95%", control == "positive", overlap == num_ALG), aes(x = fusion.gene.id, y = Algorithm, fill = Total_Read_Supp)) +
   geom_tile() +
   geom_text(aes(label = Total_Read_Supp), color = "black", size = 5, alpha =1) +  # Add numbers to the tiles, adjust color for visibility
   labs(x="", y="",

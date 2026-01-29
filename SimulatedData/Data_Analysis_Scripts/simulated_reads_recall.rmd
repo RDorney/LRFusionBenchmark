@@ -142,7 +142,7 @@ for(i in names){
 }
 LongGF_Sim <- do.call(rbind, lapply(my_files, function(filename) {
   read.table(filename) %>%
-    mutate(Source = basename(filename))
+    mutate(Source = V1)
 })) %>% 
   mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))%>% 
   separate(V2, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) %>% 

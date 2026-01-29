@@ -22,8 +22,9 @@ FCC <- ggplot(filter(fusion_profile_stat_summary, recall_category == "False_Call
                                                                             "false_fusion:self_misalignment" = "Self-Misalignment",
                                                                             "false_fusion:mitochondrial_genomic" = "Mitochondrial:Genomic",
                                                                             "false_fusion:mitochondrial" = "Mitochondrial",
+                                                                            "false_fusion:Sense-Antisense" = "Sense-Antisense",
                                                                             "false_fusion" = "False Chimera"), 
-                                                                          c("Genion"="Genion", "JAFFAL" = "JAFFAL", "LongGF" = "LongGF", "FusionSeeker" = "FusionSeeker"),
+                                                                          c("Genion"="Genion", "JAFFAL" = "JAFFAL", "LongGF" = "LongGF", "FusionSeeker" = "FusionSeeker", "CTAT-LR-Fusion" = "CTAT-LR-Fusion"),
                                                                           c("positive"="Postive", "negative" = "Negative"))) ) +  # Separate heatmaps for each algorithm
   scale_fill_gradient(low = "white", high = "red")+
   scale_alpha_continuous(range = c(0.2, 1)) +  # Adjust transparency based on fusion_type_count

@@ -36,7 +36,8 @@ combined_data$read_supp <- as.numeric(combined_data$read_supp)
 
 write_tsv(combined_data, paste0(Analysis_output_folder, "combined_data_FusionCalls.tsv"))
 
-combined_data_annotation <- filter(combined_data, read_supp >= 2) %>% unique() %>% mutate(recall_category = case_when(
+combined_data_annotation <- filter(combined_data, read_supp >= 2) %>% 
+  unique() %>% mutate(recall_category = case_when(
   grepl("false", fusionType) ~ "False_Call",
   grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
   TRUE ~ "True_Recall"))%>%
