@@ -10,7 +10,30 @@ Genion_Sim<- do.call(rbind, lapply(myfiles, function(filename) {
 }))
 og_Genion <-Genion_Sim
 
-# Annotate
+###############################
+# Check Genion antisense genes
+###############################
+# get unique genes from both columns
+genes_to_check <- unique(c(Genion_Sim$V1.1, Genion_Sim$V1.2))
+
+# run get_antisense_overlaps on each gene
+Genion_antisense_list <- lapply(genes_to_check, 
+                                function(g) get_antisense_overlaps(g, genes, id_type = "gene_id"))
+
+# combine into a single data frame
+Genion_antisense_df <- bind_rows(Genion_antisense_list, .id = "query_gene_index")
+
+# add the original gene names
+Genion_antisense_df$query_gene <- genes_to_check[as.integer(Genion_antisense_df$query_gene_index)]
+Genion_antisense_df$query_gene_index <- NULL
+
+antisense_pairs <- Genion_antisense_df %>%
+  dplyr::select(query_gene, gene_name) %>%
+  distinct()
+
+#########################
+# Annotate fusion types
+#########################
 Annot_Genion_Sim <- Genion_Sim %>%
   filter(V5 >= 2) %>% 
   separate(V1, into = c("V1.1", "V1.2", "V1.3"), "::", remove=FALSE) %>% 
@@ -68,6 +91,10 @@ Annot_Genion_Sim$fusionType <- mapply(function(g1, g2, g3, current_type, chr1, c
     #if blank and none of the above, its just a false fusion
     else if (gene_name1 == gene_name2){
       return("false_fusion:self_misalignment") 
+    }else if (paste(gene_name1, gene_name2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+              | 
+              paste(gene_name2, gene_name1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
+      return("false_fusion:Sense-Antisense") 
     } else {
       return("false_fusion")}
   }

@@ -22,6 +22,8 @@ LongGF_SGNex <- LongGF_SGNex %>%
   separate(V2, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) %>% 
   separate(V4, into = c("chromosome1", "breakpoint1"), sep = ":", remove = FALSE) %>% 
   separate(V5, into = c("chromosome2", "breakpoint2"), sep = ":", remove = FALSE) %>%
+  filter(chromosome1 %in% standard_chrs)%>%
+  filter(chromosome2 %in% standard_chrs)%>%
   filter(V3 >= 2)
   
 ###################

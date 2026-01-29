@@ -31,6 +31,8 @@ Identify resource usage of each tool :)
 
 ```{r}
 Analysis_output_folder <- "/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/"
+
+standard_chrs <- paste0("chr", c(1:22, "X", "Y", "M"))
 ```
 
 The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa. 
@@ -113,20 +115,26 @@ Read in the LongGF fusions into RStudio and separate components of output by par
 ```{r}
 #LongGF data wrangling
 RPROJ_DIR<-"/home/ryleyd/LongReadFusionCallerBenchmark"
+LONGGF_DIR<-"/bioinformatics/ryley/Gencode44/Algorithms/LongGF"
 #list files
-my_files <- list.files(path = RPROJ_DIR, pattern = "LongGF", full.names=TRUE)
+my_files <- list.files(path = LONGGF_DIR, pattern = "tsv", full.names=TRUE)
 all_tsv <-lapply(my_files, read.table)
-names <- gsub(".tsv","", list.files(path = RPROJ_DIR, pattern = "LongGF",full.names = FALSE),fixed = TRUE)
+names <- gsub(".tsv","", list.files(path = LONGGF_DIR, pattern = "tsv",full.names = FALSE),fixed = TRUE)
 #assign each longGF file
 for(i in names){
-  assign(i, read.table(paste0(RPROJ_DIR,"/", i, ".tsv")))
+  assign(i, read.table(paste0(LONGGF_DIR,"/", i, ".tsv")))
 }
-#seperate columns to more easily identify information correlating to each gene partner
-LongGF_Sim <- rbind(LongGF_Negative_Control, LongGF_Spiked)%>%
-      mutate(Source = basename(V1)) %>% mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))%>% 
+LongGF_Sim <- do.call(rbind, lapply(my_files, function(filename) {
+  read.table(filename) %>%
+    mutate(Source = basename(filename))
+})) %>% 
+  mutate(control = ifelse(grepl("Spiked", Source), "positive", "negative"))%>% 
   separate(V2, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) %>% 
   separate(V4, into = c("chromosome1", "breakpoint1"), sep = ":", remove = FALSE) %>% 
-  separate(V5, into = c("chromosome2", "breakpoint2"), sep = ":", remove = FALSE) #V2 = fusion gene name :
+  separate(V5, into = c("chromosome2", "breakpoint2"), sep = ":", remove = FALSE) %>% #V2 = fusion gene name :
+    filter(chromosome1 %in% standard_chrs)%>%
+  filter(chromosome2 %in% standard_chrs)
+
 ogLongGF <- LongGF_Sim
 ```
 
@@ -243,7 +251,7 @@ get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gen
     ) 
 }
 
-LongGF_sensecheck <- Annot_LongGF_Sim
+LongGF_sensecheck <- LongGF_Sim
 # get unique genes from both columns
 genes_to_check <- unique(c(LongGF_sensecheck$Gene1, LongGF_sensecheck$Gene2))
 
@@ -265,7 +273,7 @@ antisense_pairs <- LongGF_antisense_df %>%
 Annot_LongGF_Sim <- Annot_LongGF_Sim %>%
   group_by(V2.x) %>%
   mutate(fusionType = case_when(
-    is.na(fusionType) ~ paste0("chromosomal_misalignment:",first(na.omit(fusionType))),  # Only update NA values
+    is.na(fusionType) ~ paste0("chromosomal_misalignment:", dplyr::first(na.omit(fusionType))),  # Only update NA values
     .default = fusionType  # Keep existing values unchanged
   ))%>% ungroup()%>%
   replace_with_na(replace = list(fusionType = "chromosomal_misalignment:NA")) 
@@ -273,7 +281,7 @@ Annot_LongGF_Sim <- Annot_LongGF_Sim %>%
 Annot_LongGF_Sim <- LongGF_Sim_ensembl %>% left_join(Simulated_Fusion_Info_2, by = c("fusion.gene.id"), relationship = "many-to-many") %>%
   group_by(V2.x) %>%
   mutate(fusionType = case_when(
-    is.na(fusionType) ~ paste0("chromosomal_misalignment:",first(na.omit(fusionType))),  # Only update NA values
+    is.na(fusionType) ~ paste0("chromosomal_misalignment:", dplyr::first(na.omit(fusionType))),  # Only update NA values
     .default = fusionType  # Keep existing values unchanged
   ))%>% ungroup()%>%
   replace_with_na(replace = list(fusionType = "chromosomal_misalignment:NA"))  

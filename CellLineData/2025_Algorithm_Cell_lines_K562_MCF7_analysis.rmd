@@ -63,7 +63,6 @@ Read in Data from fusioncalling output from different algorithms [LongGF, Genion
 source("~/LongReadFusionCallerBenchmark/CellLineData/PreprocessSGNexFusions.R")
 ```
 
-
 ```{r}
 ############################
 # set up dataframes to check
@@ -78,8 +77,6 @@ LongGF_sensecheck <- LongGF_SGNex
 # Run check atypical and false fusions
 #######################################
 source("~/LongReadFusionCallerBenchmark/CellLineData/CheckAtypicalFusions.R")
-
-
 ```
 
 Find "Mitochondrial:Genomic" fusions chrM x genomic genes, and "Mitochondrial" chimeras and 

@@ -16,9 +16,9 @@ FusionSeeker_Sim <- FusionSeeker_Sim %>%
   separate(fusionGene, into= c('Gene1_vID','Gene2_vID'), sep = "::", remove = FALSE) %>%
   unite("fusion.gene.id", c(Gene1, Gene2), sep=":", remove= FALSE, na.rm = TRUE) %>%
   filter(NumSupp >= 2)
-###########################
-# Check FusionSeeker
-###########################
+#########################################
+# Check FusionSeeker for antisense genes
+#########################################
 # get unique genes from both columns
 genes_to_check <- unique(c(FusionSeeker_Sim$Gene1, FusionSeeker_Sim$Gene2))
 
@@ -36,6 +36,7 @@ FusionSeeker_antisense_df$query_gene_index <- NULL
 antisense_pairs <- FusionSeeker_antisense_df %>%
   dplyr::select(query_gene, gene_name) %>%
   distinct()
+
 #############################################################
 #Assign label to false fusions or partially recalled fusions
 #############################################################
