@@ -260,6 +260,50 @@ LongGF_sensemito_annotated <- LongGF_sensecheck_annotated %>%
   )
 
 ##################################
+# Check GFSeeker
+##################################
+# get unique genes from both columns
+genes_to_check <- unique(c(GFSeeker_sensecheck$gene1_name, GFSeeker_sensecheck$gene2_name))
+
+# run get_antisense_overlaps on each gene
+GFSeeker_antisense_list <- lapply(genes_to_check, 
+                                function(g) get_antisense_overlaps(g, genes, id_type = "gene_name"))
+
+# combine into a single data frame
+GFSeeker_antisense_df <- bind_rows(GFSeeker_antisense_list, .id = "query_gene_index")
+
+# add the original gene names
+GFSeeker_antisense_df$query_gene <- genes_to_check[as.integer(GFSeeker_antisense_df$query_gene_index)]
+GFSeeker_antisense_df$query_gene_index <- NULL
+
+antisense_pairs <- GFSeeker_antisense_df %>%
+  dplyr::select(query_gene, gene_name) %>%
+  distinct()
+
+GFSeeker_sensecheck_annotated <- GFSeeker_sensecheck %>%
+  mutate(
+    fusionType = if_else(
+      paste(gene1_name, gene2_name) %in% 
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+      | 
+        paste(gene2_name, gene1_name) %in% 
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
+      "Sense-Antisense",
+      NA_character_
+    )
+  )
+# Annotate with mitochondrial and self fusions
+GFSeeker_sensemito_annotated <- GFSeeker_sensecheck_annotated %>%
+  mutate(
+    fusionType = case_when(
+      chrom1 == "chrM" & chrom2 == "chrM" ~ "Mitochondrial:Mitochondrial",
+      xor("chrM" == chrom1, "chrM" == chrom2) ~ "Mitochondrial:Genomic",
+      gene1_name == gene2_name ~ "Self-Misalignment",
+      TRUE ~ fusionType
+    )
+  )
+
+##################################
 # Check JAFFAL and update function
 ##################################
 gencodev43gtf <- import("/bioinformatics/ryley/reference_files/gencode.v43.annotation.gtf")
@@ -385,6 +429,10 @@ sensemito_fusions <- rbind(dplyr::select(CTATLR_sensemito_annotated,
                                          c("Source", "Cell_Lines", 
                                            "Algorithm", "Sequencing_Depth",    
                                            "Library", "fusionType")),
+                           dplyr::select(GFSeeker_sensemito_annotated, 
+                                         c("Source", "Cell_Lines", 
+                                           "Algorithm", "Sequencing_Depth",    
+                                           "Library", "fusionType")),
                            dplyr::select(JAFFAL_sensemito_annotated, 
                                          c("Source", "Cell_Lines", 
                                            "Algorithm", "Sequencing_Depth",    
@@ -393,7 +441,6 @@ sensemito_fusions <- rbind(dplyr::select(CTATLR_sensemito_annotated,
 ################
 # plots
 ################
-
 ggplot(filter(sensemito_fusions, Sequencing_Depth == c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb")), 
        aes(x = Sequencing_Depth, fill = fusionType)) +
   geom_bar() +

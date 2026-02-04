@@ -13,4 +13,11 @@ GFSeeker_SIM<- bind_rows(
     }
   }))
 
+GFSeeker_SIM <- GFSeeker_SIM  %>%
+  filter("support num" >= 2)%>% 
+  separate("break points", into = c("Breakpoint1", "Breakpoint2"), ";", remove=TRUE) %>% 
+  separate(Breakpoint1, into = c("chrom1", "base1"), ":", remove=FALSE)%>%
+  separate(Breakpoint2, into = c("chrom2", "base2"), ":", remove=FALSE)%>%
+  mutate(Algorithm = "GFSeeker")
+
 og_GFSeeker <- GFSeeker_SIM

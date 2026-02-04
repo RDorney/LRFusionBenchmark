@@ -1,33 +1,67 @@
-Overlap_CellData_JAFFAL <- full_join(disc_JAFFALcl, disc_JAFFALcl_3Gene )%>%
-  filter(spanning.reads >=2) %>% rename(read_support = spanning.reads) %>%
+#########################################################
+# Check how many fusions were shared by multiple callers
+#
+#########################################################
+
+#################
+# Prep data
+#################
+Overlap_CellData_JAFFAL <- full_join(disc_JAFFAL_SGNex, disc_JAFFAL_SGNex_3Gene )%>%
+  rename(read_support = spanning.reads) %>%
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
-Overlap_CellData_Genion <- fsep_Gencl %>% filter(V5 >=2) %>%
+
+Overlap_CellData_Genion <- disc_Gen_SGNex %>% 
   rename(fusionGeneID = V1, read_support = V5)%>% 
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
+
 Overlap_CellData_FusionSeeker <- FusionSeeker_SGNex_Annot %>%
   mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y))  %>%
-  filter(NumSupp >= 2) %>%
   rename(read_support = NumSupp)%>%
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
+
 Overlap_CellData_LongGF <- LongGF_SGNex_Annot %>%
   mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y)) %>%
-  filter(V3 >=2)  %>%
-  rename(read_support = V3)%>% select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
+  rename(read_support = V3)%>% 
+  select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
 
-head(rbind(Overlap_CellData_JAFFAL, Overlap_CellData_Genion, Overlap_CellData_FusionSeeker, Overlap_CellData_LongGF))
+Overlap_CellData_GFSeeker <- GFSeeker_SGNex_Annot %>%
+  mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y)) %>%
+  rename(read_support = "support num")%>% 
+  select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
 
-fusion_data <- rbind(Overlap_CellData_JAFFAL, Overlap_CellData_Genion, Overlap_CellData_FusionSeeker, Overlap_CellData_LongGF)
+Overlap_CellData_CTATLR <- CTATLR_SGNex_Annot %>%
+  mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y)) %>%
+  rename(read_support = num_LR)%>% 
+  select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
+
+###############################
+# Combine Data
+###############################
+head(rbind(Overlap_CellData_JAFFAL, Overlap_CellData_Genion, 
+           Overlap_CellData_FusionSeeker, Overlap_CellData_LongGF,
+           Overlap_CellData_GFSeeker, Overlap_CellData_CTATLR))
+
+fusion_data <- rbind(Overlap_CellData_JAFFAL, Overlap_CellData_Genion, 
+                     Overlap_CellData_FusionSeeker, Overlap_CellData_LongGF,
+                     Overlap_CellData_GFSeeker, Overlap_CellData_CTATLR)
 
 Overlap_CellData_algorithms <- fusion_data %>% 
   group_by(fusionGeneID, Cell_Lines, Sequencing_Depth, Library) %>%
   summarise(overlap = n_distinct(Algorithm), .groups = "drop") %>%
-  left_join(fusion_data, by = c("fusionGeneID", "Cell_Lines", "Sequencing_Depth", "Library"))%>%
+  left_join(fusion_data, 
+            by = c("fusionGeneID", "Cell_Lines", "Sequencing_Depth", "Library"))%>%
   group_by(fusionGeneID, Cell_Lines, Sequencing_Depth, Library, Algorithm, overlap) %>%
   summarise(Total_Read_Supp = sum(read_support), .groups = "drop")
-Overlap_CellData_algorithms$Sequencing_Depth<- factor(Overlap_CellData_algorithms$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
-Overlap_CellData_algorithms$Library<- factor(Overlap_CellData_algorithms$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
+Overlap_CellData_algorithms$Sequencing_Depth<- factor(Overlap_CellData_algorithms$Sequencing_Depth, 
+                                                      levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
+Overlap_CellData_algorithms$Library<- factor(Overlap_CellData_algorithms$Library, 
+                                             levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
 
-Overlap_CellData_discovery <- left_join(Overlap_CellData_algorithms, known_fusions_biomart[c(1,6,7,10:12)], by = c("fusionGeneID", "Cell_Lines"="Cell_Line")) %>%  mutate(discovery = if_else(is.na(discovery), "novel", discovery))
+Overlap_CellData_discovery <- left_join(Overlap_CellData_algorithms, known_fusions_biomart[c(1,6,7,10:12)], 
+                                        by = c("fusionGeneID", "Cell_Lines"="Cell_Line")) %>%  
+  mutate(discovery = if_else(is.na(discovery), "novel", discovery))
+
+
 
 # Step 1: Summarize Read_Supp per algorithm
 OverlapknownOnly <- Overlap_CellData_discovery %>%
@@ -45,6 +79,9 @@ OverlapknownOnly <- OverlapknownOnly %>%
   left_join(Overlap_CellData_info, by = c("fusionGene", "Cell_Lines", "Sequencing_Depth", "Library")) %>%
   mutate(fusionGene = fct_reorder(fusionGene, overlap, .desc = TRUE))
 
+##########################
+# Plot results
+##########################
 ggplot(filter(OverlapknownOnly, Sequencing_Depth == "Total"), 
        aes(x = fusionGene, y = Algorithm, fill = Read_Supp)) +
   geom_tile() +
@@ -84,11 +121,13 @@ ggplot(filter(Overlap_CellData_total, str_count(fusionGeneID, "::") == 2),
   labs(x="", y="", fill = "") +
   theme_minimal() +
   facet_grid(Library ~ Cell_Lines, scales = "free_x", space = "free") +
-  scale_fill_gradient2(low = "lemonchiffon", mid="orange" ,high = "orchid", na.value = "grey", , midpoint = 30)+
+  scale_fill_gradient2(low = "lemonchiffon", mid="orange" ,high = "orchid", 
+                       na.value = "grey", , midpoint = 30)+
   scale_alpha_continuous(range = c(0.1, 1)) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="grey80"))
 
-MCF7_total_directcDNA <- Overlap_CellData_total %>% filter(Cell_Lines == "MCF7", Library == "direct-cDNA") %>% select(c(discovery, Algorithm, fusionGeneID ))
+MCF7_total_directcDNA <- Overlap_CellData_total %>% filter(Cell_Lines == "MCF7", Library == "direct-cDNA") %>% 
+  select(c(discovery, Algorithm, fusionGeneID ))
 
 shared_fusions_cell <- Overlap_CellData_algorithms %>% filter(Sequencing_Depth == "Total")%>%
   separate(fusionGeneID, into = c("Gene1","Gene2","Gene3"), sep="::", remove = FALSE)

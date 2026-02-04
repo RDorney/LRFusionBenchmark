@@ -24,7 +24,8 @@ LongGF_SGNex <- LongGF_SGNex %>%
   separate(V5, into = c("chromosome2", "breakpoint2"), sep = ":", remove = FALSE) %>%
   filter(chromosome1 %in% standard_chrs)%>%
   filter(chromosome2 %in% standard_chrs)%>%
-  filter(V3 >= 2)
+  filter(V3 >= 2)%>%
+  mutate(Algorithm = "LongGF")
   
 ###################
 #Genion
@@ -46,7 +47,8 @@ Genion_SGNex<- Genion_SGNex %>%
   separate(chr1, into = c("chr1", "gene1_range"), ":", remove=FALSE)%>%
   separate(chr2, into = c("chr2", "gene2_range"), ":", remove=FALSE)%>%
   separate(chr3, into = c("chr3", "gene3_range"), ":", remove=FALSE)%>%
-  filter(V5 >= 2)
+  filter(V5 >= 2)%>%
+  mutate(Algorithm = "Genion")
 
 ##############
 #JAFFAL
@@ -61,7 +63,8 @@ JAFFAL_SGNex <- JAFFAL_SGNex %>%
   separate(fusion.genes, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) %>%
   filter(chrom1 %in% standard_chrs)%>%
   filter(chrom2 %in% standard_chrs)%>%
-  filter(spanning.reads >= 2)
+  filter(spanning.reads >= 2)%>%
+  mutate(Algorithm = "JAFFAL")
   
 ##############
 #JAFFAL_3Gene 
@@ -74,7 +77,9 @@ JAFFAL_SGNex_3Gene <- do.call(rbind, lapply(myfiles, function(filename) {
 }))
 
 JAFFAL_SGNex_3Gene <- JAFFAL_SGNex_3Gene %>%
-  filter(Reads >= 2)
+  filter(Reads >= 2)%>% 
+  separate(Fusion, into = c("Gene1", "Gene2", "Gene3"), sep = ":", remove = FALSE)%>%
+  mutate(Algorithm = "JAFFAL")
 
 ##############
 #FusionSeeker
@@ -91,7 +96,8 @@ FusionSeeker_SGNex <- FusionSeeker_SGNex %>%
   mutate(across(c(Gene1, Gene2), ~ gsub("\\..*","", .)))%>%
   separate(fusionGene, into= c('Gene1_vID','Gene2_vID'), sep = "::", remove = FALSE) %>%
   unite("fusion.gene.id", c(Gene1, Gene2), sep=":", remove= FALSE, na.rm = TRUE) %>%
-  filter(NumSupp >= 2)
+  filter(NumSupp >= 2)%>%
+  mutate(Algorithm = "FusionSeeker")
 
 #################
 # CTAT-LR-Fusion
@@ -128,22 +134,66 @@ CTATLR_SGNex<- bind_rows(
 CTATLR_SGNex <- CTATLR_SGNex  %>%
   filter(num_LR >= 2)%>% 
   separate(LeftBreakpoint, into = c("chrom1", "base1", "strand1"), ":", remove=FALSE) %>% 
-  separate(RightBreakpoint, into = c("chrom2", "base2", "strand2"), ":", remove=FALSE)
+  separate(RightBreakpoint, into = c("chrom2", "base2", "strand2"), ":", remove=FALSE)%>%
+  mutate(Algorithm = "CTAT-LR-Fusion")
   
 og_CTATLR_SGNex <- CTATLR_SGNex
 
 #################
 # GFSeeker
 #################
+myfiles<-list.files(path = "/bioinformatics/siyuan/gfseeker_results_v2/cellline", 
+                    pattern = "final_validated_fusions.csv", full.names = TRUE, recursive = TRUE)
+GFSeeker_SGNex<- bind_rows(
+  lapply(myfiles, function(filename) {
+    if (file.info(filename)$size > 118) {
+      read_tsv(filename,
+               col_names = TRUE,
+               show_col_types = FALSE) %>%
+        mutate(Source = basename(dirname(filename)),
+               Cell_Lines = case_when(
+                 grepl("K562", Source, ignore.case = TRUE) ~ "K562",
+                 grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7"
+               ), Algorithm = "GFSeeker",
+               Sequencing_Depth = case_when(
+                 grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
+                 grepl("10G", Source, ignore.case = TRUE) ~ "10Gb",
+                 grepl("_5G", Source, ignore.case = TRUE) ~ "5Gb",
+                 grepl("2.5G", Source, ignore.case = TRUE) ~ "2.5Gb",
+                 grepl("7.5G", Source, ignore.case = TRUE) ~ "7.5Gb",
+                 .default = "Total"),
+               Library = case_when(
+                 grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
+                 grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",
+                 .default = "PCR-cDNA"))
+    } else {
+      NULL
+    }
+  }))
+
+GFSeeker_SGNex <- GFSeeker_SGNex  %>%
+  filter("support num" >= 2)%>% 
+  rename(gene1_name = "#gene1 name")%>%
+  rename(gene2_name = "gene2 name")%>%
+  separate("break points", into = c("Breakpoint1", "Breakpoint2"), ";", remove=TRUE) %>% 
+  separate(Breakpoint1, into = c("chrom1", "base1"), ":", remove=FALSE)%>%
+  separate(Breakpoint2, into = c("chrom2", "base2"), ":", remove=FALSE)%>%
+  mutate(Algorithm = "GFSeeker")
+
+og_GFSeeker_SGNex <- GFSeeker_SGNex
+
+##############################
+# Append Cell lines and Depth
+##############################
 
 #Make a column to indicate which cell line the fusion was found in, 
-# and a column to indicate what tool was used, and column to indicate the sequencing depth and library type
+# and column to indicate the sequencing depth and library type
 
 LongGF_SGNex <- LongGF_SGNex %>%
   mutate(Cell_Lines = case_when(
     grepl("K562", Source, ignore.case = TRUE) ~ "K562",
     grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7"
-  ), Algorithm = "LongGF",
+  ),
   Sequencing_Depth = case_when(
     grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
     grepl("10G", Source, ignore.case = TRUE) ~ "10Gb",
@@ -160,7 +210,7 @@ Genion_SGNex <- Genion_SGNex%>%
   mutate(Cell_Lines = case_when(
     grepl("K562", Source, ignore.case = TRUE) ~ "K562",
     grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7",# Keep original value if no match
-  ), Algorithm = "Genion",
+  ),
   Sequencing_Depth = case_when(
     grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
     grepl("10G", Source, ignore.case = TRUE) ~ "10Gb",
@@ -177,7 +227,7 @@ FusionSeeker_SGNex <- FusionSeeker_SGNex %>%
   mutate(Cell_Lines = case_when(
     grepl("K562", Source, ignore.case = TRUE) ~ "K562",
     grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7",# Keep original value if no match
-  ), Algorithm = "FusionSeeker",
+  ),
   Sequencing_Depth = case_when(
     grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
     grepl("10G", Source, ignore.case = TRUE) ~ "10Gb",
@@ -200,7 +250,7 @@ JAFFAL_SGNex <- JAFFAL_SGNex%>%
       grepl("_5G", Source, ignore.case = TRUE) ~ "5Gb",
       grepl("2.5G", Source, ignore.case = TRUE) ~ "2.5Gb",
       grepl("7.5G", Source, ignore.case = TRUE) ~ "7.5Gb",
-      .default = "Total"), Algorithm = "JAFFAL",
+      .default = "Total"), 
     Library = case_when(
       grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
       grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",
@@ -216,7 +266,7 @@ JAFFAL_SGNex_3Gene <- JAFFAL_SGNex_3Gene %>%
     grepl("_5G", Source, ignore.case = TRUE) ~ "5Gb",
     grepl("2.5G", Source, ignore.case = TRUE) ~ "2.5Gb",
     grepl("7.5G", Source, ignore.case = TRUE) ~ "7.5Gb",
-    .default = "Total"), Algorithm = "JAFFAL",
+    .default = "Total"), 
   Library = case_when(
     grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
     grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",

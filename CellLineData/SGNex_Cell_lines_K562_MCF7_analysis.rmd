@@ -52,6 +52,7 @@ JAFFAL_sensecheck <- JAFFAL_SGNex
 Genion_sensecheck <- Genion_SGNex
 FusionSeeker_sensecheck <- FusionSeeker_SGNex
 LongGF_sensecheck <- LongGF_SGNex
+GFSeeker_sensecheck <- GFSeeker_SGNex
 
 #######################################
 # Run check atypical and false fusions
@@ -63,20 +64,36 @@ JAFFAL_SGNex_msa_annot <- JAFFAL_sensemito_annotated
 Genion_SGNex_msa_annot <- Genion_sensemito_annotated
 FusionSeeker_SGNex_msa_annot <- FusionSeeker_sensemito_annotated
 LongGF_SGNex_msa_annot <- LongGF_sensemito_annotated
-```
+GFSeeker_SGNex_msa_annot <- GFSeeker_sensemito_annotated
 
-Annotate other types of fusions
-```{r}
+#Annotate other types of fusions
 source("~/LongReadFusionCallerBenchmark/CellLineData/Annotate_fusiontype_SGNex.R")
+
+
 ```
 
 Seperate fusion gene partners, make new dataframe (F)usion (SEP)arated Algorithm (C)el(l)
 ```{r}
-source("~/LongReadFusionCallerBenchmark/CellLineData/Reformatting_fusioncaller_output.R")
+Annot_CTATLR_SGNex 
+Annot_JAFFAL_SGNex 
+Annot_JAFFAL_SGNex_3Gene
+Annot_Genion_SGNex 
+Annot_FusionSeeker_SGNex 
+Annot_LongGF_SGNex 
+Annot_GFSeeker_SGNex 
+
+source("~/LongReadFusionCallerBenchmark/CellLineData/SGNex_assign_EnsemblID.R")
 ```
 
 Check which known gene fusions have been re-discovered
 ```{r}
+CTATLR_SGNex_Annot <- Annot_CTATLR_SGNex  
+JAFFAL_SGNex_Annot <- Annot_JAFFAL_SGNex
+Genion_SGNex_Annot <- Annot_Genion_SGNex 
+FusionSeeker_SGNex_Annot <-Annot_FusionSeeker_SGNex 
+GFSeeker_SGNex_Annot <- Annot_GFSeeker_SGNex 
+LongGF_SGNex_Annot <-Annot_LongGF_SGNex 
+
 source("~/LongReadFusionCallerBenchmark/CellLineData/SGNex_DiscoveryNRecall.R")
 ```
 
