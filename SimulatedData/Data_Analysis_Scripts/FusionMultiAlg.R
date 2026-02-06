@@ -24,3 +24,4 @@ fusions_in_n_algorithms$depth <- factor(fusions_in_n_algorithms$depth, levels = 
 fusions_in_n_algorithms$Sequence_Identity <- factor(fusions_in_n_algorithms$Sequence_Identity, levels = c("95%", "90%", "85%"))
 fusions_in_n_algorithms <- fusions_in_n_algorithms %>%
   mutate(fusion.gene.id = fct_reorder(fusion.gene.id, overlap, .desc = TRUE))
+write_tsv(fusions_in_n_algorithms, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/fusions_in_n_algorithms.tsv")

@@ -4,14 +4,18 @@ known_fusions <- read.table(paste0(Cell_line_data_directory, "real_gene_fusions.
 ensemblv110 <- useEnsembl("ensembl", 
                           dataset = "hsapiens_gene_ensembl", 
                           version = 110)
-gene_info <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
+gene_info <- distinct(rbind(getBM(attributes = c("external_gene_name", "external_gene_name", "ensembl_gene_id"),
                    filters = "external_gene_name",
                    values = unique(c(known_fusions$Gene1, known_fusions$Gene2)),
-                   mart = ensemblv110) %>% 
-  unique()
-known_fusions_biomart <- left_join(known_fusions,  gene_info, by  = c("Gene1"="external_gene_name")) %>% 
+                   mart = ensemblv110), 
+                   getBM(attributes = c("external_gene_name", "ensembl_gene_id", "external_synonym"),
+                    filters = "external_synonym",
+                    values = unique(c(known_fusions$Gene1, known_fusions$Gene2)),
+                    mart = ensemblv110)))
+known_fusions_biomart <- left_join(known_fusions,  gene_info, 
+                                   by  = c("Gene1"="external_gene_name")) %>% 
   left_join(gene_info, by  = c("Gene2"="external_gene_name"))
-write_csv(known_fusions_biomart, file="~/known_fusions_biomart.csv")
+write_csv(known_fusions_biomart, file="~/LongReadFusionCallerBenchmark/CellLineData/known_fusions_biomart.csv")
 
 known_fusions_manual_annotation <- read_excel("~/LongReadFusionCallerBenchmark/CellLineData/known_fusions_manual_annotation.xlsx")
 

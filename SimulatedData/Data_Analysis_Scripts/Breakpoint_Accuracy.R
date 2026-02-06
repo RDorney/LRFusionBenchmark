@@ -282,6 +282,9 @@ Breakpoint_Accuracy <- Breakpoint_Accuracy %>% filter(!if_all(FSB1:JB2, ~ .x == 
     grepl("B4", Tool_Breakpoint) ~ "Breakpoint_4"))
 
 Breakpoint_Accuracy <-filter(Breakpoint_Accuracy, Distance_from_Simulated_Breakpoint != "NA") %>% distinct()
+
 #some breakpoints are before the value and have a negative value, this we transform the values to absolute distances
 absolute_Breakpoint_Accuracy <- Breakpoint_Accuracy %>%
   mutate(values_vector = abs(values_vector))
+write_tsv(absolute_Breakpoint_Accuracy, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/absolute_Breakpoint_Accuracy.tsv")
+

@@ -14,6 +14,8 @@ fusion_profile_stat_summary <- combined_data %>%  filter(read_supp >=2) %>% uniq
 fusion_profile_stat_summary$depth <- factor(fusion_profile_stat_summary$depth, levels = c("1GB", "10GB", "100GB"))
 fusion_profile_stat_summary$Sequence_Identity <- factor(fusion_profile_stat_summary$Sequence_Identity, levels = c("85%", "90%", "95%"))
 
+write_tsv(fusion_profile_stat_summary, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/fusion_profile_stat_summary.tsv")
+
 FCC <- ggplot(filter(fusion_profile_stat_summary, recall_category == "False_Call"))+ #, control == "positive"
   aes(x = depth, y = Sequence_Identity, fill = fusion_type_count) +
   geom_tile() +

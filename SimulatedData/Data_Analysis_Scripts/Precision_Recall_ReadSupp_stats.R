@@ -21,6 +21,7 @@ stat_summary$depth <- factor(stat_summary$depth, levels = c("100GB", "10GB", "1G
 stat_summary$Sequence_Identity <- factor(stat_summary$Sequence_Identity, levels = c("85%", "90%", "95%"))
 
 write_tsv(stat_summary, file=paste0(Analysis_output_folder, "stat_summary.tsv"))
+write_tsv(stat_summary, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/stat_summary.tsv")
 
 #Calculate the effect of read support on recall/precision
 calculate_read_filt_statistics <- function(data, min_read_supp) {
@@ -50,3 +51,5 @@ for(number in seq(3, max(sort(unique(combined_data$read_supp))))){
   readsupp_filtering <- rbind(result, readsupp_filtering) 
 }
 readsupp_filtering$minimum_read_support <- as.numeric(readsupp_filtering$minimum_read_support)
+
+write_tsv(readsupp_filtering, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/readsupp_filtering.tsv")

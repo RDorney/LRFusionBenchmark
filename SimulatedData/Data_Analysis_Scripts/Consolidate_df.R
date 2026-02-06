@@ -35,6 +35,7 @@ combined_data <- rbind(dLGF, dJF, dJF3, dGen, dFS, dCTAT_LR)
 combined_data$read_supp <- as.numeric(combined_data$read_supp)
 
 write_tsv(combined_data, paste0(Analysis_output_folder, "combined_data_FusionCalls.tsv"))
+write_tsv(combined_data, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/combined_data.tsv")
 
 combined_data_annotation <- filter(combined_data, read_supp >= 2) %>% 
   unique() %>% mutate(recall_category = case_when(
@@ -52,3 +53,4 @@ combined_data_annotation$depth <- factor(combined_data_annotation$depth, levels 
 combined_data_annotation$Sequence_Identity <- factor(combined_data_annotation$Sequence_Identity, levels = c("85%", "90%", "95%"))
 
 write_tsv(combined_data_annotation, file=paste0(Analysis_output_folder, "combined_data_annotation.tsv"))
+write_tsv(combined_data_annotation, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/combined_data_annotation.tsv")

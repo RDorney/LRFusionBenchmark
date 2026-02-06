@@ -25,6 +25,7 @@ library(ggpubr)
 ```
 
 Identify resource usage of each tool :)
+
 ```{bash}
 #bash ~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/ResourceUsage.sh
 ```
@@ -51,7 +52,7 @@ genes <- gencodev44gtf %>%
   )
 ```
 
-The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa. 
+The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa.
 
 ```{r}
 ensembl_current <-  useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl")
@@ -61,13 +62,13 @@ ensemblv110 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version 
 ```
 
 Here we read in the data table containing information about the fusions generated with Fusim to be spiked in. We then modify the table to have separate columns for partner genes. We then use biomart to find the corresponding gene names/ids. This helps find potential alternative names/ids for gene fusions recalled.
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/simulated_data_info/SimulatedDataInfo_format.R")
 ```
 
-Here we perform a sanity check to ensure the simulated fusions are within our simulated fastq files.
-The fusion names will be within the headers of the fastq, all prefixed with "ref|", therefore we extract fusion names using this. 
-BadRead also simulates false chimeras, so I also need to remove fusions which were turned into false chimeras.
+Here we perform a sanity check to ensure the simulated fusions are within our simulated fastq files. The fusion names will be within the headers of the fastq, all prefixed with "ref\|", therefore we extract fusion names using this. BadRead also simulates false chimeras, so I also need to remove fusions which were turned into false chimeras.
+
 ```{bash}
 #Identify the fusions spiked in to the fastq files
 fastq_directory=/bioinformatics/ryley/Algorithm_Benchmark/Adapter_porechop_trimmed/fastq_files/
@@ -84,6 +85,7 @@ grep -v "chimera" Spiked_Fusions.csv > Spiked_Fusions_no_chimeras.csv
 ```
 
 Read the file generated containing fusions, and count how many fusions are in each file. We can also see how many supporting reads there are for each fusion
+
 ```{r}
 Simulateddatainfo_directory <- "~/LongReadFusionCallerBenchmark/SimulatedData/simulated_data_info/"
 Spiked_fusion_file <-  paste0(Simulateddatainfo_directory, "Spiked_Fusions_no_chimeras.csv")
@@ -117,6 +119,7 @@ Spiked_ReadCounts_wo_SF <- filter(Spiked_Fusions, name1 != name2) |> #filter out
 ```
 
 LongGF suggests to extract the called fusions form the output log using 'grep SumGF'.
+
 ```{bash}
 LONGGF_DIR=/bioinformatics/ryley/Gencode44/Algorithms/LongGF
 #RPROJ_DIR=/home/ryleyd/LongReadFusionCallerBenchmark
@@ -127,7 +130,8 @@ grep SumGF ${LONGGF_DIR}/*Adapter_Simulated*.log > ${LONGGF_DIR}/LongGF_Negative
 
 ```
 
-Read in the LongGF fusions into RStudio and separate components of output by partner genes. 
+Read in the LongGF fusions into RStudio and separate components of output by partner genes.
+
 ```{r}
 #LongGF data wrangling
 RPROJ_DIR<-"/home/ryleyd/LongReadFusionCallerBenchmark"
@@ -155,6 +159,7 @@ ogLongGF <- LongGF_Sim
 ```
 
 BiomaRt is then used to find the corresponding gene names/ids for fusions called by LongGF.
+
 ```{r}
 #gets ensembl gene ID and check it matches the putative chromosome 
 Gene_Name<-rbind (getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
@@ -190,12 +195,14 @@ Gene_Name$chromosome_name <- paste0("chr", Gene_Name$chromosome_name)
 ```
 
 Check if LongGF called any fusions that were spiked in
+
 ```{r}
 Annot_LongGF_Sim <- LongGF_Sim_ensembl %>% 
   left_join(Simulated_Fusion_Info_2, by = c("fusion.gene.id"), relationship = "many-to-many")
 ```
 
 Assign label to false fusions or partially recalled fusions by LongGF
+
 ```{r}
 ###############################
 # Check antisense sense fusions
@@ -342,42 +349,53 @@ Annot_LongGF_Sim$Gene1, Annot_LongGF_Sim$Gene2)
 ```
 
 Repeat the same above pre-processing steps for FusionSeeker
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/PreprocessFusionSeeker.R")
 ```
 
 Repeat pre-processing steps for JAFFAL
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/PreprocessJAFFAL.R")
 ```
 
 Repeat pre-processing steps for Genion
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/PreprocessGenion.R") 
 ```
 
-Repeat pre-processing steps for CTAT-LR 
+Repeat pre-processing steps for CTAT-LR
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/PreprocessCTAT-LR.R")
 ```
 
-Append corresponding depth and sequencing identity labels 
+Append corresponding depth and sequencing identity labels
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/Append_DepSeqIDALg.R")
 ```
 
-Label fusions as False Calls, Partial Real and True Recall in Genion and JAFFAL datasets
+Label fusions as False Calls, Partial Real and True Recall in Genion and JAFFAL datasets. Also write Genion_Fffscores.tsv and JAFFAL_scoring.tsv
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/AlgorithmRecallCategory.R")
+
 supp_Figure15
 ```
 
 Consolidate fusion caller outputs into one dataframe to more easily compare
+
+write combined_data.tsv and combined_data_annotation.tsv
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/Consolidate_df.R")
 ```
 
 Check number of false, partial and true calls. Generate Supplementary Figure 2
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/ColouredGridStats.R")
 # Display the combined plot
@@ -385,93 +403,115 @@ Supplementary_Figure2
 ggsave("~/LongReadFusionCallerBenchmark/Figures/Supplementary_Figure2.png", Supplementary_Figure2, width = 210, height = 210, units = "mm")
 ```
 
-Calculate Recall vs Precision, and F1 score
+Calculate Recall vs Precision, and F1 score.
+
+Also write stat_summary.tsv and readsupp_filtering.tsv
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/Precision_Recall_ReadSupp_stats.R") 
+
 ```
 
 Generate Supplementary Figures 8-10
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Readsupport_vs_Precision-F1.R")
 ```
 
-Make Figure 3A 
+Make Figure 3A
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/F1_RecPrec_subset.R")
 ```
 
-Check the effect of removing obvious false chimeras from the fusion calls to see if they greatly influence precision. There visually appears to be minimal/negligible influence.
+Check the effect of removing obvious false chimeras from the fusion calls to see if they greatly influence precision. There visually appears to be minimal/negligible influence. also export manual_readsupp_filtering.tsv
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Manual_Filtering.R")
 ```
 
-Create a summary of the number of false, partial and true calls in every simulation
+Create a summary of the number of false, partial and true calls in every simulation. Also write fusion_profile_stat_summary.tsv
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/FusionProfile_StatSummary.R")
 ```
 
 Make Supplementary Figure 1 and 4
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Fusion_Profile_Grid.R")
 ```
 
 Make Figure 1 part D-G
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Figure1.R")
 ```
 
 Make Supplementary Figure 5
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Make_supFig5.R")
 ```
 
 Create Supplementary Figure 6
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Make_supFig6.R")
 ```
 
 Make Supplementary Figure 7
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Make_supFig7.R")
 ```
 
 Make Figure 2
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Figure2.R")
 ```
 
-Fusionseeker and some of fusion callers will produce duplicate calls the same fusion multiple times with different read support because of breakpoint differences. We need to consolidate these for ease in comparing how read support for the same fusion will differ by fusion caller tool
+Fusionseeker and some of fusion callers will produce duplicate calls the same fusion multiple times with different read support because of breakpoint differences. We need to consolidate these for ease in comparing how read support for the same fusion will differ by fusion caller tool. Export fusions_in_all_algorithms.tsv
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/ReadSupport_Consolidation.R")
 ```
 
 Make Figure 3B: comparing read support for the same fusions as called by different algorithms
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/ReadSuppComp.R")
 ```
+
 Make Compound Figure 3
+
 ```{r}
 Figure3<- (Figure3A / Figure3B) +
           plot_annotation(tag_levels = list(c("A", "", "", "B")))
 ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure3_paper.png", plot = Figure3, width = 210, height = 297, units = "mm")  
 ```
 
-identify fusions in more than one algorithm
+identify fusions in more than one algorithm, and export fusions_in_n_algorithms.tsv
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/FusionMultiAlg.R")
 ```
 
 Supplementary Figure 11
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Make_SupFig11.R")
 ```
 
-Generate upset plots to see the total number of overlapping fusions between fusion callers
-Make Figure 1H: True Calls Overlap
+Generate upset plots to see the total number of overlapping fusions between fusion callers Make Figure 1H: True Calls Overlap
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/TrueCalls_Overlap.R")
 ```
+
 Create Compound Figure 1:
+
 ```{r}
 Figure1_paper <- (Figure1D | Figure1E)/
                   (Figure1F | Figure1G)/
@@ -482,7 +522,8 @@ ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure1_paper.pdf", plot = Figur
 ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure1_paper.png", plot = Figure1_paper, width = 300, height = 430, units = "mm", limitsize = FALSE)
 ```
 
-Make Supplementary Figure 3 
+Make Supplementary Figure 3
+
 ```{r}
 #Supplementary Figure 3A
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/FusionTypesOverlap_Upset.R")
@@ -490,16 +531,19 @@ supp_Figure3
 ```
 
 Repeat analysis with removed obvious false chimeras to see if they have any influence. Any differences observed are negligible
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Overlap_ManualFiltering.R")
 ```
 
-Calculate the breakpoint accuracy
+Calculate the breakpoint accuracy. Write absolute_Breakpoint_Accuracy.tsv
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/Breakpoint_Accuracy.R")
 ```
 
 Make Figure 4 & Supplementary Figure 13
+
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Breakpoint_stat_plots.R")
 ```

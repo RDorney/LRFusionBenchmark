@@ -64,6 +64,7 @@ for(number in unique(sort(combined_data$read_supp))){
   manual_readsupp_filtering <- rbind(result, manual_readsupp_filtering) 
 }
 manual_readsupp_filtering$minimum_read_support <- as.numeric(manual_readsupp_filtering$minimum_read_support)
+write_tsv(manual_readsupp_filtering, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/manual_readsupp_filtering.tsv")
 
 ggplot(filter(manual_readsupp_filtering, control == "positive"))+
   geom_line(aes(x = minimum_read_support, y = F1, colour = Algorithm))+

@@ -20,3 +20,5 @@ fusions_in_all_algorithms <- combined_data %>%
 
 fusions_in_all_algorithms$depth <- factor(fusions_in_all_algorithms$depth, levels = c("1GB", "10GB", "100GB"))
 fusions_in_all_algorithms$Sequence_Identity <- factor(fusions_in_all_algorithms$Sequence_Identity, levels = c("95%", "90%", "85%"))
+
+write_tsv(fusions_in_all_algorithms, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/fusions_in_all_algorithms.tsv")
