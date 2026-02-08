@@ -24,6 +24,7 @@ known_fusions_biomart <- left_join(known_fusions,  gene_info,
   left_join(gene_info, by  = c("Gene2"="external_gene_name"))
 write_tsv(known_fusions_biomart, file="~/LongReadFusionCallerBenchmark/CellLineData/known_fusions_biomart.tsv")
 
+
 ###########################################################
 # If Biomart did not work,
 # use AnnotationHub()
@@ -75,10 +76,10 @@ known_fusions_manual_annotation <- read_tsv("~/LongReadFusionCallerBenchmark/Cel
 
 #make annotation of list of known fusions
 known_fusions_manual_annotation <-known_fusions_manual_annotation %>% 
-  rename("ensembl_gene_id_1"="GENEID.x", "ensembl_gene_id_2"="GENEID.y") %>% 
+  rename("ensembl_gene_id.x"="GENEID.x", "ensembl_gene_id.y"="GENEID.y") %>% 
   dplyr::select(c(1:2, 6:9)) %>%
  mutate(fusionGene = paste0(v110_name.x, "::", v110_name.y),
-        fusion.gene.id = paste0(ensembl_gene_id_1, "::",ensembl_gene_id_2))
+        fusion.gene.id = paste0(ensembl_gene_id.x, "::",ensembl_gene_id.y))
 known_fusions_manual_annotation$discovery <- "known"
 
 #####################################
