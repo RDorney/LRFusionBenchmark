@@ -270,5 +270,6 @@ JAFFAL_SGNex_3Gene <- JAFFAL_SGNex_3Gene %>%
   Library = case_when(
     grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
     grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",
-    .default = "PCR-cDNA"))
+    .default = "PCR-cDNA"))%>% filter(Reads > 1) %>% 
+  separate(Fusion, into = c('Gene1', 'Gene2', 'Gene3'), sep = ":", remove = FALSE)
 

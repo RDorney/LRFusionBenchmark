@@ -5,7 +5,7 @@
 #####################
 # JAFFAL
 #####################
-disc_JAFFAL_SGNex <- left_join(JAFFAL_SGNex_Annot, known_fusions_biomart[c(1,6,7,10:12)], 
+disc_JAFFAL_SGNex <- left_join(JAFFAL_SGNex_Annot, known_fusions_manual_annotation, 
                                by = c("ensembl_gene_id.x", "ensembl_gene_id.y", "Cell_Lines"="Cell_Line")) %>%  
   mutate(discovery = if_else(is.na(discovery), "novel", discovery))
 check <- disc_JAFFAL_SGNex$fusion.genes[disc_JAFFAL_SGNex$discovery=="known"] %>% unique()
