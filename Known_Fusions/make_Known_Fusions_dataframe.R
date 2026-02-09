@@ -8,8 +8,11 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 BiocManager::install("biomaRt")
 ####Load biomaRT to gene Ensembl gene IDS####
 library(biomaRt)
-ensemblv113 <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl",  host = "https://oct2024.archive.ensembl.org")
-ensembl <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
+ensemblv110 <- useEnsembl(biomart = "genes", 
+                          dataset = "hsapiens_gene_ensembl",  
+                          version = "110")
+ensembl <- useEnsembl(biomart = "genes", 
+                      dataset = "hsapiens_gene_ensembl")
 
 ####Format Known Fusions####
 #Collate known fusions
