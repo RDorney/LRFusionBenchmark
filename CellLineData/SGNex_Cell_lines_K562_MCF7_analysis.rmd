@@ -91,12 +91,12 @@ source("~/LongReadFusionCallerBenchmark/CellLineData/SGNex_assign_EnsemblID.R")
 
 Check which known gene fusions have been re-discovered
 ```{r}
-CTATLR_SGNex_Annot <- Annot_CTATLR_SGNex  
-JAFFAL_SGNex_Annot <- Annot_JAFFAL_SGNex
-Genion_SGNex_Annot <- Annot_Genion_SGNex 
-FusionSeeker_SGNex_Annot <-Annot_FusionSeeker_SGNex 
-GFSeeker_SGNex_Annot <- Annot_GFSeeker_SGNex 
-LongGF_SGNex_Annot <-Annot_LongGF_SGNex 
+CTATLR_SGNex_Annot
+JAFFAL_SGNex_Annot 
+Genion_SGNex_Annot 
+FusionSeeker_SGNex_Annot 
+GFSeeker_SGNex_Annot 
+LongGF_SGNex_Annot 
 
 source("~/LongReadFusionCallerBenchmark/CellLineData/SGNex_DiscoveryNRecall.R")
 ```

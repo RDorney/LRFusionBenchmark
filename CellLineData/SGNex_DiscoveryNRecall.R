@@ -8,17 +8,21 @@
 disc_JAFFAL_SGNex <- left_join(JAFFAL_SGNex_Annot, known_fusions_manual_annotation, 
                                by = c("ensembl_gene_id.x", "ensembl_gene_id.y", "Cell_Lines"="Cell_Line")) %>%  
   mutate(discovery = if_else(is.na(discovery), "novel", discovery))
-check <- disc_JAFFAL_SGNex$fusion.genes[disc_JAFFAL_SGNex$discovery=="known"] %>% unique()
+check <- disc_JAFFAL_SGNex$fusion.genes[disc_JAFFAL_SGNex$discovery=="known"] %>% 
+  unique()
+
 disc_JAFFAL_SGNex <-disc_JAFFAL_SGNex %>%  mutate(discovery = case_when(
   fusion.genes %in% check ~ "known",  # if fusion.genes is in the known list
   is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
-  TRUE ~ discovery)) %>%  mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y))
-disc_JAFFAL_SGNe_3Gene <- JAFFAL_SGNex_Annot_3Gene %>%  
+  TRUE ~ discovery)) %>%  
+  mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y))
+
+disc_JAFFAL_SGNex_3Gene <- JAFFAL_SGNex_Annot_3Gene %>%  
   mutate(discovery ="novel", fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y, "::", ensembl_gene_id)) %>% 
-  rename(fusion.genes = Fusion, spanning.reads = Reads, classification = Classification)
+  dplyr::rename(fusion.genes = Fusion, spanning.reads = Reads, classification = Classification)
 
 SGNex_summary_JAFFAL_df <- disc_JAFFAL_SGNex%>% 
-  full_join(disc_JAFFAL_SGNe_3Gene) %>%
+  full_join(disc_JAFFAL_SGNex_3Gene) %>%
   group_by(across(all_of(colnames(JAFFAL_SGNex)))) %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
@@ -30,7 +34,7 @@ SGNex_summary_JAFFAL_df <- SGNex_summary_JAFFAL_df %>%
 #####################
 # Genion
 #####################
-disc_Genion_SGNex <- left_join(Genion_SGNex_Annot, known_fusions_biomart[c(1,6,7,10:12)], 
+disc_Genion_SGNex <- left_join(Genion_SGNex_Annot, known_fusions_manual_annotation, 
                               by = c("Gene1" = "ensembl_gene_id.x", 
                                      "Gene2" = "ensembl_gene_id.y", 
                                      "Cell_Lines"="Cell_Line")) %>%  
@@ -52,7 +56,7 @@ SGNex_summary_Genion_df <- SGNex_summary_Genion_df %>% group_by(Source, Cell_Lin
 #####################
 # FusionSeeker
 #####################
-disc_FusionSeeker_SGNex <- left_join(FusionSeeker_SGNex_Annot, known_fusions_biomart[c(1,6,7,10:12)], 
+disc_FusionSeeker_SGNex <- left_join(FusionSeeker_SGNex_Annot, known_fusions_manual_annotation, 
                                     by = c("ensembl_gene_id.x", "ensembl_gene_id.y", "Cell_Lines"="Cell_Line")) %>%  
   mutate(discovery = if_else(is.na(discovery), "novel", discovery))
 check <- disc_FusionSeeker_SGNex$fusionGeneID[disc_FusionSeeker_SGNex$discovery=="known"] %>% 
@@ -75,7 +79,7 @@ SGNex_summary_FusionSeeker_df <- SGNex_summary_FusionSeeker_df %>%
 #####################
 # LongGF
 #####################
-disc_LongGF_SGNex <- left_join(LongGF_SGNex_Annot, known_fusions_biomart[c(1,6,7,10:12)], 
+disc_LongGF_SGNex <- left_join(LongGF_SGNex_Annot, known_fusions_manual_annotation, 
                               by = c("ensembl_gene_id.x", "ensembl_gene_id.y", 
                                      "Cell_Lines"="Cell_Line")) %>% 
   mutate(discovery = if_else(is.na(discovery), "novel", discovery)) %>% 
@@ -98,7 +102,7 @@ SGNex_summary_LongGF_df <- SGNex_summary_LongGF_df %>%
 #####################
 # CTAT-LR-Fusion
 #####################
-disc_CTATLR_SGNex <- left_join(CTATLR_SGNex_Annot, known_fusions_biomart[c(1,6,7,10:12)], 
+disc_CTATLR_SGNex <- left_join(CTATLR_SGNex_Annot, known_fusions_manual_annotation, 
                                by = c("ensembl_gene_id.x", "ensembl_gene_id.y", 
                                       "Cell_Lines"="Cell_Line")) %>% 
   mutate(discovery = if_else(is.na(discovery), "novel", discovery)) %>% 
@@ -122,7 +126,7 @@ SGNex_summary_CTATLR_df <- SGNex_summary_CTATLR_df %>%
 #####################
 # GFSeeker
 #####################
-disc_GFSeeker_SGNex<- left_join(GFSeeker_SGNex_Annot, known_fusions_biomart[c(1,6,7,10:12)], 
+disc_GFSeeker_SGNex<- left_join(GFSeeker_SGNex_Annot, known_fusions_manual_annotation, 
                               by = c("ensembl_gene_id.x", "ensembl_gene_id.y", 
                                      "Cell_Lines"="Cell_Line")) %>% 
   mutate(discovery = if_else(is.na(discovery), "novel", discovery)) %>% 
@@ -208,9 +212,9 @@ disc_JAFFAL_SGNex<-disc_JAFFAL_SGNex%>%  mutate(discovery = case_when(
   fusion.genes %in% check ~ "known",  # if fusion.genes is in the known list
   is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
   TRUE ~ discovery)) %>%  mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y))
-disc_JAFFAL_SGNe_3Gene <- JAFFAL_SGNex_Annot_3Gene %>%  mutate(discovery ="novel", fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y, "::", ensembl_gene_id)) %>% rename(fusion.genes = Fusion, spanning.reads = Reads, classification = Classification)
+disc_JAFFAL_SGNex_3Gene <- JAFFAL_SGNex_Annot_3Gene %>%  mutate(discovery ="novel", fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y, "::", ensembl_gene_id)) %>% rename(fusion.genes = Fusion, spanning.reads = Reads, classification = Classification)
 
-SGNex_summary_JAFFAL_df <- disc_JAFFAL_SGNex%>% full_join(disc_JAFFAL_SGNe_3Gene) %>%
+SGNex_summary_JAFFAL_df <- disc_JAFFAL_SGNex%>% full_join(disc_JAFFAL_SGNex_3Gene) %>%
   group_by(across(all_of(colnames(JAFFAL_SGNex)))) %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),

@@ -77,9 +77,24 @@ JAFFAL_SGNex_3Gene <- do.call(rbind, lapply(myfiles, function(filename) {
 }))
 
 JAFFAL_SGNex_3Gene <- JAFFAL_SGNex_3Gene %>%
-  filter(Reads >= 2)%>% 
+  dplyr::filter(Reads >= 2)%>% 
   separate(Fusion, into = c("Gene1", "Gene2", "Gene3"), sep = ":", remove = FALSE)%>%
-  mutate(Algorithm = "JAFFAL")
+  mutate(Algorithm = "JAFFAL")%>%
+  mutate(Cell_Lines = case_when(
+    grepl("K562", Source, ignore.case = TRUE) ~ "K562",
+    grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7"# Keep original value if no match
+  ), Sequencing_Depth = case_when(
+    grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
+    grepl("10G", Source, ignore.case = TRUE) ~ "10Gb",
+    grepl("_5G", Source, ignore.case = TRUE) ~ "5Gb",
+    grepl("2.5G", Source, ignore.case = TRUE) ~ "2.5Gb",
+    grepl("7.5G", Source, ignore.case = TRUE) ~ "7.5Gb",
+    .default = "Total"), 
+  Library = case_when(
+    grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
+    grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",
+    .default = "PCR-cDNA"))
+
 
 ##############
 #FusionSeeker
@@ -255,21 +270,4 @@ JAFFAL_SGNex <- JAFFAL_SGNex%>%
       grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
       grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",
       .default = "PCR-cDNA"))
-
-JAFFAL_SGNex_3Gene <- JAFFAL_SGNex_3Gene %>%
-  mutate(Cell_Lines = case_when(
-    grepl("K562", Source, ignore.case = TRUE) ~ "K562",
-    grepl("MCF7", Source, ignore.case = TRUE) ~ "MCF7"# Keep original value if no match
-  ), Sequencing_Depth = case_when(
-    grepl("1G", Source, ignore.case = TRUE) ~ "1Gb",
-    grepl("10G", Source, ignore.case = TRUE) ~ "10Gb",
-    grepl("_5G", Source, ignore.case = TRUE) ~ "5Gb",
-    grepl("2.5G", Source, ignore.case = TRUE) ~ "2.5Gb",
-    grepl("7.5G", Source, ignore.case = TRUE) ~ "7.5Gb",
-    .default = "Total"), 
-  Library = case_when(
-    grepl("RNA", Source, ignore.case = TRUE) ~ "direct-RNA",
-    grepl("directcDNA", Source, ignore.case = TRUE) ~ "direct-cDNA",
-    .default = "PCR-cDNA"))%>% filter(Reads > 1) %>% 
-  separate(Fusion, into = c('Gene1', 'Gene2', 'Gene3'), sep = ":", remove = FALSE)
-
+ 

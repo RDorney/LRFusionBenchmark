@@ -1,6 +1,7 @@
 Cell_line_data_directory <- "~/LongReadFusionCallerBenchmark/CellLineData/"
 
 known_fusions <- read.table(paste0(Cell_line_data_directory, "real_gene_fusions.tsv"), header=TRUE)
+standard_chrs <- c(1:22, "X", "Y", "M", "MT")
 
 ################################################################
 # Load Biomart
@@ -46,23 +47,26 @@ gene_name_check<- checkGeneSymbols(unique(c(known_fusions$Gene1, known_fusions$G
     Suggested.Symbol = coalesce(Suggested.Symbol, x)
   )
 modern_mapping <- ensembldb::select(edb_latest, 
-                                    keys = unique(c(known_fusions$Gene1, known_fusions$Gene2, gene_name_check$Suggested.Symbol)), 
+                                    keys = unique(c(known_fusions$Gene1, known_fusions$Gene2, 
+                                                    gene_name_check$Suggested.Symbol)), 
                                     keytype = "GENENAME", 
-                                    columns = c("GENENAME", "GENEID", "SYMBOL"))%>%
+                                    columns = c("GENENAME", "GENEID", "SYMBOL", "SEQNAME"))%>%
+  dplyr::filter(SEQNAME %in% standard_chrs)%>%
   distinct(SYMBOL, .keep_all = TRUE)
 # Step 2: Use those IDs to find what v110 calls them
 v110_lookup <- ensembldb::select(ensembldbv110, 
                                  keys = modern_mapping$GENEID, 
                                  keytype = "GENEID", 
-                                 columns = c("GENEID", "SYMBOL"))%>%
-  distinct(SYMBOL, .keep_all = TRUE)
-
+                                 columns = c("GENEID", "SYMBOL", "SEQNAME"))%>%
+  dplyr::filter(SEQNAME %in% standard_chrs)%>%
+  distinct(SYMBOL, .keep_all = TRUE)%>%
+  rename("chromosome"="SEQNAME")
 
 dictionary <- left_join(v110_lookup,  modern_mapping, 
           by = "GENEID") %>% 
   left_join(gene_name_check, 
             by = c("GENENAME"="Suggested.Symbol")) %>%
-  rename("original.name"= "x", "v110_name"= "SYMBOL.x")%>%
+  dplyr::rename(original.name='x', v110_name= SYMBOL.x)%>%
   dplyr::select(c(GENEID, original.name, v110_name))
 
 known_fusions_ah <- left_join(known_fusions,  dictionary, 
@@ -76,7 +80,8 @@ known_fusions_manual_annotation <- read_tsv("~/LongReadFusionCallerBenchmark/Cel
 
 #make annotation of list of known fusions
 known_fusions_manual_annotation <-known_fusions_manual_annotation %>% 
-  rename("ensembl_gene_id.x"="GENEID.x", "ensembl_gene_id.y"="GENEID.y") %>% 
+  dplyr::rename("ensembl_gene_id.x"="GENEID.x", 
+                "ensembl_gene_id.y"="GENEID.y") %>% 
   dplyr::select(c(1:2, 6:9)) %>%
  mutate(fusionGene = paste0(v110_name.x, "::", v110_name.y),
         fusion.gene.id = paste0(ensembl_gene_id.x, "::",ensembl_gene_id.y))
