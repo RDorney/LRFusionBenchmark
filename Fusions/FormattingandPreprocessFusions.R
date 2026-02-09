@@ -1,7 +1,8 @@
+#################################################################
 ####Huh7 Sequencing Library Fusion Calling Results formatting####
 #Author: Ryley Dorney
 #Date Feb 2026
-#####
+#################################################################
 standard_chrs <- paste0("chr", c(1:22, "X", "Y", "M"))
 ################################################################
 #Load R libraries
