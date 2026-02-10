@@ -9077,6 +9077,385 @@ read_supp	control	fusion.gene.id	fusionType	depth	Sequence_Identity	Algorithm
 2	positive	ENSG00000203727:ENSG00000227681	false_fusion	1GB	95%	FusionSeeker
 4	positive	ENSG00000223634:ENSG00000235497	read_through	1GB	95%	FusionSeeker
 2	positive	ENSG00000264031:ENSG00000176927	false_fusion	1GB	95%	FusionSeeker
+3	negative	ENSG00000197249:ENSG00000156508	false_fusion	10GB	85%	GFSeeker
+12	negative	ENSG00000269242:ENSG00000147403	false_fusion	10GB	85%	GFSeeker
+3	negative	ENSG00000167526:ENSG00000163631	false_fusion	10GB	85%	GFSeeker
+2	negative	ENSG00000204131:ENSG00000133112	false_fusion	10GB	85%	GFSeeker
+3	negative	ENSG00000145192:ENSG00000163631	false_fusion	10GB	85%	GFSeeker
+2	negative	ENSG00000197249:ENSG00000163631	false_fusion	10GB	85%	GFSeeker
+2	negative	ENSG00000100412:ENSG00000125691	false_fusion	10GB	85%	GFSeeker
+2	negative	ENSG00000197249:ENSG00000147403	false_fusion	10GB	85%	GFSeeker
+2	negative	ENSG00000133112:ENSG00000187134	false_fusion	10GB	85%	GFSeeker
+2	negative	ENSG00000091513:ENSG00000089157	false_fusion	10GB	85%	GFSeeker
+2	negative	ENSG00000156508:ENSG00000167526	false_fusion	10GB	85%	GFSeeker
+2	negative	ENSG00000197249:ENSG00000142541	false_fusion	10GB	85%	GFSeeker
+17	negative	ENSG00000269242:ENSG00000147403	false_fusion	10GB	90%	GFSeeker
+2	negative	ENSG00000087086:ENSG00000221983	false_fusion	10GB	90%	GFSeeker
+2	negative	ENSG00000118137:ENSG00000231500	false_fusion	10GB	90%	GFSeeker
+2	negative	ENSG00000156508:ENSG00000131469	false_fusion	10GB	90%	GFSeeker
+2	negative	ENSG00000156508:ENSG00000167770	false_fusion	10GB	90%	GFSeeker
+2	negative	ENSG00000156508:ENSG00000133112	false_fusion	10GB	90%	GFSeeker
+2	negative	ENSG00000091583:ENSG00000167526	false_fusion	10GB	90%	GFSeeker
+2	negative	ENSG00000087086:ENSG00000197249	false_fusion	10GB	90%	GFSeeker
+2	negative	ENSG00000231500:ENSG00000087086	false_fusion	10GB	90%	GFSeeker
+2	negative	ENSG00000156508:ENSG00000197249	false_fusion	10GB	90%	GFSeeker
+2	negative	ENSG00000239264:ENSG00000156508	false_fusion	10GB	90%	GFSeeker
+3	negative	ENSG00000087086:ENSG00000163631	false_fusion	10GB	90%	GFSeeker
+17	negative	ENSG00000269242:ENSG00000147403	false_fusion	10GB	95%	GFSeeker
+2	negative	ENSG00000087086:ENSG00000221983	false_fusion	10GB	95%	GFSeeker
+2	negative	ENSG00000118137:ENSG00000231500	false_fusion	10GB	95%	GFSeeker
+2	negative	ENSG00000156508:ENSG00000131469	false_fusion	10GB	95%	GFSeeker
+2	negative	ENSG00000156508:ENSG00000167770	false_fusion	10GB	95%	GFSeeker
+2	negative	ENSG00000156508:ENSG00000133112	false_fusion	10GB	95%	GFSeeker
+2	negative	ENSG00000091583:ENSG00000167526	false_fusion	10GB	95%	GFSeeker
+2	negative	ENSG00000087086:ENSG00000197249	false_fusion	10GB	95%	GFSeeker
+2	negative	ENSG00000231500:ENSG00000087086	false_fusion	10GB	95%	GFSeeker
+2	negative	ENSG00000156508:ENSG00000197249	false_fusion	10GB	95%	GFSeeker
+2	negative	ENSG00000239264:ENSG00000156508	false_fusion	10GB	95%	GFSeeker
+3	negative	ENSG00000087086:ENSG00000163631	false_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000155511:ENSG00000106617	reverse_order: hybrid	10GB	85%	GFSeeker
+2	positive	ENSG00000204131:ENSG00000133112	false_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000163631:ENSG00000170889	false_fusion	10GB	85%	GFSeeker
+3	positive	ENSG00000165629:ENSG00000148655	reverse_order: intra_chromosome	10GB	85%	GFSeeker
+23	positive	ENSG00000147403:ENSG00000269242	false_fusion	10GB	85%	GFSeeker
+6	positive	ENSG00000087258:ENSG00000009830	reverse_order: hybrid	10GB	85%	GFSeeker
+3	positive	ENSG00000206384:ENSG00000196455	read_through	10GB	85%	GFSeeker
+6	positive	ENSG00000198677:ENSG00000168676	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+5	positive	ENSG00000077380:ENSG00000186088	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000184634:ENSG00000204256	reverse_order: hybrid	10GB	85%	GFSeeker
+4	positive	ENSG00000066557:ENSG00000164924	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+7	positive	ENSG00000103160:ENSG00000103415	reverse_order: intra_chromosome	10GB	85%	GFSeeker
+7	positive	ENSG00000063978:ENSG00000168556	reverse_order: intra_chromosome	10GB	85%	GFSeeker
+2	positive	ENSG00000164756:ENSG00000081985	truncated_tri_fusion	10GB	85%	GFSeeker
+4	positive	ENSG00000164627:ENSG00000095981	reverse_order: read_through	10GB	85%	GFSeeker
+2	positive	ENSG00000109971:ENSG00000095209	hybrid	10GB	85%	GFSeeker
+2	positive	ENSG00000154240:ENSG00000187498	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+3	positive	ENSG00000101003:ENSG00000088035	truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000100075:ENSG00000100034	intra_chromosome	10GB	85%	GFSeeker
+3	positive	ENSG00000003393:ENSG00000170448	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+3	positive	ENSG00000163631:ENSG00000156508	false_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000132300:ENSG00000143891	reverse_order: intra_chromosome	10GB	85%	GFSeeker
+2	positive	ENSG00000197566:ENSG00000181523	reverse_order: intra_chromosome	10GB	85%	GFSeeker
+3	positive	ENSG00000221910:ENSG00000102312	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+6	positive	ENSG00000145675:ENSG00000113569	reverse_order: intra_chromosome	10GB	85%	GFSeeker
+3	positive	ENSG00000072571:ENSG00000146809	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000140740:ENSG00000197249	false_fusion	10GB	85%	GFSeeker
+3	positive	ENSG00000143633:ENSG00000214097	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000214097:ENSG00000105819	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000089094:ENSG00000094631	truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000161016:ENSG00000084070	false_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000145192:ENSG00000156508	false_fusion	10GB	85%	GFSeeker
+4	positive	ENSG00000213983:ENSG00000126777	intra_chromosome	10GB	85%	GFSeeker
+3	positive	ENSG00000104490:ENSG00000138759	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+4	positive	ENSG00000157916:ENSG00000205835	hybrid	10GB	85%	GFSeeker
+3	positive	ENSG00000170954:ENSG00000183137	hybrid	10GB	85%	GFSeeker
+2	positive	ENSG00000104957:ENSG00000104518	hybrid	10GB	85%	GFSeeker
+8	positive	ENSG00000146223:ENSG00000119899	reverse_order: intra_chromosome	10GB	85%	GFSeeker
+3	positive	ENSG00000176746:ENSG00000142627	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000003393:ENSG00000187720	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000172782:ENSG00000161513	reverse_order: read_through	10GB	85%	GFSeeker
+2	positive	ENSG00000145907:ENSG00000082805	truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000111727:ENSG00000111596	intra_chromosome	10GB	85%	GFSeeker
+4	positive	ENSG00000151694:ENSG00000185798	truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000221886:ENSG00000174695	intra_chromosome	10GB	85%	GFSeeker
+5	positive	ENSG00000108094:ENSG00000085788	hybrid	10GB	85%	GFSeeker
+2	positive	ENSG00000118412:ENSG00000177058	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000148362:ENSG00000169583	read_through	10GB	85%	GFSeeker
+3	positive	ENSG00000105613:ENSG00000164011	hybrid	10GB	85%	GFSeeker
+3	positive	ENSG00000182621:ENSG00000124155	intra_chromosome	10GB	85%	GFSeeker
+2	positive	ENSG00000163631:ENSG00000197249	false_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000173812:ENSG00000163631	false_fusion	10GB	85%	GFSeeker
+4	positive	ENSG00000162302:ENSG00000137707	truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000124787:ENSG00000106819	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000174021:ENSG00000100219	false_fusion	10GB	85%	GFSeeker
+3	positive	ENSG00000011275:ENSG00000165383	truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000183476:ENSG00000145734	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000198677:ENSG00000140853	truncated_tri_fusion	10GB	85%	GFSeeker
+3	positive	ENSG00000081692:ENSG00000167257	reverse_order: hybrid	10GB	85%	GFSeeker
+2	positive	ENSG00000156508:ENSG00000204628	false_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000141456:ENSG00000228486	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000159176:ENSG00000117758	reverse_order: intra_chromosome	10GB	85%	GFSeeker
+3	positive	ENSG00000184619:ENSG00000081985	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000171863:ENSG00000163631	false_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000131469:ENSG00000133112	false_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000125503:ENSG00000131037	reverse_order: read_through	10GB	85%	GFSeeker
+3	positive	ENSG00000107872:ENSG00000107874	read_through	10GB	85%	GFSeeker
+2	positive	ENSG00000087086:ENSG00000273259	false_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000170634:ENSG00000143630	reverse_order: hybrid	10GB	85%	GFSeeker
+2	positive	ENSG00000130714:ENSG00000151694	truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000168280:ENSG00000144320	reverse_order: hybrid	10GB	85%	GFSeeker
+3	positive	ENSG00000101266:ENSG00000101158	reverse_order: intra_chromosome	10GB	85%	GFSeeker
+2	positive	ENSG00000147257:ENSG00000105281	false_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000196586:ENSG00000068097	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000221963:ENSG00000184708	reverse_order: intra_chromosome	10GB	85%	GFSeeker
+2	positive	ENSG00000168621:ENSG00000168958	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+3	positive	ENSG00000134326:ENSG00000062485	truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000167207:ENSG00000090565	reverse_order: intra_chromosome	10GB	85%	GFSeeker
+2	positive	ENSG00000156508:ENSG00000147403	false_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000143198:ENSG00000167881	truncated_tri_fusion	10GB	85%	GFSeeker
+2	positive	ENSG00000167588:ENSG00000110887	intra_chromosome	10GB	85%	GFSeeker
+2	positive	ENSG00000145916:ENSG00000003393	reverse_order:truncated_tri_fusion	10GB	85%	GFSeeker
+3	positive	ENSG00000221886:ENSG00000174695	intra_chromosome	10GB	90%	GFSeeker
+6	positive	ENSG00000143633:ENSG00000214097	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000156508:ENSG00000135486	false_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000185187:ENSG00000184363	reverse_order: read_through	10GB	90%	GFSeeker
+3	positive	ENSG00000106617:ENSG00000155511	hybrid	10GB	90%	GFSeeker
+18	positive	ENSG00000147403:ENSG00000269242	false_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000156508:ENSG00000087086	false_fusion	10GB	90%	GFSeeker
+5	positive	ENSG00000165383:ENSG00000011275	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000105613:ENSG00000164011	hybrid	10GB	90%	GFSeeker
+2	positive	ENSG00000109736:ENSG00000109113	truncated_tri_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000078699:ENSG00000132003	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000198677:ENSG00000140853	truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000213988:ENSG00000105193	false_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000156076:ENSG00000180879	hybrid	10GB	90%	GFSeeker
+2	positive	ENSG00000104218:ENSG00000096070	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+4	positive	ENSG00000134326:ENSG00000062485	truncated_tri_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000119899:ENSG00000146223	intra_chromosome	10GB	90%	GFSeeker
+5	positive	ENSG00000106692:ENSG00000082898	hybrid	10GB	90%	GFSeeker
+3	positive	ENSG00000139350:ENSG00000136888	truncated_tri_fusion	10GB	90%	GFSeeker
+5	positive	ENSG00000107872:ENSG00000107874	read_through	10GB	90%	GFSeeker
+4	positive	ENSG00000184619:ENSG00000081985	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000148604:ENSG00000100811	hybrid	10GB	90%	GFSeeker
+5	positive	ENSG00000147434:ENSG00000164953	intra_chromosome	10GB	90%	GFSeeker
+2	positive	ENSG00000151694:ENSG00000185798	truncated_tri_fusion	10GB	90%	GFSeeker
+7	positive	ENSG00000170634:ENSG00000143630	reverse_order: hybrid	10GB	90%	GFSeeker
+7	positive	ENSG00000170954:ENSG00000183137	hybrid	10GB	90%	GFSeeker
+4	positive	ENSG00000148655:ENSG00000165629	intra_chromosome	10GB	90%	GFSeeker
+5	positive	ENSG00000009830:ENSG00000087258	hybrid	10GB	90%	GFSeeker
+2	positive	ENSG00000072571:ENSG00000130714	truncated_tri_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000167526:ENSG00000081051	false_fusion	10GB	90%	GFSeeker
+4	positive	ENSG00000104957:ENSG00000104518	hybrid	10GB	90%	GFSeeker
+3	positive	ENSG00000164627:ENSG00000095981	reverse_order: read_through	10GB	90%	GFSeeker
+4	positive	ENSG00000206560:ENSG00000166851	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000140987:ENSG00000254979	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+5	positive	ENSG00000110887:ENSG00000167588	reverse_order: intra_chromosome	10GB	90%	GFSeeker
+4	positive	ENSG00000214097:ENSG00000105819	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+6	positive	ENSG00000144320:ENSG00000168280	hybrid	10GB	90%	GFSeeker
+2	positive	ENSG00000149657:ENSG00000101182	read_through	10GB	90%	GFSeeker
+4	positive	ENSG00000186487:ENSG00000138380	intra_chromosome	10GB	90%	GFSeeker
+2	positive	ENSG00000181019:ENSG00000163631	false_fusion	10GB	90%	GFSeeker
+6	positive	ENSG00000003393:ENSG00000187720	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+7	positive	ENSG00000005381:ENSG00000167419	reverse_order: read_through	10GB	90%	GFSeeker
+3	positive	ENSG00000109861:ENSG00000213619	hybrid	10GB	90%	GFSeeker
+2	positive	ENSG00000156508:ENSG00000184009	false_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000124787:ENSG00000106819	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+4	positive	ENSG00000090565:ENSG00000167207	intra_chromosome	10GB	90%	GFSeeker
+4	positive	ENSG00000182621:ENSG00000124155	intra_chromosome	10GB	90%	GFSeeker
+2	positive	ENSG00000221910:ENSG00000102312	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000167996:ENSG00000148248	false_fusion	10GB	90%	GFSeeker
+5	positive	ENSG00000066557:ENSG00000164924	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000159176:ENSG00000117758	reverse_order: intra_chromosome	10GB	90%	GFSeeker
+2	positive	ENSG00000138698:ENSG00000198246	truncated_tri_fusion	10GB	90%	GFSeeker
+6	positive	ENSG00000108094:ENSG00000085788	hybrid	10GB	90%	GFSeeker
+2	positive	ENSG00000163631:ENSG00000197249	false_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000196549:ENSG00000162302	truncated_tri_fusion	10GB	90%	GFSeeker
+6	positive	ENSG00000105339:ENSG00000022567	read_through	10GB	90%	GFSeeker
+2	positive	ENSG00000081051:ENSG00000087086	false_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000101439:ENSG00000091513	false_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000105889:ENSG00000075303	intra_chromosome	10GB	90%	GFSeeker
+3	positive	ENSG00000081051:ENSG00000156508	false_fusion	10GB	90%	GFSeeker
+4	positive	ENSG00000168675:ENSG00000102898	truncated_tri_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000120896:ENSG00000221947	reverse_order: intra_chromosome	10GB	90%	GFSeeker
+2	positive	ENSG00000204256:ENSG00000184634	hybrid	10GB	90%	GFSeeker
+2	positive	ENSG00000132300:ENSG00000143891	reverse_order: intra_chromosome	10GB	90%	GFSeeker
+3	positive	ENSG00000170448:ENSG00000003393	truncated_tri_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000124486:ENSG00000124523	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+4	positive	ENSG00000163631:ENSG00000156508	false_fusion	10GB	90%	GFSeeker
+5	positive	ENSG00000145916:ENSG00000003393	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000166348:ENSG00000165868	intra_chromosome	10GB	90%	GFSeeker
+4	positive	ENSG00000166145:ENSG00000171766	reverse_order: intra_chromosome	10GB	90%	GFSeeker
+2	positive	ENSG00000068097:ENSG00000196586	truncated_tri_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000121578:ENSG00000114638	reverse_order: read_through	10GB	90%	GFSeeker
+2	positive	ENSG00000077380:ENSG00000186088	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000145901:ENSG00000119535	hybrid	10GB	90%	GFSeeker
+3	positive	ENSG00000091513:ENSG00000197249	false_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000082805:ENSG00000145907	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+5	positive	ENSG00000096070:ENSG00000130396	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000095066:ENSG00000172270	intra_chromosome	10GB	90%	GFSeeker
+2	positive	ENSG00000128510:ENSG00000163930	truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000130714:ENSG00000137074	reverse_order: intra_chromosome	10GB	90%	GFSeeker
+2	positive	ENSG00000153291:ENSG00000146282	reverse_order: intra_chromosome	10GB	90%	GFSeeker
+2	positive	ENSG00000164118:ENSG00000164117	reverse_order: read_through	10GB	90%	GFSeeker
+3	positive	ENSG00000131037:ENSG00000125503	read_through	10GB	90%	GFSeeker
+4	positive	ENSG00000181786:ENSG00000132170	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000169583:ENSG00000148362	reverse_order: read_through	10GB	90%	GFSeeker
+5	positive	ENSG00000198677:ENSG00000168676	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000163930:ENSG00000010318	read_through	10GB	90%	GFSeeker
+2	positive	ENSG00000142627:ENSG00000176746	truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000144713:ENSG00000171314	false_fusion	10GB	90%	GFSeeker
+4	positive	ENSG00000138759:ENSG00000104490	truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000036672:ENSG00000137860	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000188186:ENSG00000125821	false_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000168591:ENSG00000114923	truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000273259:ENSG00000156508	false_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000187134:ENSG00000197756	false_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000079215:ENSG00000113648	reverse_order: hybrid	10GB	90%	GFSeeker
+3	positive	ENSG00000095209:ENSG00000109971	reverse_order: hybrid	10GB	90%	GFSeeker
+2	positive	ENSG00000105372:ENSG00000197249	false_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000167996:ENSG00000197249	false_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000198551:ENSG00000284770	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000213983:ENSG00000126777	intra_chromosome	10GB	90%	GFSeeker
+2	positive	ENSG00000081985:ENSG00000164756	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000214338:ENSG00000184530	read_through	10GB	90%	GFSeeker
+2	positive	ENSG00000163631:ENSG00000087086	false_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000163631:ENSG00000156482	false_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000186834:ENSG00000197249	false_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000168621:ENSG00000168958	reverse_order:truncated_tri_fusion	10GB	90%	GFSeeker
+2	positive	ENSG00000148834:ENSG00000167526	false_fusion	10GB	90%	GFSeeker
+3	positive	ENSG00000164627:ENSG00000095981	reverse_order: read_through	10GB	95%	GFSeeker
+2	positive	ENSG00000163631:ENSG00000091513	false_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000188227:ENSG00000197265	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000110887:ENSG00000167588	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+3	positive	ENSG00000143228:ENSG00000196586	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+7	positive	ENSG00000081692:ENSG00000167257	reverse_order: hybrid	10GB	95%	GFSeeker
+5	positive	ENSG00000136444:ENSG00000020256	reverse_order: hybrid	10GB	95%	GFSeeker
+6	positive	ENSG00000103528:ENSG00000110881	false_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000213983:ENSG00000126777	intra_chromosome	10GB	95%	GFSeeker
+5	positive	ENSG00000118412:ENSG00000177058	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000166145:ENSG00000171766	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+4	positive	ENSG00000141456:ENSG00000228486	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000105856:ENSG00000180304	reverse_order: hybrid	10GB	95%	GFSeeker
+4	positive	ENSG00000180879:ENSG00000156076	reverse_order: hybrid	10GB	95%	GFSeeker
+2	positive	ENSG00000145901:ENSG00000119535	hybrid	10GB	95%	GFSeeker
+4	positive	ENSG00000170634:ENSG00000143630	reverse_order: hybrid	10GB	95%	GFSeeker
+3	positive	ENSG00000198551:ENSG00000284770	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000091513:ENSG00000087086	false_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000170873:ENSG00000109339	hybrid	10GB	95%	GFSeeker
+4	positive	ENSG00000221963:ENSG00000184708	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+2	positive	ENSG00000167658:ENSG00000163631	false_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000009830:ENSG00000087258	hybrid	10GB	95%	GFSeeker
+5	positive	ENSG00000105063:ENSG00000105711	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+5	positive	ENSG00000168676:ENSG00000198677	truncated_tri_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000148362:ENSG00000169583	read_through	10GB	95%	GFSeeker
+2	positive	ENSG00000118137:ENSG00000197249	false_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000087266:ENSG00000147854	hybrid	10GB	95%	GFSeeker
+2	positive	ENSG00000183629:ENSG00000010671	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000284776:ENSG00000188186	reverse_order: hybrid	10GB	95%	GFSeeker
+5	positive	ENSG00000147403:ENSG00000269242	false_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000187498:ENSG00000154240	truncated_tri_fusion	10GB	95%	GFSeeker
+5	positive	ENSG00000140987:ENSG00000134802	false_fusion	10GB	95%	GFSeeker
+5	positive	ENSG00000161920:ENSG00000186566	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+4	positive	ENSG00000213619:ENSG00000109861	reverse_order: hybrid	10GB	95%	GFSeeker
+4	positive	ENSG00000277586:ENSG00000136504	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000140987:ENSG00000160752	truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000088035:ENSG00000101003	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000113648:ENSG00000079215	hybrid	10GB	95%	GFSeeker
+2	positive	ENSG00000284906:ENSG00000147041	truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000130714:ENSG00000137074	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+4	positive	ENSG00000188321:ENSG00000276043	intra_chromosome	10GB	95%	GFSeeker
+3	positive	ENSG00000139350:ENSG00000136888	truncated_tri_fusion	10GB	95%	GFSeeker
+6	positive	ENSG00000148655:ENSG00000165629	intra_chromosome	10GB	95%	GFSeeker
+2	positive	ENSG00000049759:ENSG00000147573	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+6	positive	ENSG00000132300:ENSG00000143891	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+4	positive	ENSG00000156508:ENSG00000163631	false_fusion	10GB	95%	GFSeeker
+6	positive	ENSG00000102898:ENSG00000168675	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000164118:ENSG00000164117	reverse_order: read_through	10GB	95%	GFSeeker
+2	positive	ENSG00000107872:ENSG00000107874	read_through	10GB	95%	GFSeeker
+3	positive	ENSG00000140853:ENSG00000181523	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000038219:ENSG00000168214	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+4	positive	ENSG00000124155:ENSG00000182621	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+2	positive	ENSG00000081051:ENSG00000163631	false_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000153291:ENSG00000146282	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+7	positive	ENSG00000114638:ENSG00000121578	read_through	10GB	95%	GFSeeker
+4	positive	ENSG00000103043:ENSG00000277893	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+5	positive	ENSG00000157916:ENSG00000205835	hybrid	10GB	95%	GFSeeker
+4	positive	ENSG00000166348:ENSG00000165868	intra_chromosome	10GB	95%	GFSeeker
+4	positive	ENSG00000221886:ENSG00000174695	intra_chromosome	10GB	95%	GFSeeker
+4	positive	ENSG00000125730:ENSG00000159917	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+2	positive	ENSG00000078699:ENSG00000132003	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+5	positive	ENSG00000103160:ENSG00000103415	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+3	positive	ENSG00000173166:ENSG00000137807	hybrid	10GB	95%	GFSeeker
+3	positive	ENSG00000167526:ENSG00000163631	false_fusion	10GB	95%	GFSeeker
+7	positive	ENSG00000145916:ENSG00000003393	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000143198:ENSG00000196839	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000105613:ENSG00000164011	hybrid	10GB	95%	GFSeeker
+2	positive	ENSG00000171735:ENSG00000144815	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000145675:ENSG00000113569	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+2	positive	ENSG00000188186:ENSG00000125821	false_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000010318:ENSG00000163930	reverse_order: read_through	10GB	95%	GFSeeker
+4	positive	ENSG00000196586:ENSG00000068097	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000072571:ENSG00000130714	truncated_tri_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000170144:ENSG00000198551	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+5	positive	ENSG00000196549:ENSG00000162302	truncated_tri_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000106819:ENSG00000124787	truncated_tri_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000189326:ENSG00000066322	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000168280:ENSG00000144320	reverse_order: hybrid	10GB	95%	GFSeeker
+2	positive	ENSG00000254979:ENSG00000140987	truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000124486:ENSG00000124523	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000196136:ENSG00000175899	false_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000138101:ENSG00000144589	intra_chromosome	10GB	95%	GFSeeker
+2	positive	ENSG00000154240:ENSG00000039560	truncated_tri_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000063978:ENSG00000168556	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+3	positive	ENSG00000151694:ENSG00000130714	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000105011:ENSG00000125755	intra_chromosome	10GB	95%	GFSeeker
+3	positive	ENSG00000132170:ENSG00000181786	truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000156508:ENSG00000115414	false_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000168591:ENSG00000114923	truncated_tri_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000108576:ENSG00000132002	hybrid	10GB	95%	GFSeeker
+2	positive	ENSG00000197756:ENSG00000178952	false_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000158987:ENSG00000145901	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+4	positive	ENSG00000214097:ENSG00000143633	truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000170889:ENSG00000156508	false_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000036672:ENSG00000137860	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000156508:ENSG00000005007	false_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000167207:ENSG00000090565	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+3	positive	ENSG00000185187:ENSG00000184363	reverse_order: read_through	10GB	95%	GFSeeker
+2	positive	ENSG00000145192:ENSG00000142541	false_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000094631:ENSG00000186409	truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000125503:ENSG00000131037	reverse_order: read_through	10GB	95%	GFSeeker
+2	positive	ENSG00000120896:ENSG00000221947	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+5	positive	ENSG00000077380:ENSG00000186088	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000100307:ENSG00000172404	false_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000109971:ENSG00000095209	hybrid	10GB	95%	GFSeeker
+2	positive	ENSG00000198246:ENSG00000138698	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000138698:ENSG00000166855	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000135517:ENSG00000136014	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000003393:ENSG00000170448	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+6	positive	ENSG00000102312:ENSG00000221910	truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000147434:ENSG00000164953	intra_chromosome	10GB	95%	GFSeeker
+3	positive	ENSG00000104490:ENSG00000138759	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000187720:ENSG00000003393	truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000197249:ENSG00000185624	false_fusion	10GB	95%	GFSeeker
+7	positive	ENSG00000161513:ENSG00000172782	read_through	10GB	95%	GFSeeker
+2	positive	ENSG00000196455:ENSG00000206384	reverse_order: read_through	10GB	95%	GFSeeker
+2	positive	ENSG00000163631:ENSG00000175899	false_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000091513:ENSG00000197249	false_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000149657:ENSG00000101182	read_through	10GB	95%	GFSeeker
+2	positive	ENSG00000164924:ENSG00000066557	truncated_tri_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000151694:ENSG00000185798	truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000100811:ENSG00000148604	reverse_order: hybrid	10GB	95%	GFSeeker
+2	positive	ENSG00000087086:ENSG00000163631	false_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000062485:ENSG00000134326	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000156508:ENSG00000108679	false_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000101266:ENSG00000101158	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+2	positive	ENSG00000156508:ENSG00000087086	false_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000147257:ENSG00000163631	false_fusion	10GB	95%	GFSeeker
+4	positive	ENSG00000109113:ENSG00000109736	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000082898:ENSG00000106692	reverse_order: hybrid	10GB	95%	GFSeeker
+2	positive	ENSG00000082805:ENSG00000145907	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+3	positive	ENSG00000183137:ENSG00000170954	reverse_order: hybrid	10GB	95%	GFSeeker
+2	positive	ENSG00000139197:ENSG00000111300	reverse_order: intra_chromosome	10GB	95%	GFSeeker
+2	positive	ENSG00000117758:ENSG00000159176	intra_chromosome	10GB	95%	GFSeeker
+2	positive	ENSG00000203734:ENSG00000049759	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000119899:ENSG00000146223	intra_chromosome	10GB	95%	GFSeeker
+2	positive	ENSG00000183476:ENSG00000145734	reverse_order:truncated_tri_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000196136:ENSG00000156508	false_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000159377:ENSG00000101255	false_fusion	10GB	95%	GFSeeker
+2	positive	ENSG00000105889:ENSG00000075303	intra_chromosome	10GB	95%	GFSeeker
+2	positive	ENSG00000155511:ENSG00000106617	reverse_order: hybrid	1GB	85%	GFSeeker
+2	positive	ENSG00000147403:ENSG00000269242	false_fusion	1GB	85%	GFSeeker
+2	positive	ENSG00000087258:ENSG00000009830	reverse_order: hybrid	1GB	85%	GFSeeker
+2	positive	ENSG00000198677:ENSG00000168676	reverse_order:truncated_tri_fusion	1GB	85%	GFSeeker
+2	positive	ENSG00000100075:ENSG00000100034	intra_chromosome	1GB	85%	GFSeeker
+2	positive	ENSG00000269242:ENSG00000147403	false_fusion	1GB	90%	GFSeeker
+2	positive	ENSG00000011275:ENSG00000165383	truncated_tri_fusion	1GB	90%	GFSeeker
+2	positive	ENSG00000170634:ENSG00000143630	reverse_order: hybrid	1GB	90%	GFSeeker
+2	positive	ENSG00000170954:ENSG00000183137	hybrid	1GB	90%	GFSeeker
+2	positive	ENSG00000136444:ENSG00000020256	reverse_order: hybrid	1GB	95%	GFSeeker
+2	positive	ENSG00000118412:ENSG00000177058	reverse_order:truncated_tri_fusion	1GB	95%	GFSeeker
+2	positive	ENSG00000140987:ENSG00000134802	false_fusion	1GB	95%	GFSeeker
+2	positive	ENSG00000213619:ENSG00000109861	reverse_order: hybrid	1GB	95%	GFSeeker
 229	negative	ENSG00000011295:ENSG00000137818	false_fusion	100GB	85%	CTAT-LR-Fusion
 182	negative	ENSG00000011295:ENSG00000137818	false_fusion	100GB	85%	CTAT-LR-Fusion
 117	negative	ENSG00000011295:ENSG00000137818	false_fusion	100GB	85%	CTAT-LR-Fusion

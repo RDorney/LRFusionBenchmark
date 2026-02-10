@@ -1,7 +1,8 @@
 ###############################
 # Fusion Profile Stat Summary #
 ###############################
-fusion_profile_stat_summary <- combined_data %>%  filter(read_supp >=2) %>% unique()%>% group_by(control, depth, Sequence_Identity, Algorithm, fusionType) %>%
+fusion_profile_stat_summary <- combined_data %>%  filter(read_supp >=2) %>% 
+  unique()%>% group_by(control, depth, Sequence_Identity, Algorithm, fusionType) %>%
   summarise(fusion_type_count = n(), .groups = 'drop')%>% 
   ungroup() %>% 
   complete(control, depth, Sequence_Identity, Algorithm, fusionType, fill = list(fusion_type_count = 0)) %>%
@@ -20,14 +21,17 @@ FCC <- ggplot(filter(fusion_profile_stat_summary, recall_category == "False_Call
   aes(x = depth, y = Sequence_Identity, fill = fusion_type_count) +
   geom_tile() +
   geom_text(aes(label = fusion_type_count), color = "black", size = 3, alpha =1) +
-  facet_nested(control + fusionType ~ Algorithm, labeller = as_labeller(c(c("wrong_order:tri_fusion" = "Wrong Order Tri-fusion", 
-                                                                            "false_fusion:self_misalignment" = "Self-Misalignment",
-                                                                            "false_fusion:mitochondrial_genomic" = "Mitochondrial:Genomic",
-                                                                            "false_fusion:mitochondrial" = "Mitochondrial",
-                                                                            "false_fusion:Sense-Antisense" = "Sense-Antisense",
-                                                                            "false_fusion" = "False Chimera"), 
-                                                                          c("Genion"="Genion", "JAFFAL" = "JAFFAL", "LongGF" = "LongGF", "FusionSeeker" = "FusionSeeker", "CTAT-LR-Fusion" = "CTAT-LR-Fusion"),
-                                                                          c("positive"="Postive", "negative" = "Negative"))) ) +  # Separate heatmaps for each algorithm
+  facet_nested(control + fusionType ~ Algorithm, 
+               labeller = as_labeller(c(c("wrong_order:tri_fusion" = "Wrong Order Tri-fusion", 
+                                          "false_fusion:self_misalignment" = "Self-Misalignment",
+                                          "false_fusion:mitochondrial_genomic" = "Mitochondrial:Genomic",
+                                          "false_fusion:mitochondrial" = "Mitochondrial",
+                                          "false_fusion:Sense-Antisense" = "Sense-Antisense",
+                                          "false_fusion" = "False Chimera"), 
+                                        c("Genion"="Genion", "JAFFAL" = "JAFFAL", "LongGF" = "LongGF", 
+                                          "FusionSeeker" = "FusionSeeker", "GFSeeker" = "GFSeeker",
+                                          "CTAT-LR-Fusion" = "CTAT-LR-Fusion"),
+                                        c("positive"="Postive", "negative" = "Negative"))) ) +  # Separate heatmaps for each algorithm
   scale_fill_gradient(low = "white", high = "red")+
   scale_alpha_continuous(range = c(0.2, 1)) +  # Adjust transparency based on fusion_type_count
   labs(x = "Depth",

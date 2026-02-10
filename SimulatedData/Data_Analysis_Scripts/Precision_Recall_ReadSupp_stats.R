@@ -1,5 +1,6 @@
 #Calculate Recall vs Precision
-stat_summary <- filter(combined_data, read_supp >= 2, control == "positive") %>%  unique() %>%
+stat_summary <- filter(combined_data, read_supp >= 2, control == "positive") %>%  
+  unique() %>%
   mutate(stat_category = case_when(
     grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType) ~ "FALSE_CALL",
     TRUE ~ "TRUE_CALL")) %>%

@@ -13,7 +13,7 @@ TRC<- ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_c
                                                                   "tri_fusion"="Tri-fusion"), 
                                                                 c("Genion"="Genion", "JAFFAL" = "JAFFAL", 
                                                                   "LongGF" = "LongGF", "FusionSeeker" = "FusionSeeker", 
-                                                                  "CTAT-LR-Fusion" = "CTAT-LR-Fusion"),
+                                                                  "GFSeeker" = "GFSeeker", "CTAT-LR-Fusion" = "CTAT-LR-Fusion"),
                                                                 c("positive"="Postive", "negative" = "Negative"))) ) +  # Separate heatmaps for each algorithm
   scale_fill_gradient(low = "white", high = "springgreen4") +  # Adjust color scale
   scale_alpha_continuous(range = c(0.2, 1)) +  # Adjust transparency based on fusion_type_count
@@ -40,7 +40,7 @@ PRC <- ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_
                                                                   "chromosomal_misalignment:intra_chromosome"="(CM)  Intra-\nchromosomal"), 
                                                                 c("Genion"="Genion", "JAFFAL" = "JAFFAL", 
                                                                   "LongGF" = "LongGF", "FusionSeeker" = "FusionSeeker", 
-                                                                  "CTAT-LR-Fusion" = "CTAT-LR-Fusion"),
+                                                                  "GFSeeker" = "GFSeeker", "CTAT-LR-Fusion" = "CTAT-LR-Fusion"),
                                                                 c("positive"="Postive", "negative" = "Negative"))) ) +  # Separate heatmaps for each algorithm
   scale_fill_gradient(low = "white", high = "orange") +
   scale_alpha_continuous(range = c(0.2, 1)) +  # Adjust transparency based on fusion_type_count

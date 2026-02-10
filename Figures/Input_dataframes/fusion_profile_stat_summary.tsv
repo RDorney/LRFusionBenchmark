@@ -53,6 +53,24 @@ negative	100GB	85%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 negative	100GB	85%	Genion	tri_fusion	0	True_Recall
 negative	100GB	85%	Genion	truncated_tri_fusion	0	Partial_Recall
 negative	100GB	85%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+negative	100GB	85%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+negative	100GB	85%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+negative	100GB	85%	GFSeeker	false_fusion	0	False_Call
+negative	100GB	85%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+negative	100GB	85%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+negative	100GB	85%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+negative	100GB	85%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+negative	100GB	85%	GFSeeker	hybrid	0	True_Recall
+negative	100GB	85%	GFSeeker	intra_chromosome	0	True_Recall
+negative	100GB	85%	GFSeeker	read_through	0	True_Recall
+negative	100GB	85%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+negative	100GB	85%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+negative	100GB	85%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+negative	100GB	85%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+negative	100GB	85%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+negative	100GB	85%	GFSeeker	tri_fusion	0	True_Recall
+negative	100GB	85%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+negative	100GB	85%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 negative	100GB	85%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 negative	100GB	85%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 negative	100GB	85%	JAFFAL	false_fusion	17	False_Call
@@ -143,6 +161,24 @@ negative	100GB	90%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 negative	100GB	90%	Genion	tri_fusion	0	True_Recall
 negative	100GB	90%	Genion	truncated_tri_fusion	0	Partial_Recall
 negative	100GB	90%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+negative	100GB	90%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+negative	100GB	90%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+negative	100GB	90%	GFSeeker	false_fusion	0	False_Call
+negative	100GB	90%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+negative	100GB	90%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+negative	100GB	90%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+negative	100GB	90%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+negative	100GB	90%	GFSeeker	hybrid	0	True_Recall
+negative	100GB	90%	GFSeeker	intra_chromosome	0	True_Recall
+negative	100GB	90%	GFSeeker	read_through	0	True_Recall
+negative	100GB	90%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+negative	100GB	90%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+negative	100GB	90%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+negative	100GB	90%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+negative	100GB	90%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+negative	100GB	90%	GFSeeker	tri_fusion	0	True_Recall
+negative	100GB	90%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+negative	100GB	90%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 negative	100GB	90%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 negative	100GB	90%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 negative	100GB	90%	JAFFAL	false_fusion	37	False_Call
@@ -233,6 +269,24 @@ negative	100GB	95%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 negative	100GB	95%	Genion	tri_fusion	0	True_Recall
 negative	100GB	95%	Genion	truncated_tri_fusion	0	Partial_Recall
 negative	100GB	95%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+negative	100GB	95%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+negative	100GB	95%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+negative	100GB	95%	GFSeeker	false_fusion	0	False_Call
+negative	100GB	95%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+negative	100GB	95%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+negative	100GB	95%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+negative	100GB	95%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+negative	100GB	95%	GFSeeker	hybrid	0	True_Recall
+negative	100GB	95%	GFSeeker	intra_chromosome	0	True_Recall
+negative	100GB	95%	GFSeeker	read_through	0	True_Recall
+negative	100GB	95%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+negative	100GB	95%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+negative	100GB	95%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+negative	100GB	95%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+negative	100GB	95%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+negative	100GB	95%	GFSeeker	tri_fusion	0	True_Recall
+negative	100GB	95%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+negative	100GB	95%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 negative	100GB	95%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 negative	100GB	95%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 negative	100GB	95%	JAFFAL	false_fusion	53	False_Call
@@ -323,6 +377,24 @@ negative	10GB	85%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 negative	10GB	85%	Genion	tri_fusion	0	True_Recall
 negative	10GB	85%	Genion	truncated_tri_fusion	0	Partial_Recall
 negative	10GB	85%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+negative	10GB	85%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+negative	10GB	85%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+negative	10GB	85%	GFSeeker	false_fusion	12	False_Call
+negative	10GB	85%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+negative	10GB	85%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+negative	10GB	85%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+negative	10GB	85%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+negative	10GB	85%	GFSeeker	hybrid	0	True_Recall
+negative	10GB	85%	GFSeeker	intra_chromosome	0	True_Recall
+negative	10GB	85%	GFSeeker	read_through	0	True_Recall
+negative	10GB	85%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+negative	10GB	85%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+negative	10GB	85%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+negative	10GB	85%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+negative	10GB	85%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+negative	10GB	85%	GFSeeker	tri_fusion	0	True_Recall
+negative	10GB	85%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+negative	10GB	85%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 negative	10GB	85%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 negative	10GB	85%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 negative	10GB	85%	JAFFAL	false_fusion	1	False_Call
@@ -413,6 +485,24 @@ negative	10GB	90%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 negative	10GB	90%	Genion	tri_fusion	0	True_Recall
 negative	10GB	90%	Genion	truncated_tri_fusion	0	Partial_Recall
 negative	10GB	90%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+negative	10GB	90%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+negative	10GB	90%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+negative	10GB	90%	GFSeeker	false_fusion	12	False_Call
+negative	10GB	90%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+negative	10GB	90%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+negative	10GB	90%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+negative	10GB	90%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+negative	10GB	90%	GFSeeker	hybrid	0	True_Recall
+negative	10GB	90%	GFSeeker	intra_chromosome	0	True_Recall
+negative	10GB	90%	GFSeeker	read_through	0	True_Recall
+negative	10GB	90%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+negative	10GB	90%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+negative	10GB	90%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+negative	10GB	90%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+negative	10GB	90%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+negative	10GB	90%	GFSeeker	tri_fusion	0	True_Recall
+negative	10GB	90%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+negative	10GB	90%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 negative	10GB	90%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 negative	10GB	90%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 negative	10GB	90%	JAFFAL	false_fusion	4	False_Call
@@ -503,6 +593,24 @@ negative	10GB	95%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 negative	10GB	95%	Genion	tri_fusion	0	True_Recall
 negative	10GB	95%	Genion	truncated_tri_fusion	0	Partial_Recall
 negative	10GB	95%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+negative	10GB	95%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+negative	10GB	95%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+negative	10GB	95%	GFSeeker	false_fusion	12	False_Call
+negative	10GB	95%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+negative	10GB	95%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+negative	10GB	95%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+negative	10GB	95%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+negative	10GB	95%	GFSeeker	hybrid	0	True_Recall
+negative	10GB	95%	GFSeeker	intra_chromosome	0	True_Recall
+negative	10GB	95%	GFSeeker	read_through	0	True_Recall
+negative	10GB	95%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+negative	10GB	95%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+negative	10GB	95%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+negative	10GB	95%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+negative	10GB	95%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+negative	10GB	95%	GFSeeker	tri_fusion	0	True_Recall
+negative	10GB	95%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+negative	10GB	95%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 negative	10GB	95%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 negative	10GB	95%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 negative	10GB	95%	JAFFAL	false_fusion	4	False_Call
@@ -593,6 +701,24 @@ negative	1GB	85%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 negative	1GB	85%	Genion	tri_fusion	0	True_Recall
 negative	1GB	85%	Genion	truncated_tri_fusion	0	Partial_Recall
 negative	1GB	85%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+negative	1GB	85%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+negative	1GB	85%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+negative	1GB	85%	GFSeeker	false_fusion	0	False_Call
+negative	1GB	85%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+negative	1GB	85%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+negative	1GB	85%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+negative	1GB	85%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+negative	1GB	85%	GFSeeker	hybrid	0	True_Recall
+negative	1GB	85%	GFSeeker	intra_chromosome	0	True_Recall
+negative	1GB	85%	GFSeeker	read_through	0	True_Recall
+negative	1GB	85%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+negative	1GB	85%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+negative	1GB	85%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+negative	1GB	85%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+negative	1GB	85%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+negative	1GB	85%	GFSeeker	tri_fusion	0	True_Recall
+negative	1GB	85%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+negative	1GB	85%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 negative	1GB	85%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 negative	1GB	85%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 negative	1GB	85%	JAFFAL	false_fusion	0	False_Call
@@ -683,6 +809,24 @@ negative	1GB	90%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 negative	1GB	90%	Genion	tri_fusion	0	True_Recall
 negative	1GB	90%	Genion	truncated_tri_fusion	0	Partial_Recall
 negative	1GB	90%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+negative	1GB	90%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+negative	1GB	90%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+negative	1GB	90%	GFSeeker	false_fusion	0	False_Call
+negative	1GB	90%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+negative	1GB	90%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+negative	1GB	90%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+negative	1GB	90%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+negative	1GB	90%	GFSeeker	hybrid	0	True_Recall
+negative	1GB	90%	GFSeeker	intra_chromosome	0	True_Recall
+negative	1GB	90%	GFSeeker	read_through	0	True_Recall
+negative	1GB	90%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+negative	1GB	90%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+negative	1GB	90%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+negative	1GB	90%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+negative	1GB	90%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+negative	1GB	90%	GFSeeker	tri_fusion	0	True_Recall
+negative	1GB	90%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+negative	1GB	90%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 negative	1GB	90%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 negative	1GB	90%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 negative	1GB	90%	JAFFAL	false_fusion	0	False_Call
@@ -773,6 +917,24 @@ negative	1GB	95%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 negative	1GB	95%	Genion	tri_fusion	0	True_Recall
 negative	1GB	95%	Genion	truncated_tri_fusion	0	Partial_Recall
 negative	1GB	95%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+negative	1GB	95%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+negative	1GB	95%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+negative	1GB	95%	GFSeeker	false_fusion	0	False_Call
+negative	1GB	95%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+negative	1GB	95%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+negative	1GB	95%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+negative	1GB	95%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+negative	1GB	95%	GFSeeker	hybrid	0	True_Recall
+negative	1GB	95%	GFSeeker	intra_chromosome	0	True_Recall
+negative	1GB	95%	GFSeeker	read_through	0	True_Recall
+negative	1GB	95%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+negative	1GB	95%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+negative	1GB	95%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+negative	1GB	95%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+negative	1GB	95%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+negative	1GB	95%	GFSeeker	tri_fusion	0	True_Recall
+negative	1GB	95%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+negative	1GB	95%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 negative	1GB	95%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 negative	1GB	95%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 negative	1GB	95%	JAFFAL	false_fusion	0	False_Call
@@ -863,6 +1025,24 @@ positive	100GB	85%	Genion	reverse_order:truncated_tri_fusion	18	Partial_Recall
 positive	100GB	85%	Genion	tri_fusion	1	True_Recall
 positive	100GB	85%	Genion	truncated_tri_fusion	18	Partial_Recall
 positive	100GB	85%	Genion	wrong_order:tri_fusion	5	Partial_Recall
+positive	100GB	85%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+positive	100GB	85%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+positive	100GB	85%	GFSeeker	false_fusion	0	False_Call
+positive	100GB	85%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+positive	100GB	85%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+positive	100GB	85%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+positive	100GB	85%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+positive	100GB	85%	GFSeeker	hybrid	0	True_Recall
+positive	100GB	85%	GFSeeker	intra_chromosome	0	True_Recall
+positive	100GB	85%	GFSeeker	read_through	0	True_Recall
+positive	100GB	85%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+positive	100GB	85%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+positive	100GB	85%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+positive	100GB	85%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+positive	100GB	85%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+positive	100GB	85%	GFSeeker	tri_fusion	0	True_Recall
+positive	100GB	85%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+positive	100GB	85%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 positive	100GB	85%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 positive	100GB	85%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 positive	100GB	85%	JAFFAL	false_fusion	48	False_Call
@@ -953,6 +1133,24 @@ positive	100GB	90%	Genion	reverse_order:truncated_tri_fusion	27	Partial_Recall
 positive	100GB	90%	Genion	tri_fusion	0	True_Recall
 positive	100GB	90%	Genion	truncated_tri_fusion	24	Partial_Recall
 positive	100GB	90%	Genion	wrong_order:tri_fusion	16	Partial_Recall
+positive	100GB	90%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+positive	100GB	90%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+positive	100GB	90%	GFSeeker	false_fusion	0	False_Call
+positive	100GB	90%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+positive	100GB	90%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+positive	100GB	90%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+positive	100GB	90%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+positive	100GB	90%	GFSeeker	hybrid	0	True_Recall
+positive	100GB	90%	GFSeeker	intra_chromosome	0	True_Recall
+positive	100GB	90%	GFSeeker	read_through	0	True_Recall
+positive	100GB	90%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+positive	100GB	90%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+positive	100GB	90%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+positive	100GB	90%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+positive	100GB	90%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+positive	100GB	90%	GFSeeker	tri_fusion	0	True_Recall
+positive	100GB	90%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+positive	100GB	90%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 positive	100GB	90%	JAFFAL	chromosomal_misalignment: intra_chromosome	1	Partial_Recall
 positive	100GB	90%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 positive	100GB	90%	JAFFAL	false_fusion	91	False_Call
@@ -1043,6 +1241,24 @@ positive	100GB	95%	Genion	reverse_order:truncated_tri_fusion	32	Partial_Recall
 positive	100GB	95%	Genion	tri_fusion	0	True_Recall
 positive	100GB	95%	Genion	truncated_tri_fusion	27	Partial_Recall
 positive	100GB	95%	Genion	wrong_order:tri_fusion	21	Partial_Recall
+positive	100GB	95%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+positive	100GB	95%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+positive	100GB	95%	GFSeeker	false_fusion	0	False_Call
+positive	100GB	95%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+positive	100GB	95%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+positive	100GB	95%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+positive	100GB	95%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+positive	100GB	95%	GFSeeker	hybrid	0	True_Recall
+positive	100GB	95%	GFSeeker	intra_chromosome	0	True_Recall
+positive	100GB	95%	GFSeeker	read_through	0	True_Recall
+positive	100GB	95%	GFSeeker	reverse_order: hybrid	0	Partial_Recall
+positive	100GB	95%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+positive	100GB	95%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+positive	100GB	95%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+positive	100GB	95%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+positive	100GB	95%	GFSeeker	tri_fusion	0	True_Recall
+positive	100GB	95%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+positive	100GB	95%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 positive	100GB	95%	JAFFAL	chromosomal_misalignment: intra_chromosome	1	Partial_Recall
 positive	100GB	95%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 positive	100GB	95%	JAFFAL	false_fusion	104	False_Call
@@ -1133,6 +1349,24 @@ positive	10GB	85%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 positive	10GB	85%	Genion	tri_fusion	0	True_Recall
 positive	10GB	85%	Genion	truncated_tri_fusion	0	Partial_Recall
 positive	10GB	85%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+positive	10GB	85%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+positive	10GB	85%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+positive	10GB	85%	GFSeeker	false_fusion	16	False_Call
+positive	10GB	85%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+positive	10GB	85%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+positive	10GB	85%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+positive	10GB	85%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+positive	10GB	85%	GFSeeker	hybrid	6	True_Recall
+positive	10GB	85%	GFSeeker	intra_chromosome	6	True_Recall
+positive	10GB	85%	GFSeeker	read_through	3	True_Recall
+positive	10GB	85%	GFSeeker	reverse_order: hybrid	6	Partial_Recall
+positive	10GB	85%	GFSeeker	reverse_order: intra_chromosome	11	Partial_Recall
+positive	10GB	85%	GFSeeker	reverse_order: read_through	3	Partial_Recall
+positive	10GB	85%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+positive	10GB	85%	GFSeeker	reverse_order:truncated_tri_fusion	20	Partial_Recall
+positive	10GB	85%	GFSeeker	tri_fusion	0	True_Recall
+positive	10GB	85%	GFSeeker	truncated_tri_fusion	11	Partial_Recall
+positive	10GB	85%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 positive	10GB	85%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 positive	10GB	85%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 positive	10GB	85%	JAFFAL	false_fusion	3	False_Call
@@ -1223,6 +1457,24 @@ positive	10GB	90%	Genion	reverse_order:truncated_tri_fusion	2	Partial_Recall
 positive	10GB	90%	Genion	tri_fusion	0	True_Recall
 positive	10GB	90%	Genion	truncated_tri_fusion	1	Partial_Recall
 positive	10GB	90%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+positive	10GB	90%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+positive	10GB	90%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+positive	10GB	90%	GFSeeker	false_fusion	24	False_Call
+positive	10GB	90%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+positive	10GB	90%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+positive	10GB	90%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+positive	10GB	90%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+positive	10GB	90%	GFSeeker	hybrid	13	True_Recall
+positive	10GB	90%	GFSeeker	intra_chromosome	11	True_Recall
+positive	10GB	90%	GFSeeker	read_through	6	True_Recall
+positive	10GB	90%	GFSeeker	reverse_order: hybrid	3	Partial_Recall
+positive	10GB	90%	GFSeeker	reverse_order: intra_chromosome	7	Partial_Recall
+positive	10GB	90%	GFSeeker	reverse_order: read_through	6	Partial_Recall
+positive	10GB	90%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+positive	10GB	90%	GFSeeker	reverse_order:truncated_tri_fusion	23	Partial_Recall
+positive	10GB	90%	GFSeeker	tri_fusion	0	True_Recall
+positive	10GB	90%	GFSeeker	truncated_tri_fusion	15	Partial_Recall
+positive	10GB	90%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 positive	10GB	90%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 positive	10GB	90%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 positive	10GB	90%	JAFFAL	false_fusion	15	False_Call
@@ -1313,6 +1565,24 @@ positive	10GB	95%	Genion	reverse_order:truncated_tri_fusion	1	Partial_Recall
 positive	10GB	95%	Genion	tri_fusion	0	True_Recall
 positive	10GB	95%	Genion	truncated_tri_fusion	1	Partial_Recall
 positive	10GB	95%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+positive	10GB	95%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+positive	10GB	95%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+positive	10GB	95%	GFSeeker	false_fusion	27	False_Call
+positive	10GB	95%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+positive	10GB	95%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+positive	10GB	95%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+positive	10GB	95%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+positive	10GB	95%	GFSeeker	hybrid	10	True_Recall
+positive	10GB	95%	GFSeeker	intra_chromosome	11	True_Recall
+positive	10GB	95%	GFSeeker	read_through	5	True_Recall
+positive	10GB	95%	GFSeeker	reverse_order: hybrid	11	Partial_Recall
+positive	10GB	95%	GFSeeker	reverse_order: intra_chromosome	19	Partial_Recall
+positive	10GB	95%	GFSeeker	reverse_order: read_through	6	Partial_Recall
+positive	10GB	95%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+positive	10GB	95%	GFSeeker	reverse_order:truncated_tri_fusion	33	Partial_Recall
+positive	10GB	95%	GFSeeker	tri_fusion	0	True_Recall
+positive	10GB	95%	GFSeeker	truncated_tri_fusion	18	Partial_Recall
+positive	10GB	95%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 positive	10GB	95%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 positive	10GB	95%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 positive	10GB	95%	JAFFAL	false_fusion	30	False_Call
@@ -1403,6 +1673,24 @@ positive	1GB	85%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 positive	1GB	85%	Genion	tri_fusion	0	True_Recall
 positive	1GB	85%	Genion	truncated_tri_fusion	0	Partial_Recall
 positive	1GB	85%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+positive	1GB	85%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+positive	1GB	85%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+positive	1GB	85%	GFSeeker	false_fusion	1	False_Call
+positive	1GB	85%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+positive	1GB	85%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+positive	1GB	85%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+positive	1GB	85%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+positive	1GB	85%	GFSeeker	hybrid	0	True_Recall
+positive	1GB	85%	GFSeeker	intra_chromosome	1	True_Recall
+positive	1GB	85%	GFSeeker	read_through	0	True_Recall
+positive	1GB	85%	GFSeeker	reverse_order: hybrid	2	Partial_Recall
+positive	1GB	85%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+positive	1GB	85%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+positive	1GB	85%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+positive	1GB	85%	GFSeeker	reverse_order:truncated_tri_fusion	1	Partial_Recall
+positive	1GB	85%	GFSeeker	tri_fusion	0	True_Recall
+positive	1GB	85%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+positive	1GB	85%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 positive	1GB	85%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 positive	1GB	85%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 positive	1GB	85%	JAFFAL	false_fusion	0	False_Call
@@ -1493,6 +1781,24 @@ positive	1GB	90%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 positive	1GB	90%	Genion	tri_fusion	0	True_Recall
 positive	1GB	90%	Genion	truncated_tri_fusion	0	Partial_Recall
 positive	1GB	90%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+positive	1GB	90%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+positive	1GB	90%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+positive	1GB	90%	GFSeeker	false_fusion	1	False_Call
+positive	1GB	90%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+positive	1GB	90%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+positive	1GB	90%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+positive	1GB	90%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+positive	1GB	90%	GFSeeker	hybrid	1	True_Recall
+positive	1GB	90%	GFSeeker	intra_chromosome	0	True_Recall
+positive	1GB	90%	GFSeeker	read_through	0	True_Recall
+positive	1GB	90%	GFSeeker	reverse_order: hybrid	1	Partial_Recall
+positive	1GB	90%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+positive	1GB	90%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+positive	1GB	90%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+positive	1GB	90%	GFSeeker	reverse_order:truncated_tri_fusion	0	Partial_Recall
+positive	1GB	90%	GFSeeker	tri_fusion	0	True_Recall
+positive	1GB	90%	GFSeeker	truncated_tri_fusion	1	Partial_Recall
+positive	1GB	90%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 positive	1GB	90%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 positive	1GB	90%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 positive	1GB	90%	JAFFAL	false_fusion	0	False_Call
@@ -1583,6 +1889,24 @@ positive	1GB	95%	Genion	reverse_order:truncated_tri_fusion	0	Partial_Recall
 positive	1GB	95%	Genion	tri_fusion	0	True_Recall
 positive	1GB	95%	Genion	truncated_tri_fusion	0	Partial_Recall
 positive	1GB	95%	Genion	wrong_order:tri_fusion	0	Partial_Recall
+positive	1GB	95%	GFSeeker	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
+positive	1GB	95%	GFSeeker	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
+positive	1GB	95%	GFSeeker	false_fusion	1	False_Call
+positive	1GB	95%	GFSeeker	false_fusion:mitochondrial	0	False_Call
+positive	1GB	95%	GFSeeker	false_fusion:mitochondrial_genomic	0	False_Call
+positive	1GB	95%	GFSeeker	false_fusion:self_misalignment	0	False_Call
+positive	1GB	95%	GFSeeker	false_fusion:Sense-Antisense	0	False_Call
+positive	1GB	95%	GFSeeker	hybrid	0	True_Recall
+positive	1GB	95%	GFSeeker	intra_chromosome	0	True_Recall
+positive	1GB	95%	GFSeeker	read_through	0	True_Recall
+positive	1GB	95%	GFSeeker	reverse_order: hybrid	2	Partial_Recall
+positive	1GB	95%	GFSeeker	reverse_order: intra_chromosome	0	Partial_Recall
+positive	1GB	95%	GFSeeker	reverse_order: read_through	0	Partial_Recall
+positive	1GB	95%	GFSeeker	reverse_order:tri_fusion	0	Partial_Recall
+positive	1GB	95%	GFSeeker	reverse_order:truncated_tri_fusion	1	Partial_Recall
+positive	1GB	95%	GFSeeker	tri_fusion	0	True_Recall
+positive	1GB	95%	GFSeeker	truncated_tri_fusion	0	Partial_Recall
+positive	1GB	95%	GFSeeker	wrong_order:tri_fusion	0	Partial_Recall
 positive	1GB	95%	JAFFAL	chromosomal_misalignment: intra_chromosome	0	Partial_Recall
 positive	1GB	95%	JAFFAL	chromosomal_misalignment:intra_chromosome	0	Partial_Recall
 positive	1GB	95%	JAFFAL	false_fusion	0	False_Call

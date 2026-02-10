@@ -31,7 +31,12 @@ dCTAT_LR<- Annot_CTATLR_Sim[c(1:25, 43, 50:52)] %>%
   dplyr::select(c(2, 22, 23, 26:29))%>%#select only columns needed for downstream analysis
   dplyr::rename(read_supp = num_LR)
 
-combined_data <- rbind(dLGF, dJF, dJF3, dGen, dFS, dCTAT_LR)
+dGFS<- Annot_GFSeeker_Sim[c(1:18, 20, 23, 24, 39, 46, 47)] %>% 
+  unique()%>% #remove duplicate values
+  dplyr::select(c(11, 15, 17, 22:24, 16))%>%#select only columns needed for downstream analysis
+  dplyr::rename(read_supp = "support num")
+
+combined_data <- rbind(dLGF, dJF, dJF3, dGen, dFS, dGFS, dCTAT_LR)
 combined_data$read_supp <- as.numeric(combined_data$read_supp)
 
 write_tsv(combined_data, paste0(Analysis_output_folder, "combined_data_FusionCalls.tsv"))
