@@ -21,7 +21,7 @@ Fusion_overlap_matrix <- as.data.frame(lapply(Fusion_overlap_matrix, as.integer)
 
 # Generate the UpSet plot using ComplexUpset
 False_Overlap <- ComplexUpset::upset(
-  Fusion_overlap_matrix, names(Fusion_overlap_matrix)[1:5],  # First four sets
+  Fusion_overlap_matrix, names(Fusion_overlap_matrix)[1:num_ALG],  # First four sets
   width_ratio=0.1, sort_intersections_by='degree',
   queries=list(upset_query(intersect=FUSIONLIST, color='blue')),
   base_annotations = list(
@@ -38,6 +38,7 @@ Fusion_Simulated_Fusion_overlap_sets <- list(
   CTAT_LR_Fusion = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "CTAT-LR-Fusion", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id),
   Genion = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "Genion", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id),
   LongGF = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "LongGF", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id),
+  GFSeeker = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "GFSeeker", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id),
   FusionSeeker = unique(filter(combined_data, depth == "100GB", Sequence_Identity == "95%", control == "positive", Algorithm == "FusionSeeker", grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType), read_supp >= 2)$fusion.gene.id)
 )
 
@@ -45,7 +46,7 @@ Fusion_Simulated_Fusion_overlap_sets <- list(
 Fusion_overlap <- fromList(Fusion_Simulated_Fusion_overlap_sets)
 # Generate an upset plot without specifying intersect, which uses the default behavior
 PartialCall_Overlap <- ComplexUpset::upset(
-  Fusion_overlap, intersect = names(Fusion_Simulated_Fusion_overlap_sets[1:5]),
+  Fusion_overlap, intersect = names(Fusion_Simulated_Fusion_overlap_sets[1:num_ALG]),
   width_ratio=0.1, sort_intersections_by='degree',
   queries=list(upset_query(intersect=FUSIONLIST, color='blue')),
   base_annotations = list(

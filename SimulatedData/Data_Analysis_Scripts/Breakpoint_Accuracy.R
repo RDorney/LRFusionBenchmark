@@ -63,6 +63,11 @@ FusionSeeker_BreakPoint <- Annot_FusionSeeker_Sim[c(1:23, 33, 40:42)] %>%
   filter(control == "positive", 
          !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", 
                 fusionType)) #Chrom1, Breakpoint1, Chrom2, Base2
+GFSeeker_BreakPoint <- Annot_GFSeeker_Sim[c(1:18, 20, 23, 24, 39, 46, 47)] %>%
+  distinct() %>%
+  filter(control == "positive", 
+         !grepl("false|wrong|truncated|reverse|chromosomal_misalignment", 
+                fusionType)) #Chrom1, Breakpoint1, Chrom2, Base2
 
 CTAT_LR_Breakpoint <- Annot_CTATLR_Sim[c(1:25, 43, 50:52)]%>%
   distinct() %>%
@@ -221,6 +226,43 @@ for (seq_depth in c('1GB' , '10GB' , '100GB')) {
   } 
 }
 
+GFSeeker_Breakpoint_Accuracy <- data.frame(matrix(nrow = 0, 
+                                                  ncol = length(c('seq_depth', 'seq_id', 
+                                                                  'gene_fusion', 'GFSB1', 'GFSB2'))))
+colnames(GFSeeker_Breakpoint_Accuracy) <- c('seq_depth', 'seq_id', 'gene_fusion', 'GFSB1', 'GFSB2')
+for (seq_depth in c('1GB' , '10GB' )) {# , '100GB'
+  for (seq_id in c('85%' , '90%' , '95%')) {   
+    for(gene_fusion in unique(c(GFSeeker_BreakPoint$fusion.gene.id))){
+      SB <- subset(Simulated_BreakPoint, fusion.gene.id == gene_fusion)
+      GFS <- subset(GFSeeker_BreakPoint, fusion.gene.id == gene_fusion & depth == seq_depth & Sequence_Identity == seq_id)
+      gene_names <- str_split(gene_fusion, pattern = ":")[[1]] 
+      gene1 <- gene_names[1]
+      gene2 <- gene_names[2]
+      
+      SB1 <- as.integer(tail(str_split(subset(SB, alternative_ID == gene1)$exonEnds, ",")[[1]], 1))
+      SB2 <- as.integer(head(str_split(subset(SB, alternative_ID == gene2)$exonStarts, ",")[[1]],1))
+      
+      gene3 <- gene_names[3]
+      SB3 <- NA
+      SB4 <- NA
+      if(is.na(gene3) == FALSE){
+        SB3 <- as.integer(str_split(subset(SB, alternative_ID == gene2)$exonEnds, ",")[[1]])
+        SB4 <- as.integer(str_split(subset(SB, alternative_ID == gene3)$exonStarts, ",")[[1]])
+      }
+      if(nrow(GFS) > 0){
+        GFSB1 <- as.numeric(GFS$base1) - SB1
+        GFSB2 <- as.numeric(GFS$base2) - SB2
+      }else{
+        GFSB1 <- "NA"
+        GFSB2 <- "NA"
+      }
+      new_row <-  data.frame(seq_depth, seq_id, gene_fusion, GFSB1, GFSB2)
+      colnames(new_row) <- colnames(GFSeeker_Breakpoint_Accuracy)
+      GFSeeker_Breakpoint_Accuracy <- rbind(GFSeeker_Breakpoint_Accuracy, new_row)
+    }
+  } 
+}
+
 CTAT_LR_Breakpoint_Accuracy <- data.frame(matrix(nrow = 0, ncol = length(c('seq_depth', 'seq_id', 'gene_fusion', 'CTATLRB1', 'CTATLRB2'))))
 colnames(CTAT_LR_Breakpoint_Accuracy) <- c('seq_depth', 'seq_id', 'gene_fusion', 'CTATLRB1', 'CTATLRB2')
 for (seq_depth in c('1GB' , '10GB' , '100GB')) {
@@ -260,18 +302,20 @@ for (seq_depth in c('1GB' , '10GB' , '100GB')) {
 Breakpoint_Accuracy <- full_join(FusionSeeker_Breakpoint_Accuracy, LongGF_Breakpoint_Accuracy) %>%
   full_join(Genion_Breakpoint_Accuracy) %>%
   full_join(JAFFAL_BreakPoint_Accuracy) %>%
-  full_join(CTAT_LR_Breakpoint_Accuracy)
+  full_join(CTAT_LR_Breakpoint_Accuracy)%>%
+  full_join(GFSeeker_Breakpoint_Accuracy)
 
 Breakpoint_Accuracy[is.na(Breakpoint_Accuracy)] <- "NA"
 
-Breakpoint_Accuracy <- Breakpoint_Accuracy %>% filter(!if_all(FSB1:JB2, ~ .x == "NA")) %>%
+Breakpoint_Accuracy <- Breakpoint_Accuracy %>% filter(!if_all(FSB1:GFSB2, ~ .x == "NA")) %>%
   pivot_longer(cols = 4:ncol(Breakpoint_Accuracy), names_to =  "Tool_Breakpoint", values_to = "Distance_from_Simulated_Breakpoint") %>%
   mutate(Algorithm = case_when(
     grepl("^GB", Tool_Breakpoint) ~ "Genion",
     grepl("^JB", Tool_Breakpoint) ~ "JAFFAL",
     grepl("^LB", Tool_Breakpoint) ~ "LongGF",
     grepl("^CTATLR", Tool_Breakpoint) ~ "CTAT-LR-Fusion",
-    grepl("^FSB", Tool_Breakpoint) ~ "FusionSeeker"))%>%
+    grepl("^FSB", Tool_Breakpoint) ~ "FusionSeeker",
+    grepl("^GFSB", Tool_Breakpoint) ~ "GFSeeker"))%>%
   mutate(values_vector = strsplit(as.character(Distance_from_Simulated_Breakpoint), ","))%>%
   unnest(values_vector) %>%
   mutate(values_vector = as.numeric(values_vector)) %>%

@@ -489,24 +489,29 @@ Make Figure 2
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Figure2.R")
 ```
 
-Fusionseeker and some of fusion callers will produce duplicate calls the same fusion multiple times with different read support because of breakpoint differences. We need to consolidate these for ease in comparing how read support for the same fusion will differ by fusion caller tool. Export fusions_in_all_algorithms.tsv
+FusionSeeker and some other fusion callers will produce duplicate calls the same fusion multiple times with different read support because of breakpoint differences. We need to consolidate these for ease in comparing how read support for the same fusion will differ by fusion caller tool. Export fusions_in_all_algorithms.tsv
+
+#this will be empty because GFSeeker have no overlap with all fusions. use fusions_in_n_algorithms.tsv instead
 
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/ReadSupport_Consolidation.R")
 ```
 
-Make Figure 3B: comparing read support for the same fusions as called by different algorithms
+Make Figure 3B: comparing read support for the same fusions as called by all algorithms
 
 ```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/ReadSuppComp.R")
+#source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/ReadSuppComp.R")
+
+##broken because GFSeeker does not overlap with all algorithms
 ```
 
 Make Compound Figure 3
 
 ```{r}
-Figure3<- (Figure3A / Figure3B) +
+#Figure3<- (Figure3A / Figure3B) +
           plot_annotation(tag_levels = list(c("A", "", "", "B")))
-ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure3_paper.png", plot = Figure3, width = 210, height = 297, units = "mm")  
+#ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure3_paper.png", plot = Figure3, width = 210, height = 297, units = "mm")  
+        ##see Figure 3B  
 ```
 
 identify fusions in more than one algorithm, and export fusions_in_n_algorithms.tsv
@@ -515,7 +520,9 @@ identify fusions in more than one algorithm, and export fusions_in_n_algorithms.
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/FusionMultiAlg.R")
 ```
 
-Supplementary Figure 11
+Supplementary Figure 11.
+
+##GFSeeker 100Gb has not been completed and does not appear in these figures
 
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Make_SupFig11.R")
@@ -529,6 +536,8 @@ source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/TrueCalls_Overlap.R")
 
 Create Compound Figure 1:
 
+##GFSeeker 100Gb has not been completed and does not appear in these figures
+
 ```{r}
 Figure1_paper <- (Figure1D | Figure1E)/
                   (Figure1F | Figure1G)/
@@ -540,6 +549,8 @@ ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure1_paper.png", plot = Figur
 ```
 
 Make Supplementary Figure 3
+
+##GFSeeker 100Gb has not been completed and does not appear in these figures
 
 ```{r}
 #Supplementary Figure 3A
@@ -560,6 +571,8 @@ source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/Brea
 ```
 
 Make Figure 4 & Supplementary Figure 13
+
+##GFSeeker 100Gb has not been completed and does not appear in some figures
 
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Breakpoint_stat_plots.R")
