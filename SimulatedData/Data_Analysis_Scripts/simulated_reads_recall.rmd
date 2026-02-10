@@ -17,6 +17,8 @@ library(dplyr)
 library(ggplot2)
 library(ggh4x)
 library(biomaRt)
+library(AnnotationHub)
+library(HGNChelper)
 library(UpSetR)
 library(ComplexUpset)
 library(patchwork)
@@ -50,6 +52,15 @@ genes <- gencodev44gtf %>%
     strand.field = "strand",
     keep.extra.columns = TRUE
   )
+
+################################################################
+# Prepare dictionary
+################################################################
+ah <- AnnotationHub()
+query(ah, c("EnsDb", "Hsapiens", "110"))#Load Ensembl the version that bests correlate to gencode version 44
+ensembldbv110 <- ah[["AH113665"]]
+query(ah, c("EnsDb", "Hsapiens", "109"))#Load Ensembl the version that bests correlate to gencode version 43
+ensembldbv109 <- ah[["AH109606"]]
 ```
 
 The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa.
