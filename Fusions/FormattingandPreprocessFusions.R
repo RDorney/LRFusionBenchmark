@@ -40,7 +40,7 @@ Illumina_sequencing_IllHB2<- read.csv("/bioinformatics/ryley/JAFFA_Promethion/Hu
 JAFFAL_Illumina_Huh7 <- rbind(Illumina_sequencing_IllHB1, Illumina_sequencing_IllHB2)%>%
   mutate(Algorithm = "JAFFA")
 
-Huh7_JAFFAL <- rbind(JAFFAL_Illumina_Huh7, JAFFAL_LR_Huh7) %>% 
+Huh7_JAFFAL <- JAFFAL_LR_Huh7 %>% #rbind(JAFFAL_Illumina_Huh7, )
   separate(fusion.genes, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) %>%
   filter(chrom1 %in% standard_chrs)%>%
   filter(chrom2 %in% standard_chrs)%>%
@@ -50,7 +50,8 @@ Huh7_JAFFAL <- rbind(JAFFAL_Illumina_Huh7, JAFFAL_LR_Huh7) %>%
   )
 
 ##load tri gene results
-LRTri_gene <- list.files(path="/bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_gv43", pattern = "3gene_summary", full.names = TRUE, recursive = TRUE) 
+LRTri_gene <- list.files(path="/bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_gv43", 
+                         pattern = "3gene_summary", full.names = TRUE, recursive = TRUE) 
 name <- 0
 for (location in LRTri_gene){
   name <- name + 1
@@ -67,10 +68,13 @@ for (location in LRTri_gene){
                 Cell_Line = "Huh7"))
 } 
 
-LRsequencing_3Gene <- rbind(file_1, file_2, 
+Huh7_JAFFAL_3Gene <- rbind(file_1, file_2, 
                             file_3, file_4, 
                             file_5, file_6,
-                            file_7, file_8)
+                            file_7, file_8)%>% 
+  separate(Fusion, sep=":" ,into = c("Gene1", "Gene2", "Gene3"), 
+           remove = FALSE)
+
 ################################################################
 #Read in data from Genion
 ################################################################
@@ -98,7 +102,7 @@ Genion_Huh7<- Genion_Huh7 %>%
                                   grepl('FAZ|PCR|FLNCcDNA', Source)  ~ "PCR_cDNA"),
          RNA_sample = case_when(grepl('FBA62655|FBA22660|FAZ80247|B1', Source)  ~ "B1", 
                                 grepl('FBA22517|FAZ83542|FBA43334|B2', Source) ~ "B2"), 
-         Platform = case_when(grepl('Nano', Source)  ~ "ONT",
+         Platform = case_when(grepl('chopper', Source)  ~ "ONT",
                               grepl('PB', Source)  ~ "PacBio"),
          Cell_Line = "Huh7")
 
@@ -106,7 +110,7 @@ Genion_Huh7<- Genion_Huh7 %>%
 ################################################################
 #Read in data from FusionSeeker
 ################################################################
-FusionSeeker_Huh7_Directory <- "/bioinformatics/ryley/Gencode44/Huh7/FusionSeeker"
+FusionSeeker_Huh7_Directory <- "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker"
 
 myfiles<-list.files(path = FusionSeeker_Huh7_Directory, pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
 FusionSeeker_Huh7 <- do.call(rbind, lapply(myfiles, function(filename){
@@ -126,26 +130,21 @@ FusionSeeker_Huh7 <- FusionSeeker_Huh7 %>%
                                   grepl('FAZ|PCR|FLNCcDNA', Source)  ~ "PCR_cDNA"),
          RNA_sample = case_when(grepl('FBA62655|FBA22660|FAZ80247|B1', Source)  ~ "B1", 
                                 grepl('FBA22517|FAZ83542|FBA43334|B2', Source) ~ "B2"), 
-         Platform = case_when(grepl('Nano', Source)  ~ "ONT",
+         Platform = case_when(grepl('chopper', Source)  ~ "ONT",
                               grepl('PB', Source)  ~ "PacBio"),
          Cell_Line = "Huh7")
 
 ################################################################
 #Read in data from LongGF
 ################################################################
-LongGF_Huh7_Directory<-"/bioinformatics/ryley/Gencode44/Huh7/LongGF/"
-my_files <- list.files(path = LongGF_Huh7_Directory, pattern = "tsv", full.names=TRUE)
-all_tsv <-lapply(my_files, read.table)
-names(all_tsv) <- gsub(".tsv","",list.files(path = LongGF_Huh7_Directory, pattern = "tsv",full.names = FALSE),fixed = TRUE)
-names <- gsub(".tsv","",list.files(path = LongGF_Huh7_Directory, pattern = "tsv",full.names = FALSE),fixed = TRUE)
-for(i in names){
-  assign(i, read.table(paste0(LongGF_Huh7_Directory, i, ".tsv")))
-}
-LongGF_Huh7 <- do.call(rbind, lapply(my_files, function(filename) {
-  read.table(filename) %>%
-    mutate(Source = basename(filename))
-}))
+LongGF_Huh7_Directory<-"/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF"
+grep_command <- paste0("grep SumGF " , LongGF_Huh7_Directory, "/LongGF.run.*log", " > ", LongGF_Huh7_Directory, "/LongGF_Huh7_summary.tsv")
+system(grep_command)
+
+LongGF_Huh7 <- read.table(paste0(LongGF_Huh7_Directory, "/LongGF_Huh7_summary.tsv"))
 LongGF_Huh7 <- LongGF_Huh7 %>% 
+  mutate(V1 = gsub("/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF/LongGF.run.", "", V1)) %>%
+  mutate(V1 =gsub(".log:SumGF", "", V1))%>%
   separate(V2, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) %>% 
   separate(V4, into = c("chromosome1", "breakpoint1"), sep = ":", remove = FALSE) %>% 
   separate(V5, into = c("chromosome2", "breakpoint2"), sep = ":", remove = FALSE) %>%
@@ -153,13 +152,13 @@ LongGF_Huh7 <- LongGF_Huh7 %>%
   filter(chromosome2 %in% standard_chrs)%>%
   filter(V3 >= 2)%>%
   mutate(Algorithm = "LongGF",
-         library_type = case_when(grepl('FBA22517|FBA22660|dRNA', Source)  ~ "direct_RNA",
-                                  grepl('FBA43334|FBA62655|dcDNA', Source)  ~ "direct_cDNA",
-                                  grepl('FAZ|PCR|FLNCcDNA', Source)  ~ "PCR_cDNA"),
-         RNA_sample = case_when(grepl('FBA62655|FBA22660|FAZ80247|B1', Source)  ~ "B1", 
-                                grepl('FBA22517|FAZ83542|FBA43334|B2', Source) ~ "B2"), 
-         Platform = case_when(grepl('Nano', Source)  ~ "ONT",
-                              grepl('PB', Source)  ~ "PacBio"),
+         library_type = case_when(grepl('FBA22517|FBA22660|dRNA', V1)  ~ "direct_RNA",
+                                  grepl('FBA43334|FBA62655|dcDNA', V1)  ~ "direct_cDNA",
+                                  grepl('FAZ|PCR|FLNCcDNA', V1)  ~ "PCR_cDNA"),
+         RNA_sample = case_when(grepl('FBA62655|FBA22660|FAZ80247|B1', V1)  ~ "B1", 
+                                grepl('FBA22517|FAZ83542|FBA43334|B2', V1) ~ "B2"), 
+         Platform = case_when(grepl('chopper', V1)  ~ "ONT",
+                              grepl('PB', V1)  ~ "PacBio"),
          Cell_Line = "Huh7")
 
 ################################################################
@@ -194,16 +193,7 @@ GFSeeker_Huh7 <- GFSeeker_Huh7  %>%
   rename(gene2_name = "gene2 name")%>%
   separate("break points", into = c("Breakpoint1", "Breakpoint2"), ";", remove=TRUE) %>% 
   separate(Breakpoint1, into = c("chrom1", "base1"), ":", remove=FALSE)%>%
-  separate(Breakpoint2, into = c("chrom2", "base2"), ":", remove=FALSE)%>%
-  mutate(Algorithm = "GFSeeker",
-         library_type = case_when(grepl('FBA22517|FBA22660|dRNA', Source)  ~ "direct_RNA",
-                                  grepl('FBA43334|FBA62655|dcDNA', Source)  ~ "direct_cDNA",
-                                  grepl('FAZ|PCR|FLNCcDNA', Source)  ~ "PCR_cDNA"),
-         RNA_sample = case_when(grepl('FBA62655|FBA22660|FAZ80247|B1', Source)  ~ "B1", 
-                                grepl('FBA22517|FAZ83542|FBA43334|B2', Source) ~ "B2"), 
-         Platform = case_when(grepl('Nano', Source)  ~ "ONT",
-                              grepl('PB', Source)  ~ "PacBio"),
-         Cell_Line = "Huh7")
+  separate(Breakpoint2, into = c("chrom2", "base2"), ":", remove=FALSE)
 
 og_GFSeeker_Huh7 <- GFSeeker_Huh7
 
