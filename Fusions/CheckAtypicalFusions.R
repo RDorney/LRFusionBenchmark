@@ -5,6 +5,7 @@
 library(rtracklayer)
 library(GenomicRanges)
 library(dplyr)
+library(gpplot2)
 #load relevant gtf file
 gencodev44gtf <- import("/bioinformatics/ryley/Gencode44/reference_v44/gencode.v44.annotation.gtf")
 # Prep files
@@ -420,41 +421,41 @@ JAFFAL_sensemito_annotated <- JAFFAL_sensecheck_annotated %>%
 # combined dataframes
 ###########################
 sensemito_fusions <- rbind(dplyr::select(CTATLR_sensemito_annotated, 
-                                         c("Source", "Cell_Lines", 
-                                           "Algorithm", "Sequencing_Depth",    
-                                           "Library", "fusionType")),
+                                         c("RNA_sample", "Platform", "Cell_Line", 
+                                           "Algorithm",    
+                                           "library_type", "fusionType")),
                            dplyr::select(Genion_sensemito_annotated, 
-                                         c("Source", "Cell_Lines", 
-                                           "Algorithm", "Sequencing_Depth",    
-                                           "Library", "fusionType")),
+                                         c("RNA_sample",  "Platform","Cell_Line", 
+                                           "Algorithm",    
+                                           "library_type", "fusionType")),
                            dplyr::select(LongGF_sensemito_annotated, 
-                                         c("Source", "Cell_Lines", 
-                                           "Algorithm", "Sequencing_Depth",    
-                                           "Library", "fusionType")), 
+                                         c("RNA_sample",  "Platform","Cell_Line", 
+                                           "Algorithm",    
+                                           "library_type", "fusionType")), 
                            dplyr::select(FusionSeeker_sensemito_annotated, 
-                                         c("Source", "Cell_Lines", 
-                                           "Algorithm", "Sequencing_Depth",    
-                                           "Library", "fusionType")),
+                                         c("RNA_sample",  "Platform","Cell_Line", 
+                                           "Algorithm",    
+                                           "library_type", "fusionType")),
                            dplyr::select(GFSeeker_sensemito_annotated, 
-                                         c("Source", "Cell_Lines", 
-                                           "Algorithm", "Sequencing_Depth",    
-                                           "Library", "fusionType")),
+                                         c("RNA_sample",  "Platform","Cell_Line", 
+                                           "Algorithm",    
+                                           "library_type", "fusionType")),
                            dplyr::select(JAFFAL_sensemito_annotated, 
-                                         c("Source", "Cell_Lines", 
-                                           "Algorithm", "Sequencing_Depth",    
-                                           "Library", "fusionType")))
+                                         c("RNA_sample",  "Platform","Cell_Line", 
+                                           "Algorithm",    
+                                           "library_type", "fusionType")))
 
 ################
 # plots
 ################
-ggplot(filter(sensemito_fusions, Sequencing_Depth == c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb")), 
-       aes(x = Sequencing_Depth, fill = fusionType)) +
+ggplot(filter(sensemito_fusions), 
+       aes(x = interaction(Platform, RNA_sample), fill = Algorithm)) +
   geom_bar() +
   theme_minimal() +
   labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))+
-  facet_grid(Library+Cell_Lines~Algorithm) +
+  facet_grid(library_type~fusionType) +
   scale_y_log10()+
   labs(fill = "Fusion Type")
