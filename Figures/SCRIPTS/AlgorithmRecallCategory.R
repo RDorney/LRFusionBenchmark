@@ -16,6 +16,18 @@ JAFFAL_scoring <- Annot_JAFFAL_Sim[c(1:25, 43, 50:52)] %>% unique() %>%
 
 write_tsv(JAFFAL_scoring, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/JAFFAL_scoring.tsv")
 
+GFSeeker_scoring <- Annot_GFSeeker_Sim[c(1:17, 39, 46, 47)] %>% 
+  unique() %>%  
+  mutate(recall_category = case_when(
+    grepl("false", fusionType) ~ "False_Call",
+    grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
+    TRUE ~ "True_Recall")) %>%
+  dplyr::select(Source, 'supporting reads information', fusion.gene.id, 
+                "support num", "rank class", 
+                recall_category, control, depth, Sequence_Identity, fusionType) %>% unique()
+
+write_tsv(GFSeeker_scoring, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/GFSeeker_scoring.tsv")
+
 #Check if JAFFAL's classification correlates to recall category. 
 #Make Supplementary Figure 15
 Supp_Figure15A <- ggplot(filter(JAFFAL_scoring, control =="positive", depth == "100GB", Sequence_Identity == "95%"),

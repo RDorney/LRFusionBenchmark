@@ -50,6 +50,16 @@ Annot_FusionSeeker_Sim <- Annot_FusionSeeker_Sim %>%
     grepl("90", Source) ~ "90%",
     grepl("85", Source) ~ "85%" # Keep original value if no match
   ))
+Annot_GFSeeker_Sim <- Annot_GFSeeker_Sim %>%
+  mutate(depth = case_when(
+    grepl("100GB", Source) ~ "100GB",
+    grepl("10GB", Source) ~ "10GB",
+    grepl("1GB", Source) ~ "1GB"  # Keep original value if no match
+  ), Sequence_Identity = case_when(
+    grepl("95", Source) ~ "95%",
+    grepl("90", Source) ~ "90%",
+    grepl("85", Source) ~ "85%" # Keep original value if no match
+  ))
 Annot_CTATLR_Sim <- Annot_CTATLR_Sim %>%
   mutate(depth = case_when(
     grepl("100GB", Source) ~ "100GB",
@@ -66,3 +76,4 @@ Annot_JAFFAL_3Gene_Sim$Algorithm <- "JAFFAL"
 Annot_Genion_Sim$Algorithm <- "Genion"
 Annot_FusionSeeker_Sim$Algorithm <- "FusionSeeker"
 Annot_CTATLR_Sim$Algorithm <- "CTAT-LR-Fusion"
+Annot_GFSeeker_Sim$Algorithm <- "GFSeeker"

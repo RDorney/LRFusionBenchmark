@@ -383,6 +383,12 @@ Repeat pre-processing steps for CTAT-LR
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/PreprocessCTAT-LR.R")
 ```
 
+Repeat pre-processing steps for GFSeeker
+
+```{r}
+source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/PreprocessGFSeeker.R")
+```
+
 Append corresponding depth and sequencing identity labels
 
 ```{r}
