@@ -332,11 +332,11 @@ Annot_LongGF_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2,
       return("reverse_order:truncated_tri_fusion") 
     } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
        matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))]
-      return(paste("reverse_order:", matching_row[1])) 
+      return(paste0("reverse_order:", matching_row[1])) 
        #check for chromosomal misalignment
     } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))){
        matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))]
-      return(paste("chromosomal_misalignment:", matching_row[1])) 
+      return(paste0("chromosomal_misalignment:", matching_row[1])) 
        #check for false fusions
     } else if ((grepl("chrM:", chr1, ignore.case = TRUE) & !grepl("chrM:", chr2, ignore.case = TRUE)) | (!grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE))){
       return("false_fusion:mitochondrial_genomic") 
@@ -508,8 +508,7 @@ Make Figure 3B: comparing read support for the same fusions as called by all alg
 Make Compound Figure 3
 
 ```{r}
-#Figure3<- (Figure3A / Figure3B) +
-          plot_annotation(tag_levels = list(c("A", "", "", "B")))
+#Figure3<- (Figure3A / Figure3B) + plot_annotation(tag_levels = list(c("A", "", "", "B")))
 #ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure3_paper.png", plot = Figure3, width = 210, height = 297, units = "mm")  
         ##see Figure 3B  
 ```

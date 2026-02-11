@@ -73,12 +73,12 @@ Annot_Genion_Sim$fusionType <- mapply(function(g1, g2, g3, current_type, chr1, c
       #check for reverse order two part genes
       else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
         matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))]
-        return(paste("reverse_order:", matching_row[1]))}
+        return(paste0("reverse_order:", matching_row[1]))}
     } 
     #check for chromosomal misalignment
     else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))){
       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))]
-      return(paste("chromosomal_misalignment:", matching_row[1])) 
+      return(paste0("chromosomal_misalignment:", matching_row[1])) 
     }
     
     #check if this fusion contains mitochondrial genes 
