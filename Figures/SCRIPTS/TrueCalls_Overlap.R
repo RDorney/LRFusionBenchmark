@@ -17,7 +17,7 @@ Fusion_overlap <- fromList(Fusion_Simulated_Fusion_overlap_sets)
 True_overlap <- ComplexUpset::upset(
   Fusion_overlap, intersect = names(Fusion_Simulated_Fusion_overlap_sets[1:num_ALG]), name='',
   width_ratio=0.1, sort_intersections_by='degree',
-  queries=list(upset_query(intersect=c("JAFFAL", "Genion", "LongGF", "FusionSeeker", "GFSeeker"), 
+  queries=list(upset_query(intersect=c("CTAT-LR", "JAFFAL", "Genion", "LongGF", "FusionSeeker", "GFSeeker"), 
                            color='blue')),
   base_annotations = list(
     'Intersection size'=(intersection_size(
