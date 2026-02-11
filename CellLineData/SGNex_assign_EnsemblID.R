@@ -3,7 +3,7 @@
 ################################################
 CTATLR_SGNex_Annot <- Annot_CTATLR_SGNex  
 JAFFAL_SGNex_Annot <- Annot_JAFFAL_SGNex
-JAFFAL_SGNex_Annot_3Gene <- JAFFAL_SGNex_3Gene
+JAFFAL_SGNex_Annot_3Gene <-  Annot_JAFFAL_SGNex_3Gene
 Genion_SGNex_Annot <- Annot_Genion_SGNex 
 FusionSeeker_SGNex_Annot <-Annot_FusionSeeker_SGNex 
 GFSeeker_SGNex_Annot <- Annot_GFSeeker_SGNex 

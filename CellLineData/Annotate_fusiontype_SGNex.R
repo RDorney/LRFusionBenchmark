@@ -73,10 +73,10 @@ Annot_Genion_SGNex$fusionType <- mapply(function(g1, g2, g3, current_type, chr1,
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
     #check for interchromsomal fusions
-    if (chr1 == chr2 & is.na(chr3)) {
+    if (chr1 == chr2 & is.na(g3)) {
       return("intra-chromosomal")
       #check for reverse order fusions
-    } else if (chr1 != chr2 & is.na(chr3)){
+    } else if (chr1 != chr2 & is.na(g3)){
       return("inter-chromosomal") 
     } else if (!is.na(g3)) {
       return("tri-fusion")
@@ -129,18 +129,18 @@ Annot_FusionSeeker_SGNex$fusionType,
 Annot_FusionSeeker_SGNex$Chrom1, Annot_FusionSeeker_SGNex$Chrom2)
 
 #######################
-# Label FusionSeeker 
+# Label GFSeeker 
 #######################
 Annot_GFSeeker_SGNex <- GFSeeker_SGNex_msa_annot
-Annot_GFSeeker_SGNex$GFType <- mapply(function(g1, g2, current_type, chr1, chr2) {
+Annot_GFSeeker_SGNex$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2) {
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
     #check for interchromsomal fusions
-    if (chr1 == chr2) {
-      return("intra-chromosomal")
+    if (chr1 != chr2) {
+      return("inter-chromosomal")
       #check for reverse order fusions
-    } else if (chr1 != chr2){
-      return("inter-chromosomal") 
+    } else if (chr1 == chr2){
+      return("intra-chromosomal") 
     } 
   }
   return(current_type)
