@@ -249,13 +249,32 @@ ggplot(filter(super_SGNex_summary, Sequencing_Depth == "Total"),
 
 View(super_SGNex_summary)
 
-ggplot(super_SGNex_summary, aes(x = reorder(fusionType, -knownnumber), y = knownnumber, fill = fusionType)) +
-  geom_col() +
-  labs(
-    title = "Total Known Fusions by Type",
-    x = "Fusion Type",
-    y = "Number of Known Fusions"
-  ) +
+ggplot(filter(super_SGNex_summary, Sequencing_Depth == "Total", knownnumber > 0))+ 
+  geom_bar(aes(x = Algorithm, y = knownnumber, fill = Algorithm), stat = "identity")+
+  facet_grid(Library+Cell_Lines~fusionType) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotates labels for readability
-  guides(fill = "none") # Hides legend if you have many types
+  labs(title = "Recall of Simulated Fusions",
+       subtitle = "Diversity in fusion types",
+       y = "Recovered Simulated Fusions",
+       x = "")+
+  ylim(c(0,50))+ 
+  theme(strip.text = element_text(size = 12),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        plot.title = element_text(size = 11),
+        axis.text = element_text(size = 11),
+        axis.title = element_text(size = 11))
+
+ggplot(filter(super_SGNex_summary, Sequencing_Depth == "Total", novelnumber > 0))+ 
+  geom_bar(aes(x = fusionType, y = novelnumber, fill = Algorithm), stat = "identity")+
+  facet_grid(Library+Cell_Lines~fusionType) +
+  theme_minimal() +
+  labs(title = "",
+       subtitle = "")+
+  ylim(c(0,50))+ 
+  theme(strip.text = element_text(size = 12),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        plot.title = element_text(size = 11),
+        axis.text = element_text(size = 11),
+        axis.title = element_text(size = 11))
