@@ -38,7 +38,7 @@ kruskal.test(Log1p_values ~ Algorithm, data = breakpoint1_stat_data)
 kruskal.test(Log1p_values ~ Algorithm, data = breakpoint2_stat_data)
 
 #Figure 4 ####
-Figure4 <- ggplot(filter(absolute_Breakpoint_Accuracy, 
+Figure4 <- ggplot(dplyr::filter(absolute_Breakpoint_Accuracy, 
                          seq_depth == "100GB", seq_id == "95%"), 
                   aes(y = Distance_from_Simulated_Breakpoint, x = Breakpoint_number, 
                       color = Algorithm)) +
@@ -81,6 +81,46 @@ Figure4 <- ggplot(filter(absolute_Breakpoint_Accuracy,
 
 ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure4_paper.pdf", plot = Figure4, width = 297, height = 210, units = "mm")
 ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure4_paper.png", plot = Figure4)
+
+##########################################################
+# check if breakpoints are significantly different from 0
+##########################################################
+wilcox_table<- absolute_Breakpoint_Accuracy %>%
+  dplyr::filter(seq_depth == "100GB", seq_id == "95%") %>%
+  group_by(Breakpoint_number, Algorithm) %>%
+  dplyr::reframe(
+    # Perform the Wilcoxon Signed-Rank Test against 0
+    test = list(wilcox.test(Distance_from_Simulated_Breakpoint, 
+                            mu = 0, 
+                            alternative = "two.sided", 
+                            exact = FALSE)),
+    # Use broom::tidy to turn the test object into a row of data
+    tidy(test[[1]]) 
+  ) %>%
+  # Clean up the output table
+  dplyr::select(Breakpoint_number, Algorithm, statistic, p.value, method) %>%
+  mutate(significance = dplyr::case_when(
+    p.value < 0.001 ~ "***",
+    p.value < 0.01  ~ "**",
+    p.value < 0.05  ~ "*",
+    TRUE            ~ "ns"
+  ))
+
+#LGFB1 and GB2 are NS,everything else sig dif
+
+library(infer)
+bootstrap_table <-absolute_Breakpoint_Accuracy %>%
+  dplyr::filter(seq_depth == "100GB", seq_id == "95%") %>%
+  group_by(Tool_Breakpoint, Algorithm) %>%
+  # We use group_modify to run the bootstrap for EACH group
+  dplyr::group_modify(~ {
+    .x %>%
+      specify(response = Distance_from_Simulated_Breakpoint) %>%
+      generate(reps = 10000, type = "bootstrap") %>%
+      calculate(stat = "median") %>%
+      get_confidence_interval(level = 0.95, type = "percentile")
+  })
+#CTATLRB2, FSB2, GB2 (very precise), LB2 span 0, therefore n.s
 
 supp_Figure13 <-ggplot(filter(absolute_Breakpoint_Accuracy), aes(y = Distance_from_Simulated_Breakpoint, x = Breakpoint_number, color = Algorithm)) +
   geom_boxplot(outlier.shape = NA) +
