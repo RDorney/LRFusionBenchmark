@@ -13,47 +13,64 @@ genes <- gencodev44gtf %>%
   )
 
 #Make read-through/cis-splice check list
-adjacent_genes_table <- genes %>%
-  as.data.frame() %>%
-  dplyr::select(
-    gene_name,
-    gene_id,
-    seqnames,
-    start,
-    end,
-    strand
-  ) %>%
-  dplyr::arrange(seqnames, start)%>%
-  dplyr::group_by(seqnames) %>%
-  dplyr::mutate(
-    upstream_gene   = lag(gene_name),
-    downstream_gene = lead(gene_name),
-    upstream_strand = lag(strand),
-    downstream_strand = lead(strand)
-  ) %>%
-  dplyr::ungroup()
+neighbour_genes <- gencodev44gtf[gencodev44gtf$type == "gene"]
+names(neighbour_genes) <- neighbour_genes$gene_name                         
+mcols(neighbour_genes)$gene_id <- gsub("\\..*$", "", mcols(neighbour_genes)$gene_id)
 
-adjacent_pairs <- adjacent_genes_table %>%
-  dplyr::select(
-    gene_name,
-    seqnames,
-    strand,
-    upstream_gene,
-    downstream_gene
-  )
+neighbourhood_lookup <-function(gen1 , gen2, input_df, id_type = "gene_name"){
+  # Set the internal names of the GRanges to the chosen ID type
+  # Either 'gene_id' or 'gene_name'
+  
+  names(neighbour_genes) <- mcols(neighbour_genes)[[id_type]]
+  #coordinates for your dataframe
+  gr_left  <- neighbour_genes[match(gen1, names(neighbour_genes))]
+  gr_right <- neighbour_genes[match(gen2, names(neighbour_genes))]
+  
+  #Define validity: Same Chromosome AND Same Strand
+  valid_idx <- which(!is.na(seqnames(gr_left)) & 
+                       !is.na(seqnames(gr_right)) & 
+                       seqnames(gr_left) == seqnames(gr_right) &
+                       strand(gr_left) == strand(gr_right))
+  
+  # Pre-fill the logical vector
+  is_neighbor_vec <- rep(FALSE, nrow(input_df))
+  
+  # Calculate Adjacency for valid pairs
+  if(length(valid_idx) > 0) {
+    # Create a range spanning the two genes
+    spans <- punion(gr_left[valid_idx], gr_right[valid_idx])
+    
+    # Count overlaps with ALL genes in GENCODE
+    overlap_counts <- countOverlaps(spans, neighbour_genes)
+    
+    # Only TRUE if exactly 2 genes (the pair itself) exist in that genomic window
+    is_neighbor_vec[valid_idx] <- (overlap_counts == 2)
+  }
+  return(is_neighbor_vec)
+}
 
 #######################
 # Label CTAT-LR-Fusion 
 #######################
 Annot_CTATLR_SGNex <- CTATLR_SGNex_msa_annot
 
+#check neighbouring genes
+is_neighbor_vec <- neighbourhood_lookup(Annot_CTATLR_SGNex$LeftGene, Annot_CTATLR_SGNex$RightGene, Annot_CTATLR_SGNex, id_type = "gene_name")
+
 Annot_CTATLR_SGNex$fusionType <- mapply(function(current_type, chr1, chr2, gene_name1, gene_name2) {
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
-    #check for interchromsomal fusions
+    
+    #check for intrachromsomal fusions
     if (chr1 == chr2) {
+      #check if read-through/cis-splicing (adjacent genes)
+      if (is_neighbour){
+        return("read-through") 
+      }
+      else {
       return("intra-chromosomal")
-      #check for reverse order fusions
+      }
+      #check for interchromosomal fusions
     } else if (chr1 != chr2){
       return("inter-chromosomal") 
     } 
@@ -62,22 +79,49 @@ Annot_CTATLR_SGNex$fusionType <- mapply(function(current_type, chr1, chr2, gene_
 },  
 Annot_CTATLR_SGNex$fusionType, 
 Annot_CTATLR_SGNex$chrom1, Annot_CTATLR_SGNex$chrom2, 
-Annot_CTATLR_SGNex$LeftGene, Annot_CTATLR_SGNex$RightGene)
+Annot_CTATLR_SGNex$LeftGene, Annot_CTATLR_SGNex$RightGene,
+is_neighbor_vec)
+
+
 
 #######################
 # Label Genion 
 #######################
 Annot_Genion_SGNex <- Genion_SGNex_msa_annot
 
-Annot_Genion_SGNex$fusionType <- mapply(function(g1, g2, g3, current_type, chr1, chr2, chr3, gene_name1, gene_name2) {
+Annot_Genion_SGNex$fusionType <- mapply(function(g1, g2, g3, 
+                                                 current_type, 
+                                                 chr1, chr2, chr3, 
+                                                 gene_name1, gene_name2) {
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
-    #check for interchromsomal fusions
+    
+    #check for read-through/cis-splicing
+    if ((chr1 == chr2 & is.na(g3)) && g1 %in% gene_order && g2 %in% gene_order) {
+      
+      same_strand <- gene_strand[g1] == gene_strand[g2]
+      
+      if (same_chr && same_strand) {
+        
+        idx1 <- match(g1, gene_order)
+        idx2 <- match(g2, gene_order)
+        
+        adjacent <- abs(idx1 - idx2) == 1
+        dist <- abs(gene_start[g1] - gene_start[g2])
+        
+        if (adjacent) {
+          return("read-through")
+        }
+      }
+    }
+    #check for intra-chromsomal fusions
     if (chr1 == chr2 & is.na(g3)) {
       return("intra-chromosomal")
-      #check for reverse order fusions
+    
+    #check for inter-chromosomal fusions
     } else if (chr1 != chr2 & is.na(g3)){
       return("inter-chromosomal") 
+      
     } else if (!is.na(g3)) {
       return("tri-fusion")
     }
