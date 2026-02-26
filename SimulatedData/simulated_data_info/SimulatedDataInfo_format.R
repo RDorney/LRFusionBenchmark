@@ -37,7 +37,7 @@ Sim_Info_Names <- Simulated_Fusion_Info %>%
   rename(external_gene_name = gene_name)
 
 #create a dataframe inclusive of alternative fusion gene names as gene names can be variable.  
-Simulated_Fusion_Info_2<-Sim_Info_Names %>%
+Simulated_Fusion_Info_2_annotdb<-Sim_Info_Names %>%
   mutate(Gene1_alternative_ID = map(Gene1_vID, ~ alternative_ID[which(geneName_ID == .x)]),
          Gene2_alternative_ID = map(Gene2_vID, ~ alternative_ID[which(geneName_ID == .x)]),
          Gene3_alternative_ID = map(Gene3_vID, ~ if (!is.na(.x)) alternative_ID[which(geneName_ID == .x)] else NA_character_)) %>%
@@ -47,7 +47,8 @@ Simulated_Fusion_Info_2<-Sim_Info_Names %>%
   unite("fusion.gene.id" , c(Gene1_alternative_ID, Gene2_alternative_ID, Gene3_alternative_ID), sep = ":", remove= FALSE, na.rm = TRUE) %>%
   dplyr::select(-c(alternative_ID)) %>% unique() %>%
   unite("original.fusion.gene.id", c(V1, V2), sep=":", remove= FALSE, na.rm = TRUE)
-write_tsv(Simulated_Fusion_Info_2, file="~/LongReadFusionCallerBenchmark/SimulatedData/simulated_data_info/simulated_fusion_info_with_GeneID.tsv")
+Simulated_Fusion_Info_2 <- read_tsv("~/LongReadFusionCallerBenchmark/SimulatedData/simulated_data_info/simulated_fusion_info_with_GeneID.tsv")
+#write_tsv(Simulated_Fusion_Info_2, file="~/LongReadFusionCallerBenchmark/SimulatedData/simulated_data_info/simulated_fusion_info_with_GeneID.tsv")
 
 Simulated_Fusion_Info_3<-Sim_Info_Names %>%
   mutate(Gene1_alternative_ID = map(Gene1_vID, ~ alternative_ID[which(geneName_ID == .x)]),
