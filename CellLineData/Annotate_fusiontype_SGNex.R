@@ -1,6 +1,8 @@
 ###############################
 # Label other types of fusions
 ###############################
+library(AnnotationFilter)
+
 genes <- gencodev44gtf %>%
   as.data.frame() %>%
   filter(type == "gene") %>%
@@ -12,76 +14,122 @@ genes <- gencodev44gtf %>%
     keep.extra.columns = TRUE
   )
 
-#Make read-through/cis-splice check list
-neighbour_genes <- gencodev44gtf[gencodev44gtf$type == "gene"]
-names(neighbour_genes) <- neighbour_genes$gene_name                         
-mcols(neighbour_genes)$gene_id <- gsub("\\..*$", "", mcols(neighbour_genes)$gene_id)
+ah <- AnnotationHub()
+ensembldbv110 <- ah[["AH113665"]]
+ensembldbv109 <- ah[["AH109606"]]
 
-neighbourhood_lookup <-function(gen1 , gen2, input_df, id_type = "gene_name"){
-  # Set the internal names of the GRanges to the chosen ID type
-  # Either 'gene_id' or 'gene_name'
+#Make read-through/cis-splice check function
+check_adjacency <- function(g_left, g_right, edb, id_type = "symbol") {
+  # 1. check if input is gene symbol or id, and set-up standard chromosomes
+  id_filter <- if(id_type == "symbol") {
+    SymbolFilter(c(g_left, g_right)) }
+  else {
+    GeneIdFilter(c(g_left, g_right))}
   
-  names(neighbour_genes) <- mcols(neighbour_genes)[[id_type]]
-  #coordinates for your dataframe
-  gr_left  <- neighbour_genes[match(gen1, names(neighbour_genes))]
-  gr_right <- neighbour_genes[match(gen2, names(neighbour_genes))]
+  std_chrs <- c(1:22, "X", "Y", "MT", "M")
   
-  #Define validity: Same Chromosome AND Same Strand
-  valid_idx <- which(!is.na(seqnames(gr_left)) & 
-                       !is.na(seqnames(gr_right)) & 
-                       seqnames(gr_left) == seqnames(gr_right) &
-                       strand(gr_left) == strand(gr_right))
+  #get the ranges of both genes
+  g <- genes(edb, filter = list(id_filter, SeqNameFilter(std_chrs)))
+  #ensure both genes are found
+  if (length(g) < 2) return(FALSE)
   
-  # Pre-fill the logical vector
-  is_neighbor_vec <- rep(FALSE, nrow(input_df))
+  # 2. Get coordinates for both genes separately to preserve order
+  left_gene_coord  <- g[g$symbol == g_left]
+  right_gene_coord <- g[g$symbol == g_right]
   
-  # Calculate Adjacency for valid pairs
-  if(length(valid_idx) > 0) {
-    # Create a range spanning the two genes
-    spans <- punion(gr_left[valid_idx], gr_right[valid_idx])
-    
-    # Count overlaps with ALL genes in GENCODE
-    overlap_counts <- countOverlaps(spans, neighbour_genes)
-    
-    # Only TRUE if exactly 2 genes (the pair itself) exist in that genomic window
-    is_neighbor_vec[valid_idx] <- (overlap_counts == 2)
+  # Validation: Must find exactly 2 unique genomic locations for both genes (start and end)
+  if (length(left_gene_coord) == 0 || length(right_gene_coord) == 0) return(FALSE)
+  
+  # 3. Strand and Chromosome Check
+  if (as.character(strand(left_gene_coord)[1]) != as.character(strand(right_gene_coord)[1])) return(FALSE)
+  if (as.character(seqnames(left_gene_coord)[1]) != as.character(seqnames(right_gene_coord)[1])) return(FALSE)
+  
+  # 4. Transcriptional Order Check
+  # For '+' strand: Left end < Right start
+  # For '-' strand: Left start > Right end (coords are higher for 5' gene)
+  if (as.character(strand(left_gene_coord)[1]) == "+") {
+    if (end(left_gene_coord) > start(right_gene_coord)) return(FALSE) # Overlap or wrong order
+  } else { #check '-' strand
+    if (start(left_gene_coord) < end(right_gene_coord)) return(FALSE) # Overlap or wrong order
   }
-  return(is_neighbor_vec)
+  #5. Intervening Gene Check (NAMED Protein-Coding Only)
+  
+  combined_range <- range(c(left_gene_coord, right_gene_coord))
+  
+  if (as.character(strand(left_gene_coord)[1]) == "+") {
+    gap_start <- end(left_gene_coord) 
+    gap_end <- start(right_gene_coord)
+  } else { #'-' strand
+    gap_start<- end(right_gene_coord)
+    gap_end <- start(left_gene_coord) 
+     
+  }
+  
+  gap_range <- GRanges(
+    seqnames = seqnames(left_gene_coord),
+    ranges   = IRanges(start = gap_start, end = gap_end),
+    strand   = strand(left_gene_coord)
+  )
+  
+  intervening <- genes(edb, filter = list(
+    GRangesFilter(gap_range),
+    SeqStrandFilter(as.character(strand(left_gene_coord)[1])) #,GeneBiotypeFilter("protein_coding")
+  ))
+  # Remove the query genes themselves 
+  intervening <- intervening[!(intervening$symbol %in% c(g_left, g_right))]
+  
+  #remove genes that overlap the query genes
+  query_gr <- c(left_gene_coord, right_gene_coord)
+  hits <- findOverlaps(intervening, query_gr, ignore.strand = FALSE)
+  
+  intervening_clean <- intervening[-queryHits(hits)]
+  
+  #return(intervening)
+  #return(intervening_clean)
+  return(length(intervening_clean) == 0)
 }
+# Example usage:
+# check_gene_adjacency("ORMDL3", "GSDMB", edb)
 
+check_adjacency("CTSD","IFITM10",ensembldbv110, id_type = "symbol")
 #######################
 # Label CTAT-LR-Fusion 
 #######################
 Annot_CTATLR_SGNex <- CTATLR_SGNex_msa_annot
 
-#check neighbouring genes
-is_neighbor_vec <- neighbourhood_lookup(Annot_CTATLR_SGNex$LeftGene, Annot_CTATLR_SGNex$RightGene, Annot_CTATLR_SGNex, id_type = "gene_name")
-
 Annot_CTATLR_SGNex$fusionType <- mapply(function(current_type, chr1, chr2, gene_name1, gene_name2) {
-  # Check if the current fusionType is empty
-  if (current_type == "" || is.na(current_type)) {
+  
+  # Process only if current_type is empty or NA
+  if (is.na(current_type) || current_type == "") {
     
-    #check for intrachromsomal fusions
-    if (chr1 == chr2) {
-      #check if read-through/cis-splicing (adjacent genes)
-      if (is_neighbour){
-        return("read-through") 
-      }
-      else {
-      return("intra-chromosomal")
-      }
-      #check for interchromosomal fusions
-    } else if (chr1 != chr2){
+    # Check for inter-chromosomal first
+    if (chr1 != chr2) {
       return("inter-chromosomal") 
     } 
+    
+    # Handle intra-chromosomal
+    else if (chr1 == chr2) {
+      # This calls the function defined above
+      # It will return TRUE if they are direct neighbors on the same strand
+      is_neighbour <- check_adjacency(gene_name1, gene_name2, ensembldbv110, id_type = "symbol")
+      
+      if (is_neighbour) {
+        return("read-through") 
+      } else {
+        return("intra-chromosomal")
+      }
+    }
   }
+  
+  # If fusionType was already set (e.g., 'distal-conflicting'), keep it
   return(current_type)
+  
 },  
 Annot_CTATLR_SGNex$fusionType, 
-Annot_CTATLR_SGNex$chrom1, Annot_CTATLR_SGNex$chrom2, 
-Annot_CTATLR_SGNex$LeftGene, Annot_CTATLR_SGNex$RightGene,
-is_neighbor_vec)
-
+Annot_CTATLR_SGNex$chrom1, 
+Annot_CTATLR_SGNex$chrom2, 
+Annot_CTATLR_SGNex$LeftGene, 
+Annot_CTATLR_SGNex$RightGene)
 
 
 #######################
