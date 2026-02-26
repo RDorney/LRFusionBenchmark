@@ -36,17 +36,35 @@ check_readthrough <- function(g_left, g_right, edb, id_type = "symbol", chr_left
   # 2. Get coordinates for both genes separately to preserve order
    
   if(!is.null(chr_left) && !is.null(chr_right)){
-    left_gene_coord <- genes(edb, filter = list(
-    SymbolFilter(g_left),
-    SeqNameFilter(chr_left)
-  ))
-    right_gene_coord <- genes(edb, filter = list(
-    SymbolFilter(g_right),
-    SeqNameFilter(chr_right)
-  ))
-  } else {#Alternatively, if chromosome is not provided
-    left_gene_coord  <- g[g$symbol == g_left]
-    right_gene_coord <- g[g$symbol == g_right]
+    if(id_type == "symbol") {
+      left_gene_coord <- genes(edb, filter = list(
+      SymbolFilter(g_left),
+      SeqNameFilter(chr_left)
+    ))
+      right_gene_coord <- genes(edb, filter = list(
+      SymbolFilter(g_right),
+      SeqNameFilter(chr_right)
+    ))
+    }
+    else{ #ID used
+      left_gene_coord <- genes(edb, filter = list(
+        GeneIdFilter(g_left),
+        SeqNameFilter(chr_left)
+      ))
+      right_gene_coord <- genes(edb, filter = list(
+        GeneIdFilter(g_right),
+        SeqNameFilter(chr_right)
+      ))
+    }
+   }
+   else {#Alternatively, if chromosome is not provided
+    if(id_type == "symbol") {
+      left_gene_coord  <- g[g$symbol == g_left]
+      right_gene_coord <- g[g$symbol == g_right]
+    } else {
+      left_gene_coord  <- g[g$gene_id == g_left]
+      right_gene_coord <- g[g$gene_id == g_right]
+    }
   }
   
   # Validation: Must find exactly 2 unique genomic locations for both genes (start and end)
@@ -72,9 +90,11 @@ check_readthrough <- function(g_left, g_right, edb, id_type = "symbol", chr_left
   # For '+' strand: Left end < Right start
   # For '-' strand: Left start > Right end (coords are higher for 5' gene)
   if (as.character(strand(left_gene_coord)[1]) == "+") {
-    if (end(left_gene_coord) > start(right_gene_coord)) return(FALSE) # Overlap or wrong order
-  } else { #check '-' strand
-    if (start(left_gene_coord) < end(right_gene_coord)) return(FALSE) # Overlap or wrong order
+    # 5' gene end must be less than 3' gene start
+    if (end(left_gene_coord) > start(right_gene_coord)) return(FALSE) 
+  } else { # check '-' strand
+    # 5' gene start (lower num on - strand) must be greater than 3' gene end
+    if (start(left_gene_coord) < end(right_gene_coord)) return(FALSE) 
   }
   #5. Intervening Gene Check (NAMED Protein-Coding Only)
   
@@ -113,7 +133,8 @@ check_readthrough <- function(g_left, g_right, edb, id_type = "symbol", chr_left
   return(length(intervening_clean) == 0)
 }
 # Example usage:
-# check_readthrough("CTSD","IFITM10",ensembldbv110, id_type = "symbol", chr_left = "11", chr_right = "11")
+check_readthrough("CTSD","IFITM10",ensembldbv110, id_type = "symbol", chr_left = "11", chr_right = "11")
+check_readthrough("ENSG00000008018","ENSG00000288829",ensembldbv110, id_type = "geneid")
 
 #Make read-through/cis-splice check function
 check_cisSAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL, chr_right = NULL) {
@@ -131,18 +152,36 @@ check_cisSAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = N
   if (length(g) < 2) return(FALSE)
   
   # 2. Get coordinates for both genes separately to preserve order
-  left_gene_coord  <- g[g$symbol == g_left]
-  right_gene_coord <- g[g$symbol == g_right]
-  #Alternatively, if chromosome is provided
   if(!is.null(chr_left) && !is.null(chr_right)){
-    left_gene_coord <- genes(edb, filter = list(
-      SymbolFilter(g_left),
-      SeqNameFilter(chr_left)
-    ))
-    right_gene_coord <- genes(edb, filter = list(
-      SymbolFilter(g_right),
-      SeqNameFilter(chr_right)
-    ))
+    if(id_type == "symbol") {
+      left_gene_coord <- genes(edb, filter = list(
+        SymbolFilter(g_left),
+        SeqNameFilter(chr_left)
+      ))
+      right_gene_coord <- genes(edb, filter = list(
+        SymbolFilter(g_right),
+        SeqNameFilter(chr_right)
+      ))
+    }
+    else{ #ID used
+      left_gene_coord <- genes(edb, filter = list(
+        GeneIdFilter(g_left),
+        SeqNameFilter(chr_left)
+      ))
+      right_gene_coord <- genes(edb, filter = list(
+        GeneIdFilter(g_right),
+        SeqNameFilter(chr_right)
+      ))
+    }
+  }
+  else {#Alternatively, if chromosome is not provided
+    if(id_type == "symbol") {
+      left_gene_coord  <- g[g$symbol == g_left]
+      right_gene_coord <- g[g$symbol == g_right]
+    } else {
+      left_gene_coord  <- g[g$gene_id == g_left]
+      right_gene_coord <- g[g$gene_id == g_right]
+    }
   }
   # Validation: Must find exactly 2 unique genomic locations for both genes (start and end)
   if (length(left_gene_coord) == 0 || length(right_gene_coord) == 0) return(FALSE)
@@ -200,6 +239,7 @@ check_cisSAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = N
 }
 # check_cisSAGe("CTSD","IFITM10",ensembldbv110, id_type = "symbol")
 
+
 #######################
 # Label CTAT-LR-Fusion 
 #######################
@@ -252,36 +292,28 @@ Annot_Genion_SGNex$fusionType <- mapply(function(g1, g2, g3,
                                                  gene_name1, gene_name2) {
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
-    
-    #check for read-through/cis-splicing
-    if ((chr1 == chr2 & is.na(g3)) && g1 %in% gene_order && g2 %in% gene_order) {
-      
-      same_strand <- gene_strand[g1] == gene_strand[g2]
-      
-      if (same_chr && same_strand) {
-        
-        idx1 <- match(g1, gene_order)
-        idx2 <- match(g2, gene_order)
-        
-        adjacent <- abs(idx1 - idx2) == 1
-        dist <- abs(gene_start[g1] - gene_start[g2])
-        
-        if (adjacent) {
-          return("read-through")
-        }
-      }
-    }
-    #check for intra-chromsomal fusions
-    if (chr1 == chr2 & is.na(g3)) {
-      return("intra-chromosomal")
-    
-    #check for inter-chromosomal fusions
-    } else if (chr1 != chr2 & is.na(g3)){
-      return("inter-chromosomal") 
-      
-    } else if (!is.na(g3)) {
+    #check for tri-fusion
+    if (!is.na(g3)) {
       return("tri-fusion")
     }
+    # Check for inter-chromosomal first
+    if (chr1 != chr2) {
+      return("inter-chromosomal") 
+    } 
+    
+    # Handle intra-chromosomal
+    # This calls the function defined above
+    # It will return TRUE if they are direct neighbors on the same strand
+    chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
+    if (chr1 == chr2) {
+    is_neighbour <- check_readthrough(gene_name1, gene_name2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome)
+    if (is_neighbour) { return("read-through") }
+  
+    is_cisSAGe <- check_cisSAGe(gene_name1, gene_name2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome) 
+    if (is_cisSAGe) { return("cis-SAGe") } 
+   
+    return("intra-chromosomal")
+    } 
   }
   return(current_type)
 } , Annot_Genion_SGNex$V1.1, Annot_Genion_SGNex$V1.2,  Annot_Genion_SGNex$V1.3, 
@@ -296,14 +328,26 @@ Annot_LongGF_SGNex <- LongGF_SGNex_msa_annot
 Annot_LongGF_SGNex$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2) {
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
-    #check for interchromsomal fusions
-    if (chr1 == chr2) {
-      return("intra-chromosomal")
-      #check for reverse order fusions
-    } else if (chr1 != chr2){
+     #check for interchromsomal fusions
+    if (chr1 != chr2){
       return("inter-chromosomal") 
     } 
+    # Handle intra-chromosomal
+    # This calls the function defined above
+    # It will return TRUE if they are direct neighbors on the same strand
+    chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
+    if (chr1 == chr2){
+    is_neighbour <- check_readthrough(gene_name1, gene_name2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
+    if (is_neighbour) { return("read-through") }
+  
+    is_cisSAGe <- check_cisSAGe(gene_name1, gene_name2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
+    if (is_cisSAGe) { return("cis-SAGe") } 
+  
+    return("intra-chromosomal")
+    }
   }
+  
+  # If fusionType was already set (e.g., 'distal-conflicting'), keep it
   return(current_type)
 } , Annot_LongGF_SGNex$Gene1, Annot_LongGF_SGNex$Gene2, 
 Annot_LongGF_SGNex$fusionType, 
