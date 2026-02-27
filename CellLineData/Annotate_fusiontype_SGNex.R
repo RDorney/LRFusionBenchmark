@@ -135,9 +135,11 @@ check_readthrough <- function(g_left, g_right, edb, id_type = "symbol", chr_left
 # Example usage:
 check_readthrough("CTSD","IFITM10",ensembldbv110, id_type = "symbol", chr_left = "11", chr_right = "11")
 check_readthrough("ENSG00000008018","ENSG00000288829",ensembldbv110, id_type = "geneid")
+check_readthrough("PTMAP9","MIR1244-4",ensembldbv110, id_type = "symbol")
+check_readthrough("ENSG00000198134","ENSG00000283475",ensembldbv110, id_type = "geneid")
 
 #Make read-through/cis-splice check function
-check_cisSAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL, chr_right = NULL) {
+check_SAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL, chr_right = NULL) {
   std_chrs <- c(1:22, "X", "Y", "MT", "M")
   
   # 1. check if input is gene symbol or id, and set-up standard chromosomes
@@ -237,8 +239,8 @@ check_cisSAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = N
   return(length(intervening_clean) == 0)
   }
 }
-# check_cisSAGe("CTSD","IFITM10",ensembldbv110, id_type = "symbol")
-
+ check_SAGe("CTSD","IFITM10",ensembldbv110, id_type = "symbol")
+ check_SAGe("CEP70","FAIM",ensembldbv110, id_type = "symbol")
 
 #######################
 # Label CTAT-LR-Fusion 
@@ -265,8 +267,8 @@ Annot_CTATLR_SGNex$fusionType <- mapply(function(current_type, chr1, chr2, stran
       if (is_neighbour) { return("read-through") }
      
     } else { #(strand1 != strand2)
-        is_cisSAGe <- check_cisSAGe(gene_name1, gene_name2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
-      if (is_cisSAGe) { return("cis-SAGe") } 
+        is_SAGe <- check_SAGe(gene_name1, gene_name2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
+      if (is_SAGe) { return("SAGe") } 
       } 
       return("intra-chromosomal")
     }
@@ -293,24 +295,21 @@ Annot_Genion_SGNex$fusionType <- mapply(function(g1, g2, g3,
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
     #check for tri-fusion
-    if (!is.na(g3)) {
-      return("tri-fusion")
-    }
+    if (!is.na(g3)) return("tri-fusion")
+    
     # Check for inter-chromosomal first
-    if (chr1 != chr2) {
-      return("inter-chromosomal") 
-    } 
+    if (chr1 != chr2) return("inter-chromosomal") 
     
     # Handle intra-chromosomal
     # This calls the function defined above
     # It will return TRUE if they are direct neighbors on the same strand
-    chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
+    
     if (chr1 == chr2) {
-    is_neighbour <- check_readthrough(gene_name1, gene_name2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome)
-    if (is_neighbour) { return("read-through") }
-  
-    is_cisSAGe <- check_cisSAGe(gene_name1, gene_name2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome) 
-    if (is_cisSAGe) { return("cis-SAGe") } 
+    chromosome <-  chr1   
+    is_neighbour <- check_readthrough(g1, g2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome)
+    is_SAGe <- check_SAGe(g1, g2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome) 
+    if (is_neighbour) return("read-through")
+    if (is_SAGe) return("SAGe") 
    
     return("intra-chromosomal")
     } 
@@ -337,11 +336,11 @@ Annot_LongGF_SGNex$fusionType <- mapply(function(g1, g2, current_type, chr1, chr
     # It will return TRUE if they are direct neighbors on the same strand
     chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
     if (chr1 == chr2){
-    is_neighbour <- check_readthrough(gene_name1, gene_name2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
+    is_neighbour <- check_readthrough(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
     if (is_neighbour) { return("read-through") }
   
-    is_cisSAGe <- check_cisSAGe(gene_name1, gene_name2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
-    if (is_cisSAGe) { return("cis-SAGe") } 
+    is_SAGe <- check_SAGe(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
+    if (is_SAGe) { return("SAGe") } 
   
     return("intra-chromosomal")
     }
@@ -360,12 +359,23 @@ Annot_FusionSeeker_SGNex <- FusionSeeker_SGNex_msa_annot
 Annot_FusionSeeker_SGNex$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2) {
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
-    #check for interchromsomal fusions
-    if (chr1 == chr2) {
-      return("intra-chromosomal")
-      #check for reverse order fusions
-    } else if (chr1 != chr2){
+    # Check for inter-chromosomal first
+    if (chr1 != chr2) {
       return("inter-chromosomal") 
+    } 
+    
+    # Handle intra-chromosomal
+    # This calls the function defined above
+    # It will return TRUE if they are direct neighbors on the same strand
+    chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
+    if (chr1 == chr2) {
+      is_neighbour <- check_readthrough(g1, g2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome)
+      if (is_neighbour) { return("read-through") }
+      
+      is_SAGe <- check_SAGe(g1, g2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome) 
+      if (is_SAGe) { return("SAGe") } 
+      
+      return("intra-chromosomal")
     } 
   }
   return(current_type)
@@ -381,12 +391,22 @@ Annot_GFSeeker_SGNex$fusionType <- mapply(function(g1, g2, current_type, chr1, c
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
     #check for interchromsomal fusions
-    if (chr1 != chr2) {
-      return("inter-chromosomal")
-      #check for reverse order fusions
-    } else if (chr1 == chr2){
-      return("intra-chromosomal") 
+    if (chr1 != chr2){
+      return("inter-chromosomal") 
     } 
+    # Handle intra-chromosomal
+    # This calls the function defined above
+    # It will return TRUE if they are direct neighbors on the same strand
+    chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
+    if (chr1 == chr2){
+      is_neighbour <- check_readthrough(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
+      if (is_neighbour) { return("read-through") }
+      
+      is_SAGe <- check_SAGe(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
+      if (is_SAGe) { return("SAGe") } 
+      
+      return("intra-chromosomal")
+    }
   }
   return(current_type)
 } , Annot_GFSeeker_SGNex$gene1_name, Annot_GFSeeker_SGNex$gene2_name, 
@@ -400,12 +420,23 @@ Annot_JAFFAL_SGNex <- JAFFAL_SGNex_msa_annot
 Annot_JAFFAL_SGNex$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2) {
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
-    #check for interchromsomal fusions
-    if (chr1 == chr2) {
-      return("intra-chromosomal")
-      #check for reverse order fusions
-    } else if (chr1 != chr2){
+    # Check for inter-chromosomal first
+    if (chr1 != chr2) {
       return("inter-chromosomal") 
+    } 
+    
+    # Handle intra-chromosomal
+    # This calls the function defined above
+    # It will return TRUE if they are direct neighbors on the same strand
+    chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
+    if (chr1 == chr2) {
+      is_neighbour <- check_readthrough(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
+      if (is_neighbour) { return("read-through") }
+      
+      is_SAGe <- check_SAGe(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
+      if (is_SAGe) { return("SAGe") } 
+      
+      return("intra-chromosomal")
     } 
   }
   return(current_type)
