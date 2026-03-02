@@ -37,6 +37,15 @@ kruskal.test(Log1p_values ~ Algorithm, data = breakpoint_stat_data)
 kruskal.test(Log1p_values ~ Algorithm, data = breakpoint1_stat_data)
 kruskal.test(Log1p_values ~ Algorithm, data = breakpoint2_stat_data)
 
+library(dplyr)
+library(rstatix)
+
+one_sample_tests <- absolute_Breakpoint_Accuracy %>%
+  filter(seq_depth == "100GB", seq_id == "95%") %>%
+  group_by(Breakpoint_number, Algorithm) %>%
+  t_test(Distance_from_Simulated_Breakpoint ~ 1, mu = 0) %>%
+  mutate(p.signif = p_format(p, digits = 2))%>%
+  mutate(y.position = 7.5)
 #Figure 4 ####
 Figure4 <- ggplot(dplyr::filter(absolute_Breakpoint_Accuracy, 
                          seq_depth == "100GB", seq_id == "95%"), 
@@ -74,12 +83,8 @@ Figure4 <- ggplot(dplyr::filter(absolute_Breakpoint_Accuracy,
   )+   
   scale_x_discrete(labels = c("Breakpoint 1", "Breakpoint 2"))+
   labs(y = "Distance from simulated breakpoint",
-       x= "")+
-  stat_compare_means(method = "kruskal.test", aes(group = Algorithm), label.y = 8.5 , show.legend = FALSE)+
-  geom_pwc(method = "dunn_test", p.adjust.method = "bonferroni", hide.ns = TRUE, label = "p.adj.signif",
-           y.position = c(6.5, 7.5 , 5.5, 6.5 ,7.5 ), show.legend = FALSE)
+       x= "")
 
-ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure4_paper.pdf", plot = Figure4, width = 297, height = 210, units = "mm")
 ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure4_paper.png", plot = Figure4)
 
 ##########################################################
@@ -120,7 +125,7 @@ bootstrap_table <-absolute_Breakpoint_Accuracy %>%
       calculate(stat = "median") %>%
       get_confidence_interval(level = 0.95, type = "percentile")
   })
-#CTATLRB2, FSB2, GB2 (very precise), LB2 span 0, therefore n.s
+#CTATLRB2, FSB2, GFSB2, GB2 (very precise), LB2 span 0, therefore n.s
 
 supp_Figure13 <-ggplot(filter(absolute_Breakpoint_Accuracy), aes(y = Distance_from_Simulated_Breakpoint, x = Breakpoint_number, color = Algorithm)) +
   geom_boxplot(outlier.shape = NA) +

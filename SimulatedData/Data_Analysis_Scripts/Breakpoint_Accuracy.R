@@ -230,7 +230,7 @@ GFSeeker_Breakpoint_Accuracy <- data.frame(matrix(nrow = 0,
                                                   ncol = length(c('seq_depth', 'seq_id', 
                                                                   'gene_fusion', 'GFSB1', 'GFSB2'))))
 colnames(GFSeeker_Breakpoint_Accuracy) <- c('seq_depth', 'seq_id', 'gene_fusion', 'GFSB1', 'GFSB2')
-for (seq_depth in c('1GB' , '10GB' )) {# , '100GB'
+for (seq_depth in c('1GB' , '10GB', '100GB' )) {# , '100GB'
   for (seq_id in c('85%' , '90%' , '95%')) {   
     for(gene_fusion in unique(c(GFSeeker_BreakPoint$fusion.gene.id))){
       SB <- subset(Simulated_BreakPoint, fusion.gene.id == gene_fusion)

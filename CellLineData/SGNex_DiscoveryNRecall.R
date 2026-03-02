@@ -252,7 +252,7 @@ View(super_SGNex_summary)
 ggplot(filter(super_SGNex_summary, Sequencing_Depth == "Total", knownnumber > 0))+ 
   geom_bar(aes(x = Algorithm, y = knownnumber, fill = Algorithm), stat = "identity")+
   facet_grid(Library+Cell_Lines~fusionType) +
-  theme_minimal() +
+  theme_bw() +
   labs(title = "Recall of Simulated Fusions",
        subtitle = "Diversity in fusion types",
        y = "Recovered Simulated Fusions",
@@ -263,18 +263,19 @@ ggplot(filter(super_SGNex_summary, Sequencing_Depth == "Total", knownnumber > 0)
         axis.ticks.x = element_blank(),
         plot.title = element_text(size = 11),
         axis.text = element_text(size = 11),
-        axis.title = element_text(size = 11))
+        axis.title = element_text(size = 11))+
+  scale_fill_npg()
 
 ggplot(filter(super_SGNex_summary, Sequencing_Depth == "Total", novelnumber > 0))+ 
-  geom_bar(aes(x = fusionType, y = novelnumber, fill = Algorithm), stat = "identity")+
-  facet_grid(Library+Cell_Lines~fusionType) +
-  theme_minimal() +
+  geom_point(aes(y = knownnumber, x = novelnumber, col = Algorithm))+
+  facet_grid(fusionType~Cell_Lines+Library) +
+  theme_bw() +
   labs(title = "",
        subtitle = "")+
-  ylim(c(0,50))+ 
+  #ylim(c(0,50))+ 
+  scale_x_log10()+
   theme(strip.text = element_text(size = 12),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
         plot.title = element_text(size = 11),
         axis.text = element_text(size = 11),
-        axis.title = element_text(size = 11))
+        axis.title = element_text(size = 11))+
+  scale_colour_npg()

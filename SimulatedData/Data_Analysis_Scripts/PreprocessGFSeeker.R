@@ -100,16 +100,6 @@ get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gen
 ####################################
 # Check GFSeeker for false antisense genes
 ####################################
-genes <- gencodev44gtf %>%
-  as.data.frame() %>%
-  filter(type == "gene") %>%
-  makeGRangesFromDataFrame(
-    seqnames.field = "seqnames",
-    start.field = "start",
-    end.field = "end",
-    strand.field = "strand",
-    keep.extra.columns = TRUE
-  )
 # get unique genes from both columns
 genes_to_check <- unique(c(GFSeeker_SIM$gene1_name, GFSeeker_SIM$gene2_name))
 

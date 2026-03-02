@@ -10,26 +10,25 @@ Overlap_CellData_JAFFAL <- full_join(disc_JAFFAL_SGNex, disc_JAFFAL_SGNex_3Gene 
   rename(read_support = spanning.reads) %>%
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
 
-Overlap_CellData_Genion <- disc_Gen_SGNex %>% 
+Overlap_CellData_Genion <- disc_Genion_SGNex %>% 
   rename(fusionGeneID = V1, read_support = V5)%>% 
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
 
-Overlap_CellData_FusionSeeker <- FusionSeeker_SGNex_Annot %>%
-  mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y))  %>%
+Overlap_CellData_FusionSeeker <- disc_FusionSeeker_SGNex %>%
   rename(read_support = NumSupp)%>%
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
 
-Overlap_CellData_LongGF <- LongGF_SGNex_Annot %>%
-  mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y)) %>%
+Overlap_CellData_LongGF <- disc_LongGF_SGNex %>%
+  #mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y)) %>%
   rename(read_support = V3)%>% 
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
 
-Overlap_CellData_GFSeeker <- GFSeeker_SGNex_Annot %>%
-  mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y)) %>%
+Overlap_CellData_GFSeeker <- disc_GFSeeker_SGNex %>%
+  #mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y)) %>%
   rename(read_support = "support num")%>% 
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
 
-Overlap_CellData_CTATLR <- CTATLR_SGNex_Annot %>%
+Overlap_CellData_CTATLR <- disc_CTATLR_SGNex %>%
   mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y)) %>%
   rename(read_support = num_LR)%>% 
   select(c(fusionGeneID, read_support, Source, Cell_Lines, Sequencing_Depth, Algorithm, Library))
