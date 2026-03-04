@@ -20,15 +20,18 @@ LR_sequencing <- read.csv("/bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_g
                               grepl('PB', sample)  ~ "PacBio"),
          Cell_Line = "Huh7")
   
-Illumina_sequencing_IllHB1<- read.csv("/bioinformatics/ryley/Library_Benchmark/JAFFA_direct_gencode43/Huh7B1/jaffa_results_Huh7B1.csv", header = TRUE) %>% 
+Illumina_sequencing_IllHB1<- read.csv("/bioinformatics/ryley/Library_Benchmark/JAFFA_direct_gencode43/Huh7B1/Huh7B1.summary", header = TRUE) %>% 
   mutate(library_type = "PCR_cDNA",           
          RNA_sample = "Huh7_p9_8_7_B1",
         Platform = "Illumina")
-Illumina_sequencing_IllHB2<- read.csv("/bioinformatics/ryley/Library_Benchmark/JAFFA_direct_gencode43/Huh7B2/jaffa_results_Huh7B2.csv", header = TRUE) %>% 
+Illumina_sequencing_IllHB2<- read.csv("/bioinformatics/ryley/Library_Benchmark/JAFFA_direct_gencode43/Huh7B2/Huh7B2.summary", header = TRUE) %>% 
   mutate(library_type = "PCR_cDNA",
          RNA_sample = "Huh7_p9_8_7_B2",
          Platform = "Illumina")
-Illumina_sequencing <- rbind(Illumina_sequencing_IllHB1, Illumina_sequencing_IllHB2)
+Illumina_sequencing <- read.csv("/bioinformatics/ryley/Library_Benchmark/JAFFA_direct_gencode43/Huh7B2/jaffa_results.csv", header = TRUE) %>% 
+  mutate(library_type = "PCR_cDNA",
+         RNA_sample = "Huh7_p9_8_7_B2",
+         Platform = "Illumina")
 
 
 Huh7_JAFFAL <- rbind(Illumina_sequencing, LR_sequencing)

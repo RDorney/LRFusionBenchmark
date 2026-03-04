@@ -29,18 +29,24 @@ JAFFAL_LR_Huh7 <- read.csv("/bioinformatics/ryley/Library_Benchmark/JAFFAL_Huh7_
          Cell_Line = "Huh7") %>%
   mutate(Algorithm = "JAFFAL")
 #Load in data from JAFFA direct
-Illumina_sequencing_IllHB1<- read.csv("/bioinformatics/ryley/JAFFA_Promethion/Huh7B1/jaffa_results_Huh7B1.csv", header = TRUE) %>% 
+Illumina_sequencing_IllHB1<- read.csv("/bioinformatics/ryley/JAFFA_Promethion/Huh7B1/Huh7B1.summary", header = TRUE) %>% 
   mutate(library_type = "PCR_cDNA",           
          RNA_sample = "B1",
-         Platform = "Illumina")
-Illumina_sequencing_IllHB2<- read.csv("/bioinformatics/ryley/JAFFA_Promethion/Huh7B2/jaffa_results_Huh7B2.csv", header = TRUE) %>% 
+         Platform = "Illumina",
+         Algorithm = "JAFFA")
+Illumina_sequencing_IllHB2<- read.csv("/bioinformatics/ryley/JAFFA_Promethion/Huh7B2/Huh7B2.summary", header = TRUE) %>% 
   mutate(library_type = "PCR_cDNA",
          RNA_sample = "B2",
-         Platform = "Illumina")
-JAFFAL_Illumina_Huh7 <- rbind(Illumina_sequencing_IllHB1, Illumina_sequencing_IllHB2)%>%
-  mutate(Algorithm = "JAFFA")
+         Platform = "Illumina",
+         Algorithm = "JAFFA")
+JAFFAL_Illumina_Huh7 <- read.csv("/bioinformatics/ryley/JAFFA_Promethion/jaffa_results.csv", header = TRUE)%>%
+  mutate(Algorithm = "JAFFA",
+         Platform = "Illumina",
+         library_type = "PCR_cDNA") %>%
+  mutate(RNA_sample = case_when(grepl('B1', sample)  ~ "B1", 
+                                grepl('B2', sample) ~ "B2"))
 
-Huh7_JAFFAL <- JAFFAL_LR_Huh7 %>% #rbind(JAFFAL_Illumina_Huh7, )
+Huh7_JAFFAL <- rbind(JAFFAL_Illumina_Huh7, JAFFAL_LR_Huh7) %>% #
   separate(fusion.genes, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) %>%
   filter(chrom1 %in% standard_chrs)%>%
   filter(chrom2 %in% standard_chrs)%>%
