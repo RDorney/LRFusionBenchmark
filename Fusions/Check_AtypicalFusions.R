@@ -448,7 +448,7 @@ sensemito_fusions <- rbind(dplyr::select(CTATLR_sensemito_annotated,
 ################
 # plots
 ################
-ggplot(dplyr::filter(sensemito_fusions), 
+ggplot(filter(sensemito_fusions), 
        aes(x = interaction(Platform, RNA_sample), fill = Algorithm)) +
   geom_bar() +
   theme_minimal() +

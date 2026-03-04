@@ -1,2 +1,0 @@
-Sample	+	-
-pychopper_stats_output	8165949.0	8154460.0

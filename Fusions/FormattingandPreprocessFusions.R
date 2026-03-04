@@ -108,7 +108,7 @@ Genion_Huh7<- Genion_Huh7 %>%
                                   grepl('FAZ|PCR|FLNCcDNA', Source)  ~ "PCR_cDNA"),
          RNA_sample = case_when(grepl('FBA62655|FBA22660|FAZ80247|B1', Source)  ~ "B1", 
                                 grepl('FBA22517|FAZ83542|FBA43334|B2', Source) ~ "B2"), 
-         Platform = case_when(grepl('chopper', Source)  ~ "ONT",
+         Platform = case_when(grepl('chopper|dorado', Source)  ~ "ONT",
                               grepl('PB', Source)  ~ "PacBio"),
          Cell_Line = "Huh7")
 

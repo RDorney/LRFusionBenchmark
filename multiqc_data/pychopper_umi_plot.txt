@@ -1,2 +1,0 @@
-Sample	Unknown UMI
-pychopper_stats_output	18856286.0
