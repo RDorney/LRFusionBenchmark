@@ -1,20 +1,14 @@
-###############################
-# Check antisense sense fusions
-###############################
-#Load necessary library
-library(rtracklayer)
-library(GenomicRanges)
-library(dplyr)
-library(gpplot2)
-#load relevant gtf file
-gencodev44gtf <- import("/bioinformatics/ryley/Gencode44/reference_v44/gencode.v44.annotation.gtf")
-# Prep files
-CTATLR_sensecheck <- CTATLR_Huh7_ensemblID
-JAFFAL_sensecheck <- Huh7_JAFFAL_ensemblID
-Genion_sensecheck <- Genion_Huh7
-FusionSeeker_sensecheck <- FusionSeeker_Huh7_ensemblID
-LongGF_sensecheck <- LongGF_Huh7_ensemblID
-GFSeeker_sensecheck <- GFSeeker_Huh7_ensemblID
+#########################################
+# Title: Label Sense Antisense Fusions
+# Author: Ryley Dorney
+# Date: Mar 2026
+#########################################
+CTATLR_mitocheck_annotated
+Genion_mitocheck_annotated
+FusionSeeker_mitocheck_annotated
+LongGF_mitocheck_annotated
+GFSeeker_mitocheck_annotated
+JAFFAL_mitocheck_annotated
 ########################################
 # Make function to find antisense genes
 ########################################
@@ -77,12 +71,14 @@ get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gen
 
 #get_antisense_overlaps("MALAT1", genes) #check function works
 #get_antisense_overlaps("ENSG00000287557", genes) # check function works
-
-###########################
-# Check CTAT-LR
-###########################
+########################################
+# Make function to find antisense genes
+########################################
+########
+#CTATLR
+########
 # get unique genes from both columns
-genes_to_check <- unique(c(CTATLR_sensecheck$LeftGene, CTATLR_sensecheck$RightGene))
+genes_to_check <- unique(c(CTATLR_mitocheck_annotated$LeftGene, CTATLR_mitocheck_annotated$RightGene))
 
 # run get_antisense_overlaps on each gene
 CTATLR_antisense_list <- lapply(genes_to_check, 
@@ -99,7 +95,7 @@ antisense_pairs <- CTATLR_antisense_df %>%
   dplyr::select(query_gene, gene_name) %>%
   distinct()
 
-CTATLR_sensecheck_annotated <- CTATLR_sensecheck %>%
+CTATLR_sensecheck_annotated <- CTATLR_mitocheck_annotated %>%
   mutate(
     fusionType = if_else(
       # Left = query_gene AND Right = gene_name
@@ -109,30 +105,14 @@ CTATLR_sensecheck_annotated <- CTATLR_sensecheck %>%
         paste(RightGene, LeftGene) %in% 
         paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
       "Sense-Antisense",
-      NA_character_
+      fusionType
     )
   )
-# Annotate with mitochondrial and self fusions
-CTATLR_sensemito_annotated <- CTATLR_sensecheck_annotated %>%
-  mutate(
-    fusionType = case_when(
-      grepl("chrM:", LeftBreakpoint,  ignore.case = TRUE) &
-        grepl("chrM:", RightBreakpoint, ignore.case = TRUE)
-      ~ "Mitochondrial:Mitochondrial",
-      xor(
-        grepl("chrM:", LeftBreakpoint,  ignore.case = TRUE),
-        grepl("chrM:", RightBreakpoint, ignore.case = TRUE)
-      ) ~ "Mitochondrial:Genomic",
-      (LeftGene == RightGene) ~ "Self-Misalignment",
-      TRUE ~ fusionType
-    )
-  )
-
-###########################
-# Check Genion
-###########################
+########
+# Genion
+########
 # get unique genes from both columns
-genes_to_check <- unique(c(Genion_sensecheck$V1.1, Genion_sensecheck$V1.2))
+genes_to_check <- unique(c(Genion_mitocheck_annotated$V1.1, Genion_mitocheck_annotated$V1.2))
 
 # run get_antisense_overlaps on each gene
 Genion_antisense_list <- lapply(genes_to_check, 
@@ -149,7 +129,7 @@ antisense_pairs <- Genion_antisense_df %>%
   dplyr::select(query_gene, gene_name) %>%
   distinct()
 
-Genion_sensecheck_annotated <- Genion_sensecheck %>%
+Genion_sensecheck_annotated <- Genion_mitocheck_annotated %>%
   mutate(
     fusionType = if_else(
       paste(V1.1, V1.2) %in% 
@@ -158,31 +138,14 @@ Genion_sensecheck_annotated <- Genion_sensecheck %>%
         paste(V1.2, V1.1) %in% 
         paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
       "Sense-Antisense",
-      NA_character_
+      fusionType
     )
   )
-# Annotate with mitochondrial and self fusions
-Genion_sensemito_annotated <- Genion_sensecheck_annotated %>%
-  mutate(
-    fusionType = case_when(
-      grepl("M:", chr1,  ignore.case = TRUE) &
-        grepl("M:", chr2, ignore.case = TRUE) 
-      ~ "Mitochondrial:Mitochondrial",
-      (
-        grepl("M:", chr1,  ignore.case = TRUE) +
-          grepl("M:", chr2, ignore.case = TRUE) +
-          grepl("M:", chr3, ignore.case = TRUE)
-      ) == 1 ~ "Mitochondrial:Genomic",
-      (V1.1 == V1.2) ~ "Self-Misalignment",
-      TRUE ~ fusionType
-    )
-  )
-
-###########################
-# Check FusionSeeker
-###########################
+##############
+# FusionSeeker
+##############
 # get unique genes from both columns
-genes_to_check <- unique(c(FusionSeeker_sensecheck$Gene1, FusionSeeker_sensecheck$Gene2))
+genes_to_check <- unique(c(FusionSeeker_mitocheck_annotated$Gene1, FusionSeeker_mitocheck_annotated$Gene2))
 
 # run get_antisense_overlaps on each gene
 FusionSeeker_antisense_list <- lapply(genes_to_check, 
@@ -199,7 +162,7 @@ antisense_pairs <- FusionSeeker_antisense_df %>%
   dplyr::select(query_gene, gene_name) %>%
   distinct()
 
-FusionSeeker_sensecheck_annotated <- FusionSeeker_sensecheck %>%
+FusionSeeker_sensecheck_annotated <- FusionSeeker_mitocheck_annotated %>%
   mutate(
     fusionType = if_else(
       paste(Gene1, Gene2) %in% 
@@ -208,25 +171,14 @@ FusionSeeker_sensecheck_annotated <- FusionSeeker_sensecheck %>%
         paste(Gene2, Gene1) %in% 
         paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
       "Sense-Antisense",
-      NA_character_
+      fusionType
     )
   )
-# Annotate with mitochondrial and self fusions
-FusionSeeker_sensemito_annotated <- FusionSeeker_sensecheck_annotated %>%
-  mutate(
-    fusionType = case_when(
-      Chrom1 == "chrM" & Chrom2 == "chrM" ~ "Mitochondrial:Mitochondrial",
-      xor("chrM" == Chrom1 , "chrM" == Chrom2) ~ "Mitochondrial:Genomic",
-      Gene1 == Gene2 ~ "Self-Misalignment",
-      TRUE ~ fusionType
-    )
-  )
-
-###########################
-# Check LongGF
-###########################
+#########
+# LongGF
+#########
 # get unique genes from both columns
-genes_to_check <- unique(c(LongGF_sensecheck$Gene1, LongGF_sensecheck$Gene2))
+genes_to_check <- unique(c(LongGF_mitocheck_annotated$Gene1, LongGF_mitocheck_annotated$Gene2))
 
 # run get_antisense_overlaps on each gene
 LongGF_antisense_list <- lapply(genes_to_check, 
@@ -243,7 +195,7 @@ antisense_pairs <- LongGF_antisense_df %>%
   dplyr::select(query_gene, gene_name) %>%
   distinct()
 
-LongGF_sensecheck_annotated <- LongGF_sensecheck %>%
+LongGF_sensecheck_annotated <- LongGF_mitocheck_annotated %>%
   mutate(
     fusionType = if_else(
       paste(Gene1, Gene2) %in% 
@@ -252,25 +204,14 @@ LongGF_sensecheck_annotated <- LongGF_sensecheck %>%
         paste(Gene2, Gene1) %in% 
         paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
       "Sense-Antisense",
-      NA_character_
+      fusionType
     )
   )
-# Annotate with mitochondrial and self fusions
-LongGF_sensemito_annotated <- LongGF_sensecheck_annotated %>%
-  mutate(
-    fusionType = case_when(
-      chromosome1 == "chrM" & chromosome2 == "chrM" ~ "Mitochondrial:Mitochondrial",
-      xor("chrM" == chromosome1, "chrM" == chromosome2) ~ "Mitochondrial:Genomic",
-      Gene1 == Gene2 ~ "Self-Misalignment",
-      TRUE ~ fusionType
-    )
-  )
-
-##################################
-# Check GFSeeker
-##################################
+##########
+# GFSeeker
+##########
 # get unique genes from both columns
-genes_to_check <- unique(c(GFSeeker_sensecheck$gene1_name, GFSeeker_sensecheck$gene2_name))
+genes_to_check <- unique(c(GFSeeker_mitocheck_annotated$gene1_name, GFSeeker_mitocheck_annotated$gene2_name))
 
 # run get_antisense_overlaps on each gene
 GFSeeker_antisense_list <- lapply(genes_to_check, 
@@ -287,7 +228,7 @@ antisense_pairs <- GFSeeker_antisense_df %>%
   dplyr::select(query_gene, gene_name) %>%
   distinct()
 
-GFSeeker_sensecheck_annotated <- GFSeeker_sensecheck %>%
+GFSeeker_sensecheck_annotated <- GFSeeker_mitocheck_annotated %>%
   mutate(
     fusionType = if_else(
       paste(gene1_name, gene2_name) %in% 
@@ -296,23 +237,13 @@ GFSeeker_sensecheck_annotated <- GFSeeker_sensecheck %>%
         paste(gene2_name, gene1_name) %in% 
         paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
       "Sense-Antisense",
-      NA_character_
-    )
-  )
-# Annotate with mitochondrial and self fusions
-GFSeeker_sensemito_annotated <- GFSeeker_sensecheck_annotated %>%
-  mutate(
-    fusionType = case_when(
-      chrom1 == "chrM" & chrom2 == "chrM" ~ "Mitochondrial:Mitochondrial",
-      xor("chrM" == chrom1, "chrM" == chrom2) ~ "Mitochondrial:Genomic",
-      gene1_name == gene2_name ~ "Self-Misalignment",
-      TRUE ~ fusionType
+      fusionType
     )
   )
 
-##################################
-# Check JAFFAL and update function
-##################################
+########################
+# JAFFAL/JAFFA-Direct
+########################
 gencodev43gtf <- import("/bioinformatics/ryley/reference_files/gencode.v43.annotation.gtf")
 
 genes <- gencodev43gtf %>%
@@ -373,7 +304,7 @@ get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gen
 }
 
 # get unique genes from both columns
-genes_to_check <- unique(c(JAFFAL_sensecheck$Gene1, JAFFAL_sensecheck$Gene2))
+genes_to_check <- unique(c(JAFFAL_mitocheck_annotated$Gene1, JAFFAL_mitocheck_annotated$Gene2))
 
 # run get_antisense_overlaps on each gene
 JAFFAL_antisense_list <- lapply(genes_to_check, function(g) {
@@ -394,7 +325,7 @@ antisense_pairs <- JAFFAL_antisense_df %>%
   dplyr::select(query_gene, gene_name) %>%
   distinct()
 
-JAFFAL_sensecheck_annotated <- JAFFAL_sensecheck %>%
+JAFFAL_sensecheck_annotated <- JAFFAL_mitocheck_annotated %>%
   mutate(
     fusionType = if_else(
       paste(Gene1, Gene2) %in% 
@@ -403,52 +334,41 @@ JAFFAL_sensecheck_annotated <- JAFFAL_sensecheck %>%
         paste(Gene2, Gene1) %in% 
         paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
       "Sense-Antisense",
-      NA_character_
-    )
-  )
-# Annotate with mitochondrial and self fusions
-JAFFAL_sensemito_annotated <- JAFFAL_sensecheck_annotated %>%
-  mutate(
-    fusionType = case_when(
-      chrom1 == "chrM" & chrom2 == "chrM" ~ "Mitochondrial:Mitochondrial",
-      xor("chrM" == chrom1, "chrM" == chrom2) ~ "Mitochondrial:Genomic",
-      (Gene1 == Gene2) ~ "Self-Misalignment",
-      TRUE ~ fusionType
+      fusionType
     )
   )
 
-###########################
-# combined dataframes
-###########################
-sensemito_fusions <- rbind(dplyr::select(CTATLR_sensemito_annotated, 
+
+#############################
+#Plot Sense-Antisense Fusions
+#############################
+sensecheck_fusions <- rbind(dplyr::select(CTATLR_sensecheck_annotated, 
                                          c("RNA_sample", "Platform", "Cell_Line", 
                                            "Algorithm",    
                                            "library_type", "fusionType")),
-                           dplyr::select(Genion_sensemito_annotated, 
+                           dplyr::select(Genion_sensecheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm",    
                                            "library_type", "fusionType")),
-                           dplyr::select(LongGF_sensemito_annotated, 
+                           dplyr::select(LongGF_sensecheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm",    
                                            "library_type", "fusionType")), 
-                           dplyr::select(FusionSeeker_sensemito_annotated, 
+                           dplyr::select(FusionSeeker_sensecheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm",    
                                            "library_type", "fusionType")),
-                           dplyr::select(GFSeeker_sensemito_annotated, 
+                           dplyr::select(GFSeeker_sensecheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm",    
                                            "library_type", "fusionType")),
-                           dplyr::select(JAFFAL_sensemito_annotated, 
+                           dplyr::select(JAFFAL_sensecheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm",    
                                            "library_type", "fusionType")))
 
-################
-# plots
-################
-ggplot(filter(sensemito_fusions), 
+
+ggplot(dplyr::filter(sensecheck_fusions, fusionType==), 
        aes(x = interaction(Platform, RNA_sample), fill = Algorithm)) +
   geom_bar() +
   theme_minimal() +
@@ -457,5 +377,7 @@ ggplot(filter(sensemito_fusions),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))+
   facet_grid(library_type~fusionType) +
+  labs(fill = "Fusion Type")+
   scale_y_log10()+
-  labs(fill = "Fusion Type")
+  scale_fill_manual(values = Alg_colour_map)
+

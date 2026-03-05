@@ -10,7 +10,6 @@ standard_chrs <-c(1:22, "X", "Y", "M", "MT")
 library(dplyr)
 library(tidyr)
 
-library(biomaRt)
 library(AnnotationHub)
 library(HGNChelper)
 
@@ -30,11 +29,13 @@ ensembldbv109 <- ah[["AH109606"]]
 gene_info <- ensembldb::select(ensembldbv110, 
                                keys = unique(c(LongGF_Huh7$Gene1, LongGF_Huh7$Gene2)), 
                                keytype = "SYMBOL", 
-                               columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
-  dplyr::filter(SEQNAME %in% standard_chrs)%>%
-  distinct(SYMBOL, .keep_all = TRUE) %>%
+                               columns = c("GENEID", "SYMBOL", "SEQNAME")) %>%  
+  dplyr::filter(SEQNAME %in% standard_chrs) %>%                         
+  distinct(SYMBOL, .keep_all = TRUE) %>%                                 
   dplyr::rename("external_gene_name" = "SYMBOL", 
-                "ensembl_gene_id"="GENEID")
+                "ensembl_gene_id" = "GENEID")
+
+
 LongGF_Huh7_ensemblID <-left_join(LongGF_Huh7, gene_info, by  = c("Gene1"="external_gene_name")) %>% 
   left_join(gene_info, by  = c("Gene2"="external_gene_name"))%>% 
   mutate(ensembl_gene_id.y = coalesce(ensembl_gene_id.y, Gene2), 

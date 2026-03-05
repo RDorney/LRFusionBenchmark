@@ -7,12 +7,9 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 ```
 
-
-
-Define colours for each platform
+Define colours for each platform and algorithms
 ```{r}
 ################################################################
 # Define colors for other platforms
@@ -30,35 +27,34 @@ platform_colours <- c(
   "ONT.PCR_cDNA.B2" = "#15496e"
 )
 # Merge colors
-color_map <- c(platform_colours)
+platform_colourscolour_map <- c(platform_colours)
+scales::show_col(pal_npg("nrc")(7))
+Algorithm_Colours <- c(
+  "CTAT_LR_Fusion"="#E64B35FF",
+  "FusionSeeker"="#4DBBD5FF",
+  "Genion" ="#00A087FF",
+  "GFSeeker" ="#3C5488FF",
+  "JAFFAL" ="#F39B7FFF",
+  "LongGF" ="#8491B4FF",
+  "JAFFA-direct" ="#91D1C2FF")
+Alg_colour_map <- c(Algorithm_Colours)
 ```
 
 Trimming Nanopore reads of their adaptors
 ```{bash}
-~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Preprocessing/DoradoTrimAdaptor.sh
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/PreprocessingReads/DoradoTrimAdaptor.sh
 ```
 
 Filtering Nanopore Reads for lengths greater than 100bp, Quality is 8 or greater
 ```{bash}
-bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Preprocessing/Filter_NanoporeReads_Chopper.sh
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/PreprocessingReads/Filter_NanoporeReads_Chopper.sh
 ```
 
 Trim adapter sequences and poly_g, and quality filter by Q15 or greater using fastp on Illumina Sequencing Data
 ```{bash}
-bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Preprocessing/Fastp_trim_and_filter.sh
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/PreprocessingReads/Fastp_trim_and_filter.sh
 ```
 
-Using JAFFAL to find fusions in the long read Huh-7 Data, and JAFFA_direct to find fusions in the short-read Huh-7 Data
-
-```{bash}
-bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/RunJAFFAL.sh
-bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Run_JAFFAdirect.sh
-```
-
-Use Genion, FusionSeeker & LongGF to find more fusions
-```{bash}
-~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Run_GFSLGF.sh
-```
 
 ```{bash}
 for input_file in /bioinformatics/ryley/Library_Benchmark/*.sorted.bam; do
@@ -94,5 +90,34 @@ Longlibrary_read_lengths <- read.delim("library_read_length_summary.tsv", header
          Alignment = case_when(grepl('transcriptome', file)  ~  "transcriptome", 
                                grepl('stranded', file)  ~  "stranded_genome",
                                TRUE ~ "genome"))
+```
+
+Identify Fusions
+Find fusions in the long read Huh-7 Data, and use JAFFA_direct to find fusions in the short-read Huh-7 Data
+```{bash}
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/RunJAFFAL.sh
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Run_JAFFAdirect.sh
+
+~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Run_GFSLGF.sh
+```
+
+Pre-process Fusion Data
+```{r}
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/FormattingandPreprocessFusions.R")
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/AssignEnsemblID.R")
+```
+
+Check FusionTypes
+```{r}
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/CheckAtypicalFusions.R")
+
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/LabelSenseAntisense.R")
+
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/LabelFusionTypes.R")
+```
+
+Check Known Fusion
+```{r}
+
 ```
 
