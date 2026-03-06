@@ -1,9 +1,9 @@
 Known_Gene_Fusion,Gene1,Gene2,Sample,PMID_Reference,Validation
-MAN2A1::FER ,,,HUH7,PMID: 38537933 ; PMID: 31164957; PMID: 28245430,TaqMan qRT-PCR and/or RT-PCR together with Sanger sequencing or functional assays
-SLC45A2::AMACR,,,HUH7,PMID: 38537933 ; PMID: 31164958; PMID: 34505419,TaqMan qRT-PCR and/or RT-PCR together with Sanger sequencing or functional assays
+MAN2A1::FER,,,HUH7,PMID: 38537933 ; PMID:31164957; PMID: 28245430,TaqMan qRT-PCR and/or RT-PCR together with Sanger sequencing or functional assays
+SLC45A2::AMACR,,,HUH7,PMID: 38537933 ; PMID:31164958; PMID: 34505419,TaqMan qRT-PCR and/or RT-PCR together with Sanger sequencing or functional assays
 ZMPSTE24::ZMYM4,,,HCC,PMID: 38537933,TaqMan qRT-PCR
 PTEN::NOLC1,,,HCC,PMID: 38537933,TaqMan qRT-PCR
-CCNH::C5orf30 ,,,HUH7,PMID: 30705370; PMID: 38537933 ; PMID: 31164957,TaqMan qRT-PCR and/or RT-PCR together with Sanger sequencing or functional assays
+CCNH::C5orf30,,,HUH7,PMID:30705370; PMID: 38537933 ; PMID:31164957,TaqMan qRT-PCR and/or RT-PCR together with Sanger sequencing or functional assays
 NUP188::PHYHD1,NUP188,PHYHD1,HUH7,PMID: 25485619,RNA sequencing
 IPO11::KIAA0825,IPO11,KIAA0825,HUH7,PMID: 25485619,RNA sequencing
 FAM59A::ACN9,FAM59A,ACN9,HUH7,PMID: 25485619,RNA sequencing
@@ -40,22 +40,22 @@ ANKIB1::PTPRN2,ANKIB1,PTPRN2,HUH7,PMID: 25485619,RNA sequencing
 ,SORD,TERB2,HUH7,PMID: 39468210,RNA sequencing
 ,ZNF274,TMEM132E,HUH7,PMID: 39468210,RNA sequencing
 ,TUBB4B,TUBB2A,HUH7,PMID: 39468210,RNA sequencing
-LRRC59::FLJ60017,,,HEPG2,PMID: 30705370,TaqMan qRT-PCR
+LRRC59::FLJ60017,,,HEPG2,PMID:30705370,TaqMan qRT-PCR
 STAMBPL1::FAS,,,HCC,PMID: 38537933,TaqMan qRT-PCR
-PCMTD1::SNTG1 ,,,HCC,PMID: 38537933,TaqMan qRT-PCR
-TRMT11::GRIK2 ,,,HCC,PMID: 31164957; PMID: 30705370,TaqMan qRT-PCR and Sanger sequencing
-CRYL1::IFT88 ,,,HCC,PMID: 28489570,"RNA sequencing, RT-PCR, Sanger sequencing, and rapid amplification of cDNA ends"
-RP11?476K15.1::CTD?2015H3.2,,,HCC,PMID: 30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
-DNAJB1::PRKACA,,,Fibrolamellar-HCC,PMID: 24578576,"PCR, Sanger sequencing, Western blot, and functional assays"
-C15orf57::CBX3,,,HCC,PMID: 30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
-IGLV1?51::IGLL5,,,HCC,PMID: 30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
-RP11?100N3.2::GNAS,,,HCC,PMID: 30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
-XXbac?BPG248L24.12::EVA1B,,,HCC,PMID: 30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
-SERPINA5::SERPINA9,,,HCC,PMID: 30903738,RNA sequencing
-DCUN1D3::GSG1L,,,HCC,PMID: 30903738,RNA sequencing
-AP3D1::SLC6A8,,,HCC,PMID: 30903738,RNA sequencing
-IGLV4?69::IGLJ3,,,HCC,PMID: 30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
-HLA?DPB2?HLA?DRB1,,,HCC,PMID: 30903738,RNA sequencing
-CDH23?HLA?DPB1 ,,,HCC,PMID: 30903738,RNA sequencing
+PCMTD1::SNTG1,,,HCC,PMID: 38537933,TaqMan qRT-PCR
+TRMT11::GRIK2,,,HCC,PMID:31164957; PMID: 30705370,TaqMan qRT-PCR and Sanger sequencing
+CRYL1::IFT88,,,HCC,PMID:28489570,"RNA sequencing, RT-PCR, Sanger sequencing, and rapid amplification of cDNA ends"
+RP11476K15.1::CTD2015H3.2,,,HCC,PMID:30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
+DNAJB1::PRKACA,,,Fibrolamellar-HCC,PMID:24578576,"PCR, Sanger sequencing, Western blot, and functional assays"
+C15orf57::CBX3,,,HCC,PMID:30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
+IGLV151::IGLL5,,,HCC,PMID:30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
+RP11100N3.2::GNAS,,,HCC,PMID:30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
+XXbacBPG248L24.12::EVA1B,,,HCC,PMID:30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
+SERPINA5::SERPINA9,,,HCC,PMID:30903738,RNA sequencing
+DCUN1D3::GSG1L,,,HCC,PMID:30903738,RNA sequencing
+AP3D1::SLC6A8,,,HCC,PMID:30903738,RNA sequencing
+IGLV469::IGLJ3,,,HCC,PMID:30903738,"RNA sequencing, RT-PCR, and Sanger sequencing"
+HLADPB2HLADRB1,,,HCC,PMID:30903738,RNA sequencing
+CDH23HLADPB1,,,HCC,PMID:30903738,RNA sequencing
 VTI1A::CFAP46,,,HCC,PMID: 31602373,"RNA sequencing, RT-PCR"
 SERPINA1::H19,,,HCC,PMID: 40613496,RNA sequencing

@@ -65,6 +65,13 @@ export -f run_fusionseeker
 #############################
 for input_bam in ${INPUT_DIR}/chopperfiltered_dorado_trimmed_*.sorted.bam; do
     output_prefix=$(basename "${input_bam}" .sorted.bam)
+    outdir="fusionseeker_${output_prefix}"
+    #check if files has been run
+    if [[ -d "$outdir" ]]; then
+        echo "Skipping FusionSeeker for ${output_prefix} (dir exists)"
+        continue
+    fi
+    echo "running FusionSeeker on ${output_prefix}"
     run_fusionseeker "$input_bam" "$output_prefix" "$threads" 
 done
 

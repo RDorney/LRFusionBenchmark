@@ -338,7 +338,6 @@ JAFFAL_sensecheck_annotated <- JAFFAL_mitocheck_annotated %>%
     )
   )
 
-
 #############################
 #Plot Sense-Antisense Fusions
 #############################
@@ -367,17 +366,41 @@ sensecheck_fusions <- rbind(dplyr::select(CTATLR_sensecheck_annotated,
                                            "Algorithm",    
                                            "library_type", "fusionType")))
 
+sensecheck_fusions$Platform <- factor(sensecheck_fusions$Platform, levels = c("Illumina", "PacBio", "ONT")) 
 
-ggplot(dplyr::filter(sensecheck_fusions, fusionType==), 
-       aes(x = interaction(Platform, RNA_sample), fill = Algorithm)) +
+sensecheck_fusions$library_type <- factor(sensecheck_fusions$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
+sensecheck_fusions$full_label <- interaction(
+  sensecheck_fusions$Platform,
+  sensecheck_fusions$library_type,
+  sensecheck_fusions$RNA_sample)
+sensecheck_fusions$full_label <- factor(sensecheck_fusions$full_label, levels = c("Illumina.PCR_cDNA.B1", "Illumina.PCR_cDNA.B2", 
+                                                                                "PacBio.PCR_cDNA.B1", "PacBio.PCR_cDNA.B2", 
+                                                                                "ONT.PCR_cDNA.B1","ONT.PCR_cDNA.B2", 
+                                                                                "ONT.direct_cDNA.B1", "ONT.direct_cDNA.B2", 
+                                                                                "ONT.direct_RNA.B1", "ONT.direct_RNA.B2"))
+
+ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
+       aes(x = RNA_sample, fill = Algorithm)) +
   geom_bar() +
   theme_minimal() +
-  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))+
-  facet_grid(library_type~fusionType) +
-  labs(fill = "Fusion Type")+
+  facet_grid(fusionType~library_type+Platform) +
+  labs(fill = "Algorithm")+
   scale_y_log10()+
   scale_fill_manual(values = Alg_colour_map)
 
+ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
+       aes(x = RNA_sample, fill = full_label)) +
+  geom_bar() +
+  theme_minimal() +
+  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))+
+  facet_grid(fusionType~library_type+Platform) +
+  #labs(fill = "Fusion Type")+
+  scale_y_log10()+
+  scale_fill_manual(values = platformlibsamp_colourmap)

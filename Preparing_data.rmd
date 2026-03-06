@@ -14,23 +14,32 @@ Define colours for each platform and algorithms
 ################################################################
 # Define colors for other platforms
 ################################################################
-platform_colours <- c(
+platformlibsamp_colours <- c(
   "Illumina.PCR_cDNA.B1" = "#FFA500",
   "Illumina.PCR_cDNA.B2" = "#CC8400",
   "PacBio.PCR_cDNA.B1"   = "#C80972",
   "PacBio.PCR_cDNA.B2"   = "#8B064F",
+  "ONT.PCR_cDNA.B1" = "#1f77b4",
+  "ONT.PCR_cDNA.B2" = "#15496e",
   "ONT.direct_cDNA.B1" = "#009ACD",
   "ONT.direct_cDNA.B2" = "#00688B",
   "ONT.direct_RNA.B1"  = "#00CDCD",
-  "ONT.direct_RNA.B2"  = "#008B8B",
-  "ONT.PCR_cDNA.B1" = "#1f77b4",
-  "ONT.PCR_cDNA.B2" = "#15496e"
+  "ONT.direct_RNA.B2"  = "#008B8B"
 )
+
 # Merge colors
-platform_colourscolour_map <- c(platform_colours)
+platformlibsamp_colourmap <- c(platformlibsamp_colours)
+
+###########
+# template to order labels
+#df$full_label <- factor(df$full_label, levels = c("Illumina.PCR_cDNA.B1", "Illumina.PCR_cDNA.B2", "PacBio.PCR_cDNA.B1", "PacBio.PCR_cDNA.B2", "ONT.PCR_cDNA.B1","ONT.PCR_cDNA.B2", "ONT.direct_cDNA.B1", "ONT.direct_cDNA.B2", "ONT.direct_RNA.B1", "ONT.direct_RNA.B2")) 
+#df$Platform <- factor(df$Platform, levels = c("Illumina", "PacBio", "ONT")) 
+#df$library_type <- factor(df$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
+###########
+
 scales::show_col(pal_npg("nrc")(7))
 Algorithm_Colours <- c(
-  "CTAT_LR_Fusion"="#E64B35FF",
+  "CTAT-LR-Fusion"="#E64B35FF",
   "FusionSeeker"="#4DBBD5FF",
   "Genion" ="#00A087FF",
   "GFSeeker" ="#3C5488FF",
@@ -95,25 +104,25 @@ Longlibrary_read_lengths <- read.delim("library_read_length_summary.tsv", header
 Identify Fusions
 Find fusions in the long read Huh-7 Data, and use JAFFA_direct to find fusions in the short-read Huh-7 Data
 ```{bash}
-bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/RunJAFFAL.sh
-bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Run_JAFFAdirect.sh
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/runtools/RunJAFFAL.sh
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/runtools/Run_JAFFAdirect.sh
 
-~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Run_GFSLGF.sh
+~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/runtools/Run_GFSLGF.sh
 ```
 
 Pre-process Fusion Data
 ```{r}
 source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/FormattingandPreprocessFusions.R")
-source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/AssignEnsemblID.R")
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/AssignEnsemblID.R")
 ```
 
 Check FusionTypes
 ```{r}
-source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/CheckAtypicalFusions.R")
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/CheckFalseFusions.R")
 
-source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/LabelSenseAntisense.R")
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/LabelSenseAntisense.R")
 
-source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/LabelFusionTypes.R")
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/LabelFusionTypes.R")
 ```
 
 Check Known Fusion

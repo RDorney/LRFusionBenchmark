@@ -47,6 +47,7 @@ JAFFAL_Illumina_Huh7 <- read.csv("/bioinformatics/ryley/JAFFA_Promethion/jaffa_r
                                 grepl('B2', sample) ~ "B2"))
 
 Huh7_JAFFAL <- rbind(JAFFAL_Illumina_Huh7, JAFFAL_LR_Huh7) %>% #
+  mutate(full_label = interaction(Platform,library_type,RNA_sample, sep = ".")) %>%
   tidyr::separate(fusion.genes, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) %>%
   dplyr::filter(chrom1 %in% standard_chrs)%>%
   dplyr::filter(chrom2 %in% standard_chrs)%>%
@@ -71,7 +72,9 @@ for (location in LRTri_gene){
                                        grepl('FBA22517|FAZ83542|FBA43334|B2', sample) ~ "B2"), 
                 Platform = dplyr::case_when(grepl('Nano', sample)  ~ "ONT",
                                      grepl('PB', sample)  ~ "PacBio"),
-                Cell_Line = "Huh7"))
+                Cell_Line = "Huh7",
+                full_label = interaction(Platform,library_type,RNA_sample, sep = ".")
+         ))
 } 
 
 Huh7_JAFFAL_3Gene <- rbind(file_1, file_2, 
@@ -95,12 +98,13 @@ Genion_Huh7<- do.call(rbind, lapply(myfiles, function(filename) {
   }
 }))
 Genion_Huh7<- Genion_Huh7 %>% 
-  tidyr::separate(V1, into = c("V1.1", "V1.2", "V1.3"), "::", remove=FALSE) %>% 
-  tidyr::separate(V2, into = c("V2.1", "V2.2", "V2.3"), "::", remove=FALSE) %>% 
-  tidyr::separate(V8, into = c("chr1", "chr2", "chr3"), ";", remove=FALSE) %>%
+  tidyr::separate(V1, into = c("V1.1", "V1.2", "V1.3", "V1.4"), "::", remove=FALSE) %>% 
+  tidyr::separate(V2, into = c("V2.1", "V2.2", "V2.3", "V2.4"), "::", remove=FALSE) %>% 
+  tidyr::separate(V8, into = c("chr1", "chr2", "chr3", "chr4"), ";", remove=FALSE) %>%
   tidyr::separate(chr1, into = c("chr1", "gene1_range"), ":", remove=FALSE)%>%
   tidyr::separate(chr2, into = c("chr2", "gene2_range"), ":", remove=FALSE)%>%
   tidyr::separate(chr3, into = c("chr3", "gene3_range"), ":", remove=FALSE)%>%
+  tidyr::separate(chr4, into = c("chr4", "gene4_range"), ":", remove=FALSE)%>%
   dplyr::filter(V5 >= 2)%>%
   dplyr::mutate(Algorithm = "Genion",
          library_type = dplyr::case_when(grepl('FBA22517|FBA22660|dRNA', Source)  ~ "direct_RNA",
@@ -110,8 +114,9 @@ Genion_Huh7<- Genion_Huh7 %>%
                                 grepl('FBA22517|FAZ83542|FBA43334|B2', Source) ~ "B2"), 
          Platform = dplyr::case_when(grepl('chopper|dorado', Source)  ~ "ONT",
                               grepl('PB', Source)  ~ "PacBio"),
-         Cell_Line = "Huh7")
-
+         Cell_Line = "Huh7",
+         full_label = interaction(Platform,library_type,RNA_sample, sep = "."))
+           
 
 ################################################################
 #Read in data from FusionSeeker
@@ -144,7 +149,9 @@ FusionSeeker_Huh7 <- FusionSeeker_Huh7 %>%
                                 grepl('FBA22517|FAZ83542|FBA43334|B2', Source) ~ "B2"), 
          Platform = dplyr::case_when(grepl('chopper|dorado', Source)  ~ "ONT",
                               grepl('PB', Source)  ~ "PacBio"),
-         Cell_Line = "Huh7")
+         Cell_Line = "Huh7",
+         full_label = interaction(Platform,library_type,RNA_sample, sep = ".")
+  )
 
 ################################################################
 #Read in data from LongGF
@@ -171,7 +178,8 @@ LongGF_Huh7 <- LongGF_Huh7 %>%
                                 grepl('FBA22517|FAZ83542|FBA43334|B2', V1) ~ "B2"), 
          Platform = dplyr::case_when(grepl('chopper|dorado', V1)  ~ "ONT",
                               grepl('PB', V1)  ~ "PacBio"),
-         Cell_Line = "Huh7")
+         Cell_Line = "Huh7",
+         full_label = interaction(Platform,library_type,RNA_sample, sep = "."))
 
 ################################################################
 #Read in data from GFSeeker
@@ -193,7 +201,8 @@ GFSeeker_Huh7<- bind_rows(
                                       grepl('FBA22517|FAZ83542|FBA43334|B2', Source) ~ "B2"), 
                Platform = dplyr::case_when(grepl('Nano', Source)  ~ "ONT",
                                     grepl('PB', Source)  ~ "PacBio"),
-               Cell_Line = "Huh7")
+               Cell_Line = "Huh7",
+               full_label = interaction(Platform,library_type,RNA_sample, sep = "."))
     } else {
       NULL
     }
@@ -228,7 +237,8 @@ CTATLR_Huh7<- bind_rows(
                                       grepl('FBA22517|FAZ83542|FBA43334|B2', Source) ~ "B2"), 
                Platform = dplyr::case_when(grepl('Nano', Source)  ~ "ONT",
                                     grepl('PB', Source)  ~ "PacBio"),
-               Cell_Line = "Huh7")
+               Cell_Line = "Huh7",
+               full_label = interaction(Platform,library_type,RNA_sample, sep = "."))
     } else {
       NULL
     }

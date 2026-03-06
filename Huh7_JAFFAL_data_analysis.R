@@ -407,19 +407,3 @@ filtered_Huh7_JAFFAL_with_GeneID %>% filter(!str_detect(ensembl_gene_id.x, "ENSG
 filtered_Huh7_JAFFAL_with_GeneID %>% filter(!str_detect(ensembl_gene_id.y, "ENSG"))
 
 
-
-
-
-
-
-
-#number of previously identified fusions in HCC
-#number of previously identified fusions in Liver Cancer
-##Mitelman database
-#number of previously identified fusions in Cancer
-##Mitelman database
-
-#number of reads for each library vs read lengths for each library vs read depth for each library (table)
-
-
-
