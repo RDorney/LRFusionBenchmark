@@ -9,7 +9,7 @@ standard_chrs <- paste0("chr", c(1:22, "X", "Y", "M"))
 ################################################################
 library(dplyr)
 library(tidyr)
-
+library(readr)
 library(AnnotationHub)
 library(HGNChelper)
 
@@ -251,5 +251,3 @@ CTATLR_Huh7 <- CTATLR_Huh7  %>%
   mutate(Algorithm = "CTAT-LR-Fusion")
 
 og_CTATLR_Huh7 <- CTATLR_Huh7
-
-

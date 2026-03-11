@@ -64,6 +64,20 @@ Trim adapter sequences and poly_g, and quality filter by Q15 or greater using fa
 bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/PreprocessingReads/Fastp_trim_and_filter.sh
 ```
 
+Quality control
+```{bash}
+#Read Lengths and Quality
+#Nanoplot
+conda install -c bioconda nanoplot
+NanoPlot -t 10 --bam /bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker/*sorted.bam --minlength 100 -o Huh7_bam_summary_plots
+
+NanoPlot -t 10 --summary/bioinformatics/ryley/Library_Benchmark/raw_files/Huh*/*/*/sequencing*txt
+#LongQC
+
+#SQANTI-reads
+#LongReadSum
+```
+
 
 ```{bash}
 for input_file in /bioinformatics/ryley/Library_Benchmark/*.sorted.bam; do

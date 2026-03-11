@@ -23,7 +23,23 @@ genes <- gencodev44gtf %>%
     keep.extra.columns = TRUE
   )
 
-get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gene_id")) {
+hits <- findOverlaps(genes, genes, ignore.strand = TRUE)
+# Filter hits to find genes on opposite strands that overlap
+antisense_lookup <- data.frame(
+  gene_a_name = genes$gene_name[queryHits(hits)],
+  gene_a_id   = sub("\\..*$", "", genes$gene_id[queryHits(hits)]),
+  gene_b_name = genes$gene_name[subjectHits(hits)],
+  gene_b_id   = sub("\\..*$", "", genes$gene_id[subjectHits(hits)]),
+  strand_a    = as.character(strand(genes)[queryHits(hits)]),
+  strand_b    = as.character(strand(genes)[subjectHits(hits)])
+) %>%
+  filter(strand_a != strand_b) %>% # Only keep antisense
+  select(gene_a_name, gene_a_id, gene_b_name, gene_b_id) %>%
+  distinct()
+
+##################################
+# Alternative function application
+#get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gene_id")) {
   
   id_type <- match.arg(id_type)
   
@@ -68,178 +84,65 @@ get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gen
       seqnames, start, end, strand
     ) 
 }
-
 #get_antisense_overlaps("MALAT1", genes) #check function works
 #get_antisense_overlaps("ENSG00000287557", genes) # check function works
-########################################
-# Make function to find antisense genes
 ########################################
 ########
 #CTATLR
 ########
-# get unique genes from both columns
-genes_to_check <- unique(c(CTATLR_mitocheck_annotated$LeftGene, CTATLR_mitocheck_annotated$RightGene))
-
-# run get_antisense_overlaps on each gene
-CTATLR_antisense_list <- lapply(genes_to_check, 
-                                function(g) get_antisense_overlaps(g, genes, id_type = "gene_name"))
-
-# combine into a single data frame
-CTATLR_antisense_df <- bind_rows(CTATLR_antisense_list, .id = "query_gene_index")
-
-# add the original gene names
-CTATLR_antisense_df$query_gene <- genes_to_check[as.integer(CTATLR_antisense_df$query_gene_index)]
-CTATLR_antisense_df$query_gene_index <- NULL
-
-antisense_pairs <- CTATLR_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
-  distinct()
-
 CTATLR_sensecheck_annotated <- CTATLR_mitocheck_annotated %>%
+  left_join(antisense_lookup, by = c("LeftGene" = "gene_a_name", "RightGene" = "gene_b_name")) %>%
   mutate(
-    fusionType = if_else(
-      # Left = query_gene AND Right = gene_name
-      paste(LeftGene, RightGene) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
-      | 
-        paste(RightGene, LeftGene) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
-      "Sense-Antisense",
-      fusionType
-    )
-  )
+    fusionType = if_else(!is.na(gene_a_id), "Sense-Antisense", fusionType)
+  ) %>%
+  select(-gene_a_id, -gene_b_id) # Clean up join columns
 ########
 # Genion
 ########
-# get unique genes from both columns
-genes_to_check <- unique(c(Genion_mitocheck_annotated$V1.1, Genion_mitocheck_annotated$V1.2))
-
-# run get_antisense_overlaps on each gene
-Genion_antisense_list <- lapply(genes_to_check, 
-                                function(g) get_antisense_overlaps(g, genes, id_type = "gene_id"))
-
-# combine into a single data frame
-Genion_antisense_df <- bind_rows(Genion_antisense_list, .id = "query_gene_index")
-
-# add the original gene names
-Genion_antisense_df$query_gene <- genes_to_check[as.integer(Genion_antisense_df$query_gene_index)]
-Genion_antisense_df$query_gene_index <- NULL
-
-antisense_pairs <- Genion_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
-  distinct()
-
 Genion_sensecheck_annotated <- Genion_mitocheck_annotated %>%
+  left_join(
+    antisense_lookup, 
+    by = c("V1.1" = "gene_a_id", "V1.2" = "gene_b_id")
+  ) %>%
   mutate(
-    fusionType = if_else(
-      paste(V1.1, V1.2) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
-      | 
-        paste(V1.2, V1.1) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
-      "Sense-Antisense",
-      fusionType
-    )
-  )
+    # If a match was found in the lookup table, label it
+    fusionType = if_else(!is.na(gene_a_name), "Sense-Antisense", fusionType)
+  ) %>%
+  # Clean up temporary helper columns
+  select(-gene_a_name, -gene_b_name)
 ##############
 # FusionSeeker
 ##############
-# get unique genes from both columns
-genes_to_check <- unique(c(FusionSeeker_mitocheck_annotated$Gene1, FusionSeeker_mitocheck_annotated$Gene2))
-
-# run get_antisense_overlaps on each gene
-FusionSeeker_antisense_list <- lapply(genes_to_check, 
-                                      function(g) get_antisense_overlaps(g, genes, id_type = "gene_id"))
-
-# combine into a single data frame
-FusionSeeker_antisense_df <- bind_rows(FusionSeeker_antisense_list, .id = "query_gene_index")
-
-# add the original gene names
-FusionSeeker_antisense_df$query_gene <- genes_to_check[as.integer(FusionSeeker_antisense_df$query_gene_index)]
-FusionSeeker_antisense_df$query_gene_index <- NULL
-
-antisense_pairs <- FusionSeeker_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
-  distinct()
-
 FusionSeeker_sensecheck_annotated <- FusionSeeker_mitocheck_annotated %>%
+  left_join(
+    antisense_lookup, 
+    by = c("Gene1" = "gene_a_id", "Gene2" = "gene_b_id")
+  ) %>%
   mutate(
-    fusionType = if_else(
-      paste(Gene1, Gene2) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
-      | 
-        paste(Gene2, Gene1) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
-      "Sense-Antisense",
-      fusionType
-    )
-  )
+    # If a match was found in the lookup table, label it
+    fusionType = if_else(!is.na(gene_a_name), "Sense-Antisense", fusionType)
+  ) %>%
+  # Clean up temporary helper columns
+  select(-gene_a_name, -gene_b_name)
+
 #########
 # LongGF
 #########
-# get unique genes from both columns
-genes_to_check <- unique(c(LongGF_mitocheck_annotated$Gene1, LongGF_mitocheck_annotated$Gene2))
-
-# run get_antisense_overlaps on each gene
-LongGF_antisense_list <- lapply(genes_to_check, 
-                                function(g) get_antisense_overlaps(g, genes, id_type = "gene_name"))
-
-# combine into a single data frame
-LongGF_antisense_df <- bind_rows(LongGF_antisense_list, .id = "query_gene_index")
-
-# add the original gene names
-LongGF_antisense_df$query_gene <- genes_to_check[as.integer(LongGF_antisense_df$query_gene_index)]
-LongGF_antisense_df$query_gene_index <- NULL
-
-antisense_pairs <- LongGF_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
-  distinct()
-
 LongGF_sensecheck_annotated <- LongGF_mitocheck_annotated %>%
+  left_join(antisense_lookup, by = c("Gene1" = "gene_a_name", "Gene2" = "gene_b_name")) %>%
   mutate(
-    fusionType = if_else(
-      paste(Gene1, Gene2) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
-      | 
-        paste(Gene2, Gene1) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
-      "Sense-Antisense",
-      fusionType
-    )
-  )
+    fusionType = if_else(!is.na(gene_a_id), "Sense-Antisense", fusionType)
+  ) %>%
+  select(-gene_a_id, -gene_b_id) # Clean up join columns
 ##########
 # GFSeeker
 ##########
-# get unique genes from both columns
-genes_to_check <- unique(c(GFSeeker_mitocheck_annotated$gene1_name, GFSeeker_mitocheck_annotated$gene2_name))
-
-# run get_antisense_overlaps on each gene
-GFSeeker_antisense_list <- lapply(genes_to_check, 
-                                  function(g) get_antisense_overlaps(g, genes, id_type = "gene_name"))
-
-# combine into a single data frame
-GFSeeker_antisense_df <- bind_rows(GFSeeker_antisense_list, .id = "query_gene_index")
-
-# add the original gene names
-GFSeeker_antisense_df$query_gene <- genes_to_check[as.integer(GFSeeker_antisense_df$query_gene_index)]
-GFSeeker_antisense_df$query_gene_index <- NULL
-
-antisense_pairs <- GFSeeker_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
-  distinct()
-
 GFSeeker_sensecheck_annotated <- GFSeeker_mitocheck_annotated %>%
+  left_join(antisense_lookup, by = c("gene1_name" = "gene_a_name", "gene2_name" = "gene_b_name")) %>%
   mutate(
-    fusionType = if_else(
-      paste(gene1_name, gene2_name) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
-      | 
-        paste(gene2_name, gene1_name) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
-      "Sense-Antisense",
-      fusionType
-    )
-  )
+    fusionType = if_else(!is.na(gene_a_id), "Sense-Antisense", fusionType)
+  ) %>%
+  select(-gene_a_id, -gene_b_id) # Clean up join columns
 
 ########################
 # JAFFAL/JAFFA-Direct
@@ -257,122 +160,60 @@ genes <- gencodev43gtf %>%
     keep.extra.columns = TRUE
   )
 
-get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gene_id")) {
-  
-  id_type <- match.arg(id_type)
-  
-  if (id_type == "gene_id") {
-    # strip version if present (ENSG00000xxxx.y)
-    gene <- sub("\\..*$", "", gene)
-    gene_ids <- sub("\\..*$", "", genes_gr$gene_id)
-    target <- genes_gr[gene_ids == gene]
-  } else {
-    target <- genes_gr[genes_gr$gene_name == gene]
-  }
-  
-  if (length(target) == 0)
-    stop("Gene not found in annotation")
-  
-  hits <- findOverlaps(target, genes_gr, ignore.strand = TRUE)
-  
-  query_idx   <- queryHits(hits)
-  subject_idx <- subjectHits(hits)
-  
-  hit_df <- data.frame(
-    target_gene   = as.character(target$gene_name[query_idx]),
-    target_gene_id = as.character(target$gene_id[query_idx]),
-    target_strand = as.character(strand(target)[query_idx]),
-    gene_name     = as.character(genes_gr$gene_name[subject_idx]),
-    gene_id       = as.character(genes_gr$gene_id[subject_idx]),
-    gene_type     = genes_gr$gene_type[subject_idx],
-    seqnames      = as.character(seqnames(genes_gr)[subject_idx]),
-    start         = start(genes_gr)[subject_idx],
-    end           = end(genes_gr)[subject_idx],
-    strand        = as.character(strand(genes_gr)[subject_idx]),
-    stringsAsFactors = FALSE
-  )
-  
-  hit_df %>%
-    dplyr::filter(
-      gene_id != target_gene_id,   # remove self
-      strand != target_strand      # opposite strand
-    ) %>%
-    dplyr::distinct(
-      gene_name, gene_id, gene_type,
-      seqnames, start, end, strand
-    ) 
-}
-
-# get unique genes from both columns
-genes_to_check <- unique(c(JAFFAL_mitocheck_annotated$Gene1, JAFFAL_mitocheck_annotated$Gene2))
-
-# run get_antisense_overlaps on each gene
-JAFFAL_antisense_list <- lapply(genes_to_check, function(g) {
-  if (grepl("^ENSG", g)) {
-    get_antisense_overlaps(g, genes, id_type = "gene_id")
-  } else {
-    get_antisense_overlaps(g, genes, id_type = "gene_name")
-  }
-})
-
-# combine into a single data frame
-JAFFAL_antisense_df <- bind_rows(JAFFAL_antisense_list, .id = "query_gene_index")
-# add the original gene names
-JAFFAL_antisense_df$query_gene <- genes_to_check[as.integer(JAFFAL_antisense_df$query_gene_index)]
-JAFFAL_antisense_df$query_gene_index <- NULL
-
-antisense_pairs <- JAFFAL_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
+hits <- findOverlaps(genes, genes, ignore.strand = TRUE)
+# Filter hits to find genes on opposite strands that overlap
+antisense_lookup <- data.frame(
+  gene_a_name = genes$gene_name[queryHits(hits)],
+  gene_a_id   = sub("\\..*$", "", genes$gene_id[queryHits(hits)]),
+  gene_b_name = genes$gene_name[subjectHits(hits)],
+  gene_b_id   = sub("\\..*$", "", genes$gene_id[subjectHits(hits)]),
+  strand_a    = as.character(strand(genes)[queryHits(hits)]),
+  strand_b    = as.character(strand(genes)[subjectHits(hits)])
+) %>%
+  filter(strand_a != strand_b) %>% # Only keep antisense
+  select(gene_a_name, gene_a_id, gene_b_name, gene_b_id) %>%
   distinct()
 
+
 JAFFAL_sensecheck_annotated <- JAFFAL_mitocheck_annotated %>%
+  left_join(antisense_lookup, by = c("Gene1" = "gene_a_name", "Gene2" = "gene_b_name")) %>%
   mutate(
-    fusionType = if_else(
-      paste(Gene1, Gene2) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
-      | 
-        paste(Gene2, Gene1) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
-      "Sense-Antisense",
-      fusionType
-    )
-  )
+    fusionType = if_else(!is.na(gene_a_id), "Sense-Antisense", fusionType)
+  ) %>%
+  select(-gene_a_id, -gene_b_id) # Clean up join columns
 
 #############################
 #Plot Sense-Antisense Fusions
 #############################
 sensecheck_fusions <- rbind(dplyr::select(CTATLR_sensecheck_annotated, 
                                          c("RNA_sample", "Platform", "Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")),
+                                           "Algorithm", "library_type", 
+                                           "fusionType", "full_label")),
                            dplyr::select(Genion_sensecheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")),
+                                           "Algorithm", "library_type", 
+                                           "fusionType", "full_label")),
                            dplyr::select(LongGF_sensecheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")), 
+                                           "Algorithm", "library_type", 
+                                           "fusionType", "full_label")), 
                            dplyr::select(FusionSeeker_sensecheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")),
+                                           "Algorithm", "library_type", 
+                                           "fusionType", "full_label")),
                            dplyr::select(GFSeeker_sensecheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")),
+                                           "Algorithm", "library_type", 
+                                           "fusionType", "full_label")),
                            dplyr::select(JAFFAL_sensecheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")))
+                                           "Algorithm", "library_type", 
+                                           "fusionType", "full_label")))
 
 sensecheck_fusions$Platform <- factor(sensecheck_fusions$Platform, levels = c("Illumina", "PacBio", "ONT")) 
 
 sensecheck_fusions$library_type <- factor(sensecheck_fusions$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
-sensecheck_fusions$full_label <- interaction(
-  sensecheck_fusions$Platform,
-  sensecheck_fusions$library_type,
-  sensecheck_fusions$RNA_sample)
+
 sensecheck_fusions$full_label <- factor(sensecheck_fusions$full_label, levels = c("Illumina.PCR_cDNA.B1", "Illumina.PCR_cDNA.B2", 
                                                                                 "PacBio.PCR_cDNA.B1", "PacBio.PCR_cDNA.B2", 
                                                                                 "ONT.PCR_cDNA.B1","ONT.PCR_cDNA.B2", 
@@ -393,6 +234,20 @@ ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"),
   scale_fill_manual(values = Alg_colour_map)
 
 ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
+       aes(x = RNA_sample, colour = Algorithm)) +
+  geom_point(stat = "count") +
+  theme_minimal() +
+  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))+
+  facet_grid(fusionType~library_type+Platform) +
+  labs(fill = "Algorithm")+
+  scale_y_log10()+
+  scale_colour_manual(values = Alg_colour_map)
+
+
+ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
        aes(x = RNA_sample, fill = full_label)) +
   geom_bar() +
   theme_minimal() +
@@ -404,3 +259,16 @@ ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"),
   #labs(fill = "Fusion Type")+
   scale_y_log10()+
   scale_fill_manual(values = platformlibsamp_colourmap)
+
+ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
+       aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +
+  geom_point(stat = "count") +
+  theme_minimal() +
+  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))+
+  facet_grid(fusionType~library_type+Platform) +
+  #labs(fill = "Fusion Type")+
+  scale_y_log10()+
+  scale_colour_manual(values = platformlibsamp_colourmap)

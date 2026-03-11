@@ -5,7 +5,7 @@
 library(rtracklayer)
 library(GenomicRanges)
 library(dplyr)
-library(gpplot2)
+library(ggplot2)
 library(ggsci)
 #load relevant gtf file
 gencodev44gtf <- import("/bioinformatics/ryley/Gencode44/reference_v44/gencode.v44.annotation.gtf")
@@ -118,28 +118,28 @@ JAFFAL_mitocheck_annotated <- JAFFAL_mitocheck %>%
 ###########################
 mitocheck_fusions <- rbind(dplyr::select(CTATLR_mitocheck_annotated, 
                                          c("RNA_sample", "Platform", "Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")),
+                                           "Algorithm", "library_type", 
+                                           "fusionType","full_label")),
                            dplyr::select(Genion_mitocheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")),
+                                           "Algorithm", "library_type", 
+                                           "fusionType","full_label")),
                            dplyr::select(LongGF_mitocheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")), 
+                                           "Algorithm", "library_type", 
+                                           "fusionType","full_label")), 
                            dplyr::select(FusionSeeker_mitocheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")),
+                                           "Algorithm", "library_type", 
+                                           "fusionType","full_label")),
                            dplyr::select(GFSeeker_mitocheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")),
+                                           "Algorithm", "library_type", 
+                                           "fusionType","full_label")),
                            dplyr::select(JAFFAL_mitocheck_annotated, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
-                                           "Algorithm",    
-                                           "library_type", "fusionType")))
+                                           "Algorithm", "library_type", 
+                                           "fusionType","full_label")))
 
 ################
 # plots
@@ -147,10 +147,7 @@ mitocheck_fusions <- rbind(dplyr::select(CTATLR_mitocheck_annotated,
 mitocheck_fusions$Platform <- factor(mitocheck_fusions$Platform, levels = c("Illumina", "PacBio", "ONT")) 
 
 mitocheck_fusions$library_type <- factor(mitocheck_fusions$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
-mitocheck_fusions$full_label <- interaction(
-  mitocheck_fusions$Platform,
-  mitocheck_fusions$library_type,
-  mitocheck_fusions$RNA_sample)
+#mitocheck_fusions$full_label <- interaction(mitocheck_fusions$Platform,mitocheck_fusions$library_type, mitocheck_fusions$RNA_sample)
 mitocheck_fusions$full_label <- factor(mitocheck_fusions$full_label, levels = c("Illumina.PCR_cDNA.B1", "Illumina.PCR_cDNA.B2", 
                                                   "PacBio.PCR_cDNA.B1", "PacBio.PCR_cDNA.B2", 
                                                   "ONT.PCR_cDNA.B1","ONT.PCR_cDNA.B2", 
@@ -172,6 +169,20 @@ ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)),
   scale_fill_manual(values = Alg_colour_map)
 
 ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)), 
+       aes(x = RNA_sample, colour = Algorithm)) +
+  geom_point(stat = "count") +
+  theme_minimal() +
+  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))+
+  facet_grid(fusionType~library_type+Platform) +
+  labs(fill = "Algorithm")+
+  scale_y_log10()+
+  scale_colour_manual(values = Alg_colour_map)
+
+
+ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)), 
        aes(x = RNA_sample, fill = full_label)) +
   geom_bar() +
   theme_minimal() +
@@ -183,3 +194,16 @@ ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)),
   #labs(fill = "Fusion Type")+
   scale_y_log10()+
   scale_fill_manual(values = platformlibsamp_colourmap)
+
+ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)), 
+       aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +
+  geom_point(stat = "count") +
+  theme_minimal() +
+  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))+
+  facet_grid(fusionType~library_type+Platform) +
+  #labs(fill = "Fusion Type")+
+  scale_y_log10()+
+  scale_colour_manual(values = platformlibsamp_colourmap)

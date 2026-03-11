@@ -4,24 +4,14 @@
 # Date: Mar 2026
 #########################################
 library(AnnotationFilter)
-
-genes <- gencodev44gtf %>%
-  as.data.frame() %>%
-  filter(type == "gene") %>%
-  makeGRangesFromDataFrame(
-    seqnames.field = "seqnames",
-    start.field = "start",
-    end.field = "end",
-    strand.field = "strand",
-    keep.extra.columns = TRUE
-  )
+library(GenomicRanges)
+library(dplyr)
+library(parallel)
 
 ah <- AnnotationHub()
 ensembldbv110 <- ah[["AH113665"]]
-ensembldbv109 <- ah[["AH109606"]]
-
 #Make read-through/cis-splice check function
-check_readthrough <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL, chr_right = NULL) {
+#check_readthrough <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL, chr_right = NULL) {
   # 1. check if input is gene symbol or id, and set-up standard chromosomes
   id_filter <- if(id_type == "symbol") {
     SymbolFilter(c(g_left, g_right)) }
@@ -134,8 +124,7 @@ check_readthrough <- function(g_left, g_right, edb, id_type = "symbol", chr_left
   #return(intervening_clean)
   return(length(intervening_clean) == 0)
 }
-
-check_SAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL, chr_right = NULL) {
+#check_SAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL, chr_right = NULL) {
   std_chrs <- c(1:22, "X", "Y", "MT", "M")
   
   # 1. check if input is gene symbol or id, and set-up standard chromosomes
@@ -235,12 +224,13 @@ check_SAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL
     return(length(intervening_clean) == 0)
   }
 }
+
 #######################
 # Label CTAT-LR-Fusion 
 #######################
 Annot_CTATLR_Huh7 <- CTATLR_sensecheck_annotated
 
-Annot_CTATLR_Huh7$fusionType <- mapply(function(current_type, chr1, chr2, strand1, strand2, gene_name1, gene_name2) {
+Annot_CTATLR_Huh7$fusionType <- mcmapply(function(current_type, chr1, chr2, strand1, strand2, gene_name1, gene_name2) {
   
   # Process only if current_type is empty or NA
   if (is.na(current_type) || current_type == "") {
@@ -273,15 +263,16 @@ Annot_CTATLR_Huh7$fusionType <- mapply(function(current_type, chr1, chr2, strand
 Annot_CTATLR_Huh7$fusionType, 
 Annot_CTATLR_Huh7$chrom1, Annot_CTATLR_Huh7$chrom2,
 Annot_CTATLR_Huh7$strand1, Annot_CTATLR_Huh7$strand2, 
-Annot_CTATLR_Huh7$LeftGene, Annot_CTATLR_Huh7$RightGene)
+Annot_CTATLR_Huh7$LeftGene, Annot_CTATLR_Huh7$RightGene,
+mc.cores = 8)
 
-
+write_tsv(Annot_CTATLR_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7.tsv")
 #######################
 # Label Genion 
 #######################
 Annot_Genion_Huh7 <- Genion_sensecheck_annotated
 
-Annot_Genion_Huh7$fusionType <- mapply(function(g1, g2, g3, 
+Annot_Genion_Huh7$fusionType <- mcmapply(function(g1, g2, g3, 
                                                  current_type, 
                                                  chr1, chr2, chr3, chr4,
                                                  gene_name1, gene_name2) {
@@ -313,13 +304,16 @@ Annot_Genion_Huh7$fusionType <- mapply(function(g1, g2, g3,
 } , Annot_Genion_Huh7$V1.1, Annot_Genion_Huh7$V1.2,  Annot_Genion_Huh7$V1.3, 
 Annot_Genion_Huh7$fusionType, 
 Annot_Genion_Huh7$chr1, Annot_Genion_Huh7$chr2 , Annot_Genion_Huh7$chr3, Annot_Genion_Huh7$chr4, 
-Annot_Genion_Huh7$V2.1, Annot_Genion_Huh7$V2.2)
+Annot_Genion_Huh7$V2.1, Annot_Genion_Huh7$V2.2,
+mc.cores = 8)
+
+write_tsv(Annot_Genion_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7.tsv")
 
 #######################
 # Label LongGF 
 #######################
 Annot_LongGF_Huh7 <- LongGF_sensecheck_annotated
-Annot_LongGF_Huh7$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2) {
+Annot_LongGF_Huh7$fusionType <-  mcmapply(function(g1, g2, current_type, chr1, chr2) {
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
     #check for interchromsomal fusions
@@ -345,44 +339,60 @@ Annot_LongGF_Huh7$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2
   return(current_type)
 } , Annot_LongGF_Huh7$Gene1, Annot_LongGF_Huh7$Gene2, 
 Annot_LongGF_Huh7$fusionType, 
-Annot_LongGF_Huh7$chromosome1, Annot_LongGF_Huh7$chromosome2)
+Annot_LongGF_Huh7$chromosome1, Annot_LongGF_Huh7$chromosome2,
+mc.cores = 8)
+
+write_tsv(Annot_LongGF_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF_Huh7.tsv")
 
 #######################
 # Label FusionSeeker 
 #######################
 Annot_FusionSeeker_Huh7 <- FusionSeeker_sensecheck_annotated
-Annot_FusionSeeker_Huh7$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2) {
-  # Check if the current fusionType is empty
-  if (current_type == "" || is.na(current_type)) {
-    # Check for inter-chromosomal first
-    if (chr1 != chr2) {
-      return("inter-chromosomal") 
-    } 
+idx <- which(is.na(Annot_FusionSeeker_Huh7$fusionType) | 
+               Annot_FusionSeeker_Huh7$fusionType == "")
+
+Annot_FusionSeeker_Huh7$fusionType[idx] <- mcmapply(
+  function(g1, g2, chr1, chr2) {
     
-    # Handle intra-chromosomal
-    # This calls the function defined above
-    # It will return TRUE if they are direct neighbors on the same strand
-    chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
-    if (chr1 == chr2) {
-      is_neighbour <- check_readthrough(g1, g2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome)
-      if (is_neighbour) { return("read-through") }
-      
-      is_SAGe <- check_SAGe(g1, g2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome) 
-      if (is_SAGe) { return("SAGe") } 
-      
-      return("intra-chromosomal")
-    } 
-  }
-  return(current_type)
-} , Annot_FusionSeeker_Huh7$Gene1, Annot_FusionSeeker_Huh7$Gene2, 
-Annot_FusionSeeker_Huh7$fusionType, 
-Annot_FusionSeeker_Huh7$Chrom1, Annot_FusionSeeker_Huh7$Chrom2)
+    if (chr1 != chr2) {
+      return("inter-chromosomal")
+    }
+    
+    chromosome <- sub("^chr", "", chr1, ignore.case = TRUE)
+    
+    is_neighbour <- check_readthrough(
+      g1, g2, ensembldbv110,
+      id_type="geneid",
+      chr_left=chromosome,
+      chr_right=chromosome
+    )
+    if (is_neighbour) return("read-through")
+    
+    is_SAGe <- check_SAGe(
+      g1, g2, ensembldbv110,
+      id_type="geneid",
+      chr_left=chromosome,
+      chr_right=chromosome
+    )
+    if (is_SAGe) return("SAGe")
+    
+    "intra-chromosomal"
+    
+  },
+  Annot_FusionSeeker_Huh7$Gene1[idx],
+  Annot_FusionSeeker_Huh7$Gene2[idx],
+  Annot_FusionSeeker_Huh7$Chrom1[idx],
+  Annot_FusionSeeker_Huh7$Chrom2[idx],
+  mc.cores = 8
+)
+
+write_tsv(Annot_FusionSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker_Huh7.tsv")
 
 #######################
 # Label GFSeeker 
 #######################
-Annot_GFSeeker_Huh7 <- GFSeeker_Huh7_sensecheck_annotated
-Annot_GFSeeker_Huh7$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2) {
+Annot_GFSeeker_Huh7 <- GFSeeker_sensecheck_annotated
+Annot_GFSeeker_Huh7$fusionType <- mcmapply(function(g1, g2, current_type, chr1, chr2) {
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
     #check for interchromsomal fusions
@@ -406,13 +416,18 @@ Annot_GFSeeker_Huh7$fusionType <- mapply(function(g1, g2, current_type, chr1, ch
   return(current_type)
 } , Annot_GFSeeker_Huh7$gene1_name, Annot_GFSeeker_Huh7$gene2_name, 
 Annot_GFSeeker_Huh7$fusionType, 
-Annot_GFSeeker_Huh7$chrom1, Annot_GFSeeker_Huh7$chrom2)
+Annot_GFSeeker_Huh7$chrom1, Annot_GFSeeker_Huh7$chrom2,
+mc.cores = 8)
+
+write_tsv(Annot_GFSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/GFSeeker_Huh7.tsv")
 
 #######################
 # Label JAFFAL 
 #######################
-Annot_JAFFAL_Huh7 <- JAFFAL_Huh7_sensecheck_annotated
-Annot_JAFFAL_Huh7$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2) {
+ensembldbv109 <- ah[["AH109606"]]
+
+Annot_JAFFAL_Huh7 <- JAFFAL_sensecheck_annotated
+Annot_JAFFAL_Huh7$fusionType <- mcmapply(function(g1, g2, current_type, chr1, chr2) {
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
     # Check for inter-chromosomal first
@@ -437,8 +452,63 @@ Annot_JAFFAL_Huh7$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2
   return(current_type)
 } , Annot_JAFFAL_Huh7$Gene1, Annot_JAFFAL_Huh7$Gene2, 
 Annot_JAFFAL_Huh7$fusionType, 
-Annot_JAFFAL_Huh7$chrom1, Annot_JAFFAL_Huh7$chrom2)
+Annot_JAFFAL_Huh7$chrom1, Annot_JAFFAL_Huh7$chrom2,
+mc.cores = 8)
+
+write_tsv(Annot_JAFFAL_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_JAFFAdirect_Huh7.tsv")
 
 #Repeat for tri-gene fusions
 Annot_JAFFAL_Huh7_3Gene <- JAFFAL_Huh7_3Gene
 Annot_JAFFAL_Huh7_3Gene$fusionType <- "tri-fusion"
+
+write_tsv(Annot_JAFFAL_Huh7_3Gene, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_3Gene_Huh7.tsv")
+
+#####################################
+# Plot fusion types
+#####################################
+fusions_Huh7_types <- rbind(dplyr::select(Annot_CTATLR_Huh7, 
+                                          c("RNA_sample", "Platform", "Cell_Line", 
+                                            "Algorithm", "library_type",    
+                                            "fusionType", "full_label")),
+                            dplyr::select(Annot_Genion_Huh7, 
+                                          c("RNA_sample",  "Platform","Cell_Line", 
+                                            "Algorithm", "library_type",   
+                                             "fusionType", "full_label")),
+                            dplyr::select(Annot_LongGF_Huh7, 
+                                          c("RNA_sample",  "Platform","Cell_Line", 
+                                            "Algorithm", "library_type",    
+                                            "fusionType", "full_label")), 
+                            dplyr::select(Annot_FusionSeeker_Huh7, 
+                                          c("RNA_sample",  "Platform","Cell_Line", 
+                                            "Algorithm", "library_type",   
+                                             "fusionType", "full_label")),
+                            dplyr::select(Annot_GFSeeker_Huh7, 
+                                          c("RNA_sample",  "Platform","Cell_Line", 
+                                            "Algorithm", "library_type",    
+                                            "fusionType", "full_label")),
+                            dplyr::select(Annot_JAFFAL_Huh7, 
+                                          c("RNA_sample",  "Platform","Cell_Line", 
+                                            "Algorithm", "library_type",    
+                                            "fusionType", "full_label")))
+
+fusions_Huh7_types$Platform <- factor(fusions_Huh7_types$Platform, levels = c("Illumina", "PacBio", "ONT")) 
+
+fusions_Huh7_types$library_type <- factor(fusions_Huh7_types$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
+fusions_Huh7_types$full_label <- factor(fusions_Huh7_types$full_label, levels = c("Illumina.PCR_cDNA.B1", "Illumina.PCR_cDNA.B2", 
+                                                                                  "PacBio.PCR_cDNA.B1", "PacBio.PCR_cDNA.B2", 
+                                                                                  "ONT.PCR_cDNA.B1","ONT.PCR_cDNA.B2", 
+                                                                                  "ONT.direct_cDNA.B1", "ONT.direct_cDNA.B2", 
+                                                                                  "ONT.direct_RNA.B1", "ONT.direct_RNA.B2"))
+
+ggplot(fusions_Huh7_types, 
+       aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +
+  geom_point(stat = "count") +
+  theme_minimal() +
+  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))+
+  facet_grid(fusionType~library_type+Platform) +
+  #labs(fill = "Fusion Type")+
+  scale_y_log10()+
+  scale_colour_manual(values = platformlibsamp_colourmap)
