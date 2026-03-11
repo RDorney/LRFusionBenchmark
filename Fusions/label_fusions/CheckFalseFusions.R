@@ -156,19 +156,6 @@ mitocheck_fusions$full_label <- factor(mitocheck_fusions$full_label, levels = c(
 
 
 ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)), 
-       aes(x = RNA_sample, fill = Algorithm)) +
-  geom_bar() +
-  theme_minimal() +
-  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(fusionType~library_type+Platform) +
-  labs(fill = "Fusion Type")+
-  scale_y_log10()+
-  scale_fill_manual(values = Alg_colour_map)
-
-ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)), 
        aes(x = RNA_sample, colour = Algorithm)) +
   geom_point(stat = "count") +
   theme_minimal() +
@@ -181,19 +168,6 @@ ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)),
   scale_y_log10()+
   scale_colour_manual(values = Alg_colour_map)
 
-
-ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)), 
-       aes(x = RNA_sample, fill = full_label)) +
-  geom_bar() +
-  theme_minimal() +
-  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(fusionType~library_type+Platform) +
-  #labs(fill = "Fusion Type")+
-  scale_y_log10()+
-  scale_fill_manual(values = platformlibsamp_colourmap)
 
 ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)), 
        aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +

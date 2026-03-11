@@ -220,18 +220,6 @@ sensecheck_fusions$full_label <- factor(sensecheck_fusions$full_label, levels = 
                                                                                 "ONT.direct_cDNA.B1", "ONT.direct_cDNA.B2", 
                                                                                 "ONT.direct_RNA.B1", "ONT.direct_RNA.B2"))
 
-ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
-       aes(x = RNA_sample, fill = Algorithm)) +
-  geom_bar() +
-  theme_minimal() +
-  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(fusionType~library_type+Platform) +
-  labs(fill = "Algorithm")+
-  scale_y_log10()+
-  scale_fill_manual(values = Alg_colour_map)
 
 ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
        aes(x = RNA_sample, colour = Algorithm)) +
@@ -245,20 +233,6 @@ ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"),
   labs(fill = "Algorithm")+
   scale_y_log10()+
   scale_colour_manual(values = Alg_colour_map)
-
-
-ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
-       aes(x = RNA_sample, fill = full_label)) +
-  geom_bar() +
-  theme_minimal() +
-  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(fusionType~library_type+Platform) +
-  #labs(fill = "Fusion Type")+
-  scale_y_log10()+
-  scale_fill_manual(values = platformlibsamp_colourmap)
 
 ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
        aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +

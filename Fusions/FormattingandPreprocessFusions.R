@@ -122,10 +122,15 @@ Genion_Huh7<- Genion_Huh7 %>%
 #Read in data from FusionSeeker
 ################################################################
 FusionSeeker_Huh7_Directory <- "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker"
-
 myfiles<-list.files(path = FusionSeeker_Huh7_Directory, pattern = "confident_genefusion.txt", full.names = TRUE, recursive = TRUE)
+
+dirs <- dirname(myfiles)
+keep <- file.exists(file.path(dirs, "confident_genefusion_transcript_sequence.fa"))
+
+filtered_files <- myfiles[keep]
+
 FusionSeeker_Huh7 <- dplyr::bind_rows(
-  lapply(myfiles, function(filename) {
+  lapply(filtered_files, function(filename) {
     read.table(filename, 
                header = TRUE, 
                sep = "\t", 
