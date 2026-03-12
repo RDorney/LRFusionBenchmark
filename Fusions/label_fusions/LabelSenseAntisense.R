@@ -182,6 +182,8 @@ JAFFAL_sensecheck_annotated <- JAFFAL_mitocheck_annotated %>%
   ) %>%
   select(-gene_a_id, -gene_b_id) # Clean up join columns
 
+write_tsv(JAFFAL_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_Huh7_sensecheck.tsv")
+
 #############################
 #Plot Sense-Antisense Fusions
 #############################

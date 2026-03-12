@@ -11,7 +11,7 @@ library(parallel)
 ah <- AnnotationHub()
 ensembldbv110 <- ah[["AH113665"]]
 #Make read-through/cis-splice check function
-#check_readthrough <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL, chr_right = NULL) {
+check_readthrough <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL, chr_right = NULL) {
   # 1. check if input is gene symbol or id, and set-up standard chromosomes
   id_filter <- if(id_type == "symbol") {
     SymbolFilter(c(g_left, g_right)) }
@@ -124,7 +124,7 @@ ensembldbv110 <- ah[["AH113665"]]
   #return(intervening_clean)
   return(length(intervening_clean) == 0)
 }
-#check_SAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL, chr_right = NULL) {
+check_SAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL, chr_right = NULL) {
   std_chrs <- c(1:22, "X", "Y", "MT", "M")
   
   # 1. check if input is gene symbol or id, and set-up standard chromosomes
@@ -427,9 +427,10 @@ write_tsv(Annot_GFSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Libr
 ensembldbv109 <- ah[["AH109606"]]
 
 Annot_JAFFAL_Huh7 <- JAFFAL_sensecheck_annotated
-Annot_JAFFAL_Huh7$fusionType <- mcmapply(function(g1, g2, current_type, chr1, chr2) {
-  # Check if the current fusionType is empty
-  if (current_type == "" || is.na(current_type)) {
+idx <- which(is.na(Annot_JAFFAL_Huh7$fusionType) | # Check if the current fusionType is empty
+               Annot_JAFFAL_Huh7$fusionType == "")
+
+Annot_JAFFAL_Huh7$fusionType[idx] <- mcmapply(function(g1, g2, chr1, chr2) {
     # Check for inter-chromosomal first
     if (chr1 != chr2) {
       return("inter-chromosomal") 
@@ -440,19 +441,16 @@ Annot_JAFFAL_Huh7$fusionType <- mcmapply(function(g1, g2, current_type, chr1, ch
     # It will return TRUE if they are direct neighbors on the same strand
     chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
     if (chr1 == chr2) {
-      is_neighbour <- check_readthrough(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
+      is_neighbour <- check_readthrough(g1, g2, ensembldbv109, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
       if (is_neighbour) { return("read-through") }
       
-      is_SAGe <- check_SAGe(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
+      is_SAGe <- check_SAGe(g1, g2, ensembldbv109, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
       if (is_SAGe) { return("SAGe") } 
       
       return("intra-chromosomal")
     } 
-  }
-  return(current_type)
-} , Annot_JAFFAL_Huh7$Gene1, Annot_JAFFAL_Huh7$Gene2, 
-Annot_JAFFAL_Huh7$fusionType, 
-Annot_JAFFAL_Huh7$chrom1, Annot_JAFFAL_Huh7$chrom2,
+} , Annot_JAFFAL_Huh7$Gene1[idx], Annot_JAFFAL_Huh7$Gene2[idx], 
+Annot_JAFFAL_Huh7$chrom1[idx], Annot_JAFFAL_Huh7$chrom2[idx],
 mc.cores = 8)
 
 write_tsv(Annot_JAFFAL_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_JAFFAdirect_Huh7.tsv")
@@ -504,7 +502,7 @@ ggplot(fusions_Huh7_types,
        aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +
   geom_point(stat = "count") +
   theme_minimal() +
-  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  labs(title = "Fusion Types", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))+
