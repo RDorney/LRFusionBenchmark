@@ -4,9 +4,11 @@
 # Date: Mar 2026
 #########################################
 library(AnnotationFilter)
+library(ensembldb)
 library(GenomicRanges)
 library(dplyr)
-library(parallel)
+library(BiocParallel)
+library(memoise)
 
 ah <- AnnotationHub()
 ensembldbv110 <- ah[["AH113665"]]
@@ -224,58 +226,67 @@ check_SAGe <- function(g_left, g_right, edb, id_type = "symbol", chr_left = NULL
     return(length(intervening_clean) == 0)
   }
 }
+m_check_readthrough <- memoise(check_readthrough)
+m_check_SAGe        <- memoise(check_SAGe)
 
 #######################
 # Label CTAT-LR-Fusion 
 #######################
 Annot_CTATLR_Huh7 <- CTATLR_sensecheck_annotated
 
-Annot_CTATLR_Huh7$fusionType <- mcmapply(function(current_type, chr1, chr2, strand1, strand2, gene_name1, gene_name2) {
-  
-  # Process only if current_type is empty or NA
-  if (is.na(current_type) || current_type == "") {
-    
-    # Check for inter-chromosomal first
-    if (chr1 != chr2) {
-      return("inter-chromosomal") 
-    } 
-    
+idx <- which(is.na(Annot_CTATLR_Huh7$fusionType) | Annot_CTATLR_Huh7$fusionType == "")# Check if the current fusionType is empty
+
+inter_idx <- idx[Annot_CTATLR_Huh7$chrom1[idx] != Annot_CTATLR_Huh7$chrom2[idx]] #label inter-chromosomal fusions
+Annot_CTATLR_Huh7$fusionType[inter_idx] <- "inter-chromosomal"
+intra_idx <- idx[Annot_CTATLR_Huh7$chrom1[idx] == Annot_CTATLR_Huh7$chrom2[idx]]
+
+Annot_CTATLR_Huh7$fusionType[intra_idx] <- mapply(function(chr1, chr2, strand1, strand2, gene_name1, gene_name2) {
     # Handle intra-chromosomal
     # This calls the function defined above
     # It will return TRUE if they are direct neighbors on the same strand
     chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
     
     if (strand1 == strand2) {
-      is_neighbour <- check_readthrough(gene_name1, gene_name2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
+      is_neighbour <- m_check_readthrough(gene_name1, gene_name2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
       if (is_neighbour) { return("read-through") }
       
-    } else { #(strand1 != strand2)
-      is_SAGe <- check_SAGe(gene_name1, gene_name2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
+    } else if (strand1 != strand2){
+      is_SAGe <- m_check_SAGe(gene_name1, gene_name2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
       if (is_SAGe) { return("SAGe") } 
     } 
     return("intra-chromosomal")
-  }
-  
-  # If fusionType was already set (e.g., 'distal-conflicting'), keep it
-  return(current_type)
   
 },  
-Annot_CTATLR_Huh7$fusionType, 
-Annot_CTATLR_Huh7$chrom1, Annot_CTATLR_Huh7$chrom2,
-Annot_CTATLR_Huh7$strand1, Annot_CTATLR_Huh7$strand2, 
-Annot_CTATLR_Huh7$LeftGene, Annot_CTATLR_Huh7$RightGene,
-mc.cores = 8)
+Annot_CTATLR_Huh7$chrom1[intra_idx] , Annot_CTATLR_Huh7$chrom2[intra_idx] ,
+Annot_CTATLR_Huh7$strand1[intra_idx] , Annot_CTATLR_Huh7$strand2[intra_idx] , 
+Annot_CTATLR_Huh7$LeftGene[intra_idx] , Annot_CTATLR_Huh7$RightGene[intra_idx])
 
 write_tsv(Annot_CTATLR_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7.tsv")
 #######################
 # Label Genion 
 #######################
-Annot_Genion_Huh7 <- Genion_sensecheck_annotated
+# Setup the parallel parameters (5 workers as requested)
+param <- SnowParam(workers = 5, progressbar = TRUE)
+db_path <- dbfile(dbconn(ensembldbv110))
 
-Annot_Genion_Huh7$fusionType <- mcmapply(function(g1, g2, g3, 
+Annot_Genion_Huh7 <- Genion_sensecheck_annotated
+Annot_Genion_Huh7$fusionType <- bpmapply(function(g1, g2, g3, 
                                                  current_type, 
                                                  chr1, chr2, chr3, chr4,
-                                                 gene_name1, gene_name2) {
+                                                 gene_name1, gene_name2,
+                                                 path_to_db, func1, func2) {
+
+  # Check if worker_db already exists in this worker's environment
+  if (!exists("worker_db", envir = .GlobalEnv)) {
+    libs <- c("stats","ensembldb", "GenomicRanges", "dplyr", "AnnotationFilter")
+    lapply(libs, library, character.only = TRUE) 
+    
+    assign("worker_db", EnsDb(path_to_db), envir = .GlobalEnv)
+  }
+  # Now use get("worker_db", envir = .GlobalEnv) 
+  edb <- get("worker_db", envir = .GlobalEnv)
+  
+  
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
     #check for multi-fusion
@@ -292,8 +303,8 @@ Annot_Genion_Huh7$fusionType <- mcmapply(function(g1, g2, g3,
     
     if (chr1 == chr2) {
       chromosome <-  chr1   
-      is_neighbour <- check_readthrough(g1, g2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome)
-      is_SAGe <- check_SAGe(g1, g2, ensembldbv110, id_type = "geneid", chr_left = chromosome, chr_right = chromosome) 
+      is_neighbour <- func1(g1, g2, edb, id_type = "geneid", chr_left = chromosome, chr_right = chromosome)
+      is_SAGe <- func2(g1, g2, edb, id_type = "geneid", chr_left = chromosome, chr_right = chromosome) 
       if (is_neighbour) return("read-through")
       if (is_SAGe) return("SAGe") 
       
@@ -301,75 +312,113 @@ Annot_Genion_Huh7$fusionType <- mcmapply(function(g1, g2, g3,
     } 
   }
   return(current_type)
-} , Annot_Genion_Huh7$V1.1, Annot_Genion_Huh7$V1.2,  Annot_Genion_Huh7$V1.3, 
+} , 
+Annot_Genion_Huh7$V1.1, Annot_Genion_Huh7$V1.2,  Annot_Genion_Huh7$V1.3, 
 Annot_Genion_Huh7$fusionType, 
 Annot_Genion_Huh7$chr1, Annot_Genion_Huh7$chr2 , Annot_Genion_Huh7$chr3, Annot_Genion_Huh7$chr4, 
 Annot_Genion_Huh7$V2.1, Annot_Genion_Huh7$V2.2,
-mc.cores = 8)
+MoreArgs = list(path_to_db = db_path, 
+                func1 = check_readthrough, # Pass actual function objects
+                func2 = check_SAGe),
+BPPARAM = param)
 
 write_tsv(Annot_Genion_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7.tsv")
+
+# 3. Clean up
+bpstop(param) 
 
 #######################
 # Label LongGF 
 #######################
+# Setup the parallel parameters (5 workers as requested)
+param <- SnowParam(workers = 5, progressbar = TRUE)
+db_path <- dbfile(dbconn(ensembldbv110))
+
 Annot_LongGF_Huh7 <- LongGF_sensecheck_annotated
-Annot_LongGF_Huh7$fusionType <-  mcmapply(function(g1, g2, current_type, chr1, chr2) {
-  # Check if the current fusionType is empty
-  if (current_type == "" || is.na(current_type)) {
-    #check for interchromsomal fusions
-    if (chr1 != chr2){
-      return("inter-chromosomal") 
-    } 
-    # Handle intra-chromosomal
+
+idx <- which(is.na(Annot_LongGF_Huh7$fusionType) | Annot_LongGF_Huh7$fusionType == "")# Check if the current fusionType is empty
+inter_idx <- idx[Annot_LongGF_Huh7$chromosome1[idx] != Annot_LongGF_Huh7$chromosome2[idx]] #label inter-chromosomal fusions
+Annot_LongGF_Huh7$fusionType[inter_idx] <- "inter-chromosomal"
+intra_idx <- idx[Annot_LongGF_Huh7$chromosome1[idx] == Annot_LongGF_Huh7$chromosome2[idx]]
+length(Annot_LongGF_Huh7$fusionType[intra_idx])
+length(unique(paste(Annot_LongGF_Huh7$Gene1[intra_idx], Annot_LongGF_Huh7$Gene2[intra_idx])))
+
+Annot_LongGF_Huh7$fusionType[intra_idx] <-  bpmapply(function(g1, g2, chr1, chr2,
+                                                              path_to_db, func1, func2) {
+  # Check if worker_db already exists in this worker's environment
+  if (!exists("worker_db", envir = .GlobalEnv)) {
+    libs <- c("stats","ensembldb", "GenomicRanges", "dplyr", "AnnotationFilter")
+    lapply(libs, library, character.only = TRUE) 
+    
+    assign("worker_db", EnsDb(path_to_db), envir = .GlobalEnv)
+  }
+  # Now use get("worker_db", envir = .GlobalEnv) 
+  edb <- get("worker_db", envir = .GlobalEnv)
+  
+  # Handle intra-chromosomal
     # This calls the function defined above
     # It will return TRUE if they are direct neighbors on the same strand
     chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
-    if (chr1 == chr2){
-      is_neighbour <- check_readthrough(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
+      is_neighbour <- func1(g1, g2, edb, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
       if (is_neighbour) { return("read-through") }
       
-      is_SAGe <- check_SAGe(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
+      is_SAGe <- func2(g1, g2, edb, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
       if (is_SAGe) { return("SAGe") } 
       
       return("intra-chromosomal")
-    }
   }
-  
-  # If fusionType was already set (e.g., 'distal-conflicting'), keep it
-  return(current_type)
-} , Annot_LongGF_Huh7$Gene1, Annot_LongGF_Huh7$Gene2, 
-Annot_LongGF_Huh7$fusionType, 
-Annot_LongGF_Huh7$chromosome1, Annot_LongGF_Huh7$chromosome2,
-mc.cores = 8)
+ , Annot_LongGF_Huh7$Gene1[intra_idx], Annot_LongGF_Huh7$Gene2[intra_idx], 
+Annot_LongGF_Huh7$chromosome1[intra_idx], Annot_LongGF_Huh7$chromosome2[intra_idx],
+MoreArgs = list(path_to_db = db_path, 
+                func1 = check_readthrough, # Pass actual function objects
+                func2 = check_SAGe),
+BPPARAM = param)
 
 write_tsv(Annot_LongGF_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF_Huh7.tsv")
-
+bpstop(param)
 #######################
 # Label FusionSeeker 
 #######################
-Annot_FusionSeeker_Huh7 <- FusionSeeker_sensecheck_annotated
-idx <- which(is.na(Annot_FusionSeeker_Huh7$fusionType) | 
-               Annot_FusionSeeker_Huh7$fusionType == "")
+# Setup the parallel parameters (8 workers as requested)
+param <- SnowParam(workers = 8, progressbar = TRUE)
+db_path <- dbfile(dbconn(ensembldbv110))
 
-Annot_FusionSeeker_Huh7$fusionType[idx] <- mcmapply(
-  function(g1, g2, chr1, chr2) {
-    
-    if (chr1 != chr2) {
-      return("inter-chromosomal")
+Annot_FusionSeeker_Huh7 <- FusionSeeker_sensecheck_annotated
+idx <- which(is.na(Annot_FusionSeeker_Huh7$fusionType) | Annot_FusionSeeker_Huh7$fusionType == "")
+
+inter_idx <- idx[Annot_FusionSeeker_Huh7$Chrom1[idx] != Annot_FusionSeeker_Huh7$Chrom2[idx]] #label inter-chromosomal fusions
+Annot_FusionSeeker_Huh7$fusionType[inter_idx] <- "inter-chromosomal"
+length(Annot_FusionSeeker_Huh7$fusionType[inter_idx])
+intra_idx <- idx[Annot_FusionSeeker_Huh7$Chrom1[idx] == Annot_FusionSeeker_Huh7$Chrom2[idx]]
+length(Annot_FusionSeeker_Huh7$fusionType[intra_idx])
+length(unique(paste(Annot_FusionSeeker_Huh7$Gene1[intra_idx], Annot_FusionSeeker_Huh7$Gene2[intra_idx])))
+
+Annot_FusionSeeker_Huh7$fusionType[intra_idx] <- bpmapply(
+  function(g1, g2, chr1, chr2,
+           path_to_db, func1, func2) {
+    # Check if worker_db already exists in this worker's environment
+    if (!exists("worker_db", envir = .GlobalEnv)) {
+      libs <- c("stats","ensembldb", "GenomicRanges", "dplyr", "AnnotationFilter")
+      lapply(libs, library, character.only = TRUE) 
+      
+      assign("worker_db", EnsDb(path_to_db), envir = .GlobalEnv)
     }
+    # Now use get("worker_db", envir = .GlobalEnv) 
+    edb <- get("worker_db", envir = .GlobalEnv)
     
+    #check types
     chromosome <- sub("^chr", "", chr1, ignore.case = TRUE)
     
-    is_neighbour <- check_readthrough(
-      g1, g2, ensembldbv110,
+    is_neighbour <- func1(
+      g1, g2, edb,
       id_type="geneid",
       chr_left=chromosome,
       chr_right=chromosome
     )
     if (is_neighbour) return("read-through")
     
-    is_SAGe <- check_SAGe(
-      g1, g2, ensembldbv110,
+    is_SAGe <- func2(
+      g1, g2, edb,
       id_type="geneid",
       chr_left=chromosome,
       chr_right=chromosome
@@ -379,88 +428,140 @@ Annot_FusionSeeker_Huh7$fusionType[idx] <- mcmapply(
     "intra-chromosomal"
     
   },
-  Annot_FusionSeeker_Huh7$Gene1[idx],
-  Annot_FusionSeeker_Huh7$Gene2[idx],
-  Annot_FusionSeeker_Huh7$Chrom1[idx],
-  Annot_FusionSeeker_Huh7$Chrom2[idx],
-  mc.cores = 8
+  Annot_FusionSeeker_Huh7$Gene1[intra_idx],
+  Annot_FusionSeeker_Huh7$Gene2[intra_idx],
+  Annot_FusionSeeker_Huh7$Chrom1[intra_idx],
+  Annot_FusionSeeker_Huh7$Chrom2[intra_idx],
+  MoreArgs = list(path_to_db = db_path, 
+                  func1 = check_readthrough, # Pass actual function objects
+                  func2 = check_SAGe),
+  BPPARAM = param
 )
 
 write_tsv(Annot_FusionSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker_Huh7.tsv")
+bpstop(param)
 
 #######################
 # Label GFSeeker 
 #######################
+# Setup the parallel parameters (5 workers as requested)
+param <- SnowParam(workers = 5, progressbar = TRUE)
+db_path <- dbfile(dbconn(ensembldbv110))
+
 Annot_GFSeeker_Huh7 <- GFSeeker_sensecheck_annotated
-Annot_GFSeeker_Huh7$fusionType <- mcmapply(function(g1, g2, current_type, chr1, chr2) {
-  # Check if the current fusionType is empty
-  if (current_type == "" || is.na(current_type)) {
-    #check for interchromsomal fusions
-    if (chr1 != chr2){
-      return("inter-chromosomal") 
-    } 
+
+idx <- which(is.na(Annot_GFSeeker_Huh7$fusionType) | Annot_GFSeeker_Huh7$fusionType == "")
+
+inter_idx <- idx[Annot_GFSeeker_Huh7$chrom1[idx] != Annot_GFSeeker_Huh7$chrom2[idx]] #label inter-chromosomal fusions
+Annot_GFSeeker_Huh7$fusionType[inter_idx] <- "inter-chromosomal"
+length(Annot_GFSeeker_Huh7$fusionType[inter_idx])
+intra_idx <- idx[Annot_GFSeeker_Huh7$chrom1[idx] == Annot_GFSeeker_Huh7$chrom2[idx]]
+length(Annot_GFSeeker_Huh7$fusionType[intra_idx])
+length(unique(paste(Annot_GFSeeker_Huh7$gene1_name[intra_idx], Annot_GFSeeker_Huh7$gene2_name[intra_idx])))
+
+
+Annot_GFSeeker_Huh7$fusionType[intra_idx] <- bpmapply(function(g1, g2,chr1, chr2,
+                                                               path_to_db, func1, func2) {
+  # Check if worker_db already exists in this worker's environment
+  if (!exists("worker_db", envir = .GlobalEnv)) {
+    libs <- c("stats","ensembldb", "GenomicRanges", "dplyr", "AnnotationFilter")
+    lapply(libs, library, character.only = TRUE) 
+    
+    assign("worker_db", EnsDb(path_to_db), envir = .GlobalEnv)
+  }
+  # Now use get("worker_db", envir = .GlobalEnv) 
+  edb <- get("worker_db", envir = .GlobalEnv)
+  
     # Handle intra-chromosomal
     # This calls the function defined above
     # It will return TRUE if they are direct neighbors on the same strand
     chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
     if (chr1 == chr2){
-      is_neighbour <- check_readthrough(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
+      is_neighbour <- func1(g1, g2, edb, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
       if (is_neighbour) { return("read-through") }
       
-      is_SAGe <- check_SAGe(g1, g2, ensembldbv110, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
+      is_SAGe <- func2(g1, g2, edb, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
       if (is_SAGe) { return("SAGe") } 
       
       return("intra-chromosomal")
     }
-  }
-  return(current_type)
-} , Annot_GFSeeker_Huh7$gene1_name, Annot_GFSeeker_Huh7$gene2_name, 
-Annot_GFSeeker_Huh7$fusionType, 
-Annot_GFSeeker_Huh7$chrom1, Annot_GFSeeker_Huh7$chrom2,
-mc.cores = 8)
+
+} , 
+Annot_GFSeeker_Huh7$gene1_name[intra_idx], Annot_GFSeeker_Huh7$gene2_name[intra_idx], 
+Annot_GFSeeker_Huh7$chrom1[intra_idx], Annot_GFSeeker_Huh7$chrom2[intra_idx],
+MoreArgs = list(path_to_db = db_path, 
+                func1 = check_readthrough, # Pass actual function objects
+                func2 = check_SAGe),
+BPPARAM = param)
 
 write_tsv(Annot_GFSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/GFSeeker_Huh7.tsv")
 
+bpstop(param)
 #######################
 # Label JAFFAL 
 #######################
-ensembldbv109 <- ah[["AH109606"]]
-
-Annot_JAFFAL_Huh7 <- JAFFAL_sensecheck_annotated
-idx <- which(is.na(Annot_JAFFAL_Huh7$fusionType) | # Check if the current fusionType is empty
-               Annot_JAFFAL_Huh7$fusionType == "")
-
-Annot_JAFFAL_Huh7$fusionType[idx] <- mcmapply(function(g1, g2, chr1, chr2) {
-    # Check for inter-chromosomal first
-    if (chr1 != chr2) {
-      return("inter-chromosomal") 
-    } 
-    
-    # Handle intra-chromosomal
-    # This calls the function defined above
-    # It will return TRUE if they are direct neighbors on the same strand
-    chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
-    if (chr1 == chr2) {
-      is_neighbour <- check_readthrough(g1, g2, ensembldbv109, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
-      if (is_neighbour) { return("read-through") }
-      
-      is_SAGe <- check_SAGe(g1, g2, ensembldbv109, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
-      if (is_SAGe) { return("SAGe") } 
-      
-      return("intra-chromosomal")
-    } 
-} , Annot_JAFFAL_Huh7$Gene1[idx], Annot_JAFFAL_Huh7$Gene2[idx], 
-Annot_JAFFAL_Huh7$chrom1[idx], Annot_JAFFAL_Huh7$chrom2[idx],
-mc.cores = 8)
-
-write_tsv(Annot_JAFFAL_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_JAFFAdirect_Huh7.tsv")
-
 #Repeat for tri-gene fusions
-Annot_JAFFAL_Huh7_3Gene <- JAFFAL_Huh7_3Gene
+Annot_JAFFAL_Huh7_3Gene <- Huh7_JAFFAL_3Gene
 Annot_JAFFAL_Huh7_3Gene$fusionType <- "tri-fusion"
 
 write_tsv(Annot_JAFFAL_Huh7_3Gene, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_3Gene_Huh7.tsv")
 
+# Setup the parallel parameters (10 workers as requested)
+ensembldbv109 <- ah[["AH109606"]]
+param <- SnowParam(workers = 10, progressbar = TRUE)
+db_path <- dbfile(dbconn(ensembldbv109))
+
+Annot_JAFFAL_Huh7 <- JAFFAL_sensecheck_annotated
+
+idx <- which(is.na(Annot_JAFFAL_Huh7$fusionType) | Annot_JAFFAL_Huh7$fusionType == "")# Check if the current fusionType is empty
+               
+inter_idx <- idx[Annot_JAFFAL_Huh7$chrom1[idx] != Annot_JAFFAL_Huh7$chrom2[idx]] #label inter-chromosomal fusions
+length(Annot_JAFFAL_Huh7$fusionType[inter_idx])
+Annot_JAFFAL_Huh7$fusionType[inter_idx] <- "inter-chromosomal" 
+
+#label intra-chromosomal fusions and their sub
+intra_idx <- idx[Annot_JAFFAL_Huh7$chrom1[idx] == Annot_JAFFAL_Huh7$chrom2[idx]]
+length(Annot_JAFFAL_Huh7$fusionType[intra_idx])
+length(unique(paste(Annot_JAFFAL_Huh7$Gene1[intra_idx], Annot_JAFFAL_Huh7$Gene2[intra_idx])))
+
+Annot_JAFFAL_Huh7$fusionType[intra_idx] <- bpmapply(function(g1, g2, chr1, chr2, str1, str2,
+                                                             path_to_db, func1, func2) {
+  # Check if worker_db already exists in this worker's environment
+  if (!exists("worker_db", envir = .GlobalEnv)) {
+    libs <- c("stats","ensembldb", "GenomicRanges", "dplyr", "AnnotationFilter")
+    lapply(libs, library, character.only = TRUE) 
+    
+    assign("worker_db", EnsDb(path_to_db), envir = .GlobalEnv)
+  }
+  # Now use get("worker_db", envir = .GlobalEnv) 
+  edb <- get("worker_db", envir = .GlobalEnv)
+  
+  # Handle intra-chromosomal
+    # This calls the function defined above
+    # It will return TRUE if they are direct neighbors on the same strand
+    chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
+    if (chr1 == chr2) {
+      if (str1 == str2) {
+      is_neighbour <- func1(g1, g2, edb, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
+      if (is_neighbour) { return("read-through") }
+      } else if (str1 != str2) {
+      is_SAGe <- func2(g1, g2, edb, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
+      if (is_SAGe) { return("SAGe") } 
+      }
+      return("intra-chromosomal")
+    } 
+} , Annot_JAFFAL_Huh7$Gene1[intra_idx], Annot_JAFFAL_Huh7$Gene2[intra_idx], 
+Annot_JAFFAL_Huh7$chrom1[intra_idx], Annot_JAFFAL_Huh7$chrom2[intra_idx],
+Annot_JAFFAL_Huh7$strand1[intra_idx], Annot_JAFFAL_Huh7$strand2[intra_idx],
+MoreArgs = list(path_to_db = db_path, 
+                func1 = m_check_readthrough, # Pass actual function objects
+                func2 = m_check_SAGe),
+BPPARAM = param) 
+
+write_tsv(Annot_JAFFAL_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_JAFFAdirect_Huh7.tsv")
+gc(full = TRUE)
+
+bpstop(param)
 #####################################
 # Plot fusion types
 #####################################

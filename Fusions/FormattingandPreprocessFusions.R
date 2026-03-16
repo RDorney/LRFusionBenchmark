@@ -219,7 +219,9 @@ GFSeeker_Huh7 <- GFSeeker_Huh7  %>%
   rename(gene2_name = "gene2 name")%>%
   tidyr::separate("break points", into = c("Breakpoint1", "Breakpoint2"), ";", remove=TRUE) %>% 
   tidyr::separate(Breakpoint1, into = c("chrom1", "base1"), ":", remove=FALSE)%>%
+  dplyr::mutate(Breakpoint2 = gsub("^ " , "", Breakpoint2)) %>%
   tidyr::separate(Breakpoint2, into = c("chrom2", "base2"), ":", remove=FALSE)
+  
 
 og_GFSeeker_Huh7 <- GFSeeker_Huh7
 
