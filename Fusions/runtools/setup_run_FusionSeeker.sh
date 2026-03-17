@@ -85,7 +85,7 @@ for input_bam in ${INPUT_DIR}/chopperfiltered_dorado_trimmed_*.sorted.bam; do
       if ! [[ -d "${outdir}/poa_workspace" || -d "${INPUT_DIR}/${outdir}/poa_workspace" ]]; then
         echo "Skipping FusionSeeker for ${output_prefix} (dir exists)"
         continue
-      elif [[ -d "${outdir}/poa_workspace" ]]; then
+      elif [[ -d "${outdir}/poa_workspace" || -d "${INPUT_DIR}/${outdir}/poa_workspace" ]]; then
         rm -r "${outdir}/"
         echo "previous run for ${output_prefix} was incomplete. Redoing"
       fi
