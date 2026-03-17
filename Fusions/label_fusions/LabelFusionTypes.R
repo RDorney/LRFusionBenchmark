@@ -375,12 +375,13 @@ MoreArgs = list(path_to_db = db_path,
 BPPARAM = param)
 
 write_tsv(Annot_LongGF_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF_Huh7.tsv")
+
 bpstop(param)
 #######################
 # Label FusionSeeker 
 #######################
-# Setup the parallel parameters (10 workers as requested)
-param <- SnowParam(workers = 10, progressbar = TRUE)
+# Setup the parallel parameters (5 workers as requested)
+param <- SnowParam(workers = 5, progressbar = TRUE)
 db_path <- dbfile(dbconn(ensembldbv110))
 
 Annot_FusionSeeker_Huh7 <- FusionSeeker_sensecheck_annotated
@@ -433,8 +434,8 @@ Annot_FusionSeeker_Huh7$fusionType[intra_idx] <- bpmapply(
   Annot_FusionSeeker_Huh7$Chrom1[intra_idx],
   Annot_FusionSeeker_Huh7$Chrom2[intra_idx],
   MoreArgs = list(path_to_db = db_path, 
-                  func1 = check_readthrough, # Pass actual function objects
-                  func2 = check_SAGe),
+                  func1 = m_check_readthrough, # Pass actual function objects
+                  func2 = m_check_SAGe),
   BPPARAM = param
 )
 
@@ -490,8 +491,8 @@ Annot_GFSeeker_Huh7$fusionType[intra_idx] <- bpmapply(function(g1, g2,chr1, chr2
 Annot_GFSeeker_Huh7$gene1_name[intra_idx], Annot_GFSeeker_Huh7$gene2_name[intra_idx], 
 Annot_GFSeeker_Huh7$chrom1[intra_idx], Annot_GFSeeker_Huh7$chrom2[intra_idx],
 MoreArgs = list(path_to_db = db_path, 
-                func1 = check_readthrough, # Pass actual function objects
-                func2 = check_SAGe),
+                func1 = m_check_readthrough, # Pass actual function objects
+                func2 = m_check_SAGe),
 BPPARAM = param)
 
 write_tsv(Annot_GFSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/GFSeeker_Huh7.tsv")
@@ -503,7 +504,7 @@ bpstop(param)
 #Repeat for tri-gene fusions
 Annot_JAFFAL_Huh7_3Gene <- Huh7_JAFFAL_3Gene
 Annot_JAFFAL_Huh7_3Gene$fusionType <- "tri-fusion"
-
+Annot_JAFFAL_Huh7_3Gene$Algorithm <- "JAFFAL"
 write_tsv(Annot_JAFFAL_Huh7_3Gene, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_3Gene_Huh7.tsv")
 
 # Setup the parallel parameters (5 workers as requested)
@@ -561,7 +562,8 @@ MoreArgs = list(path_to_db = db_path,
 BPPARAM = param) 
 
 write_tsv(Annot_JAFFAL_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_JAFFAdirect_Huh7.tsv")
-gc(full = TRUE)
+
+length(which(Annot_JAFFAL_Huh7$fusionType == "read-through" | Annot_JAFFAL_Huh7$fusionType == "SAGe"))
 
 bpstop(param)
 #####################################
@@ -590,6 +592,10 @@ fusions_Huh7_types <- rbind(dplyr::select(Annot_CTATLR_Huh7,
                             dplyr::select(Annot_JAFFAL_Huh7, 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",    
+                                            "fusionType", "full_label")),
+                            dplyr::select(Annot_JAFFAL_Huh7_3Gene, 
+                                          c("RNA_sample",  "Platform","Cell_Line", 
+                                            "Algorithm", "library_type",    
                                             "fusionType", "full_label")))
 
 fusions_Huh7_types$Platform <- factor(fusions_Huh7_types$Platform, levels = c("Illumina", "PacBio", "ONT")) 
@@ -601,10 +607,13 @@ fusions_Huh7_types$full_label <- factor(fusions_Huh7_types$full_label, levels = 
                                                                                   "ONT.direct_cDNA.B1", "ONT.direct_cDNA.B2", 
                                                                                   "ONT.direct_RNA.B1", "ONT.direct_RNA.B2"))
 
+write_tsv(fusions_Huh7_types, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/fusions_Huh7_types.tsv")
+
+
 ggplot(fusions_Huh7_types, 
        aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +
   geom_point(stat = "count") +
-  theme_minimal() +
+  theme_bw() +
   labs(title = "Fusion Types", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
@@ -613,3 +622,64 @@ ggplot(fusions_Huh7_types,
   #labs(fill = "Fusion Type")+
   scale_y_log10()+
   scale_colour_manual(values = platformlibsamp_colourmap)
+
+ggplot(dplyr::filter(fusions_Huh7_types, !fusionType %in% c(
+  "Mitochondrial:Genomic",
+  "Mitochondrial:Mitochondrial",
+  "Self-Misalignment"
+)), 
+       aes(x = RNA_sample, colour = Algorithm)) +
+  geom_point(stat = "count") +
+  theme_bw() +
+  labs(title = "", subtitle = "minimum read support of 2", x = "", y = "Count")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))+
+  facet_grid(fusionType~library_type+Platform) +
+  labs(fill = "Algorithm")+
+  scale_y_log10()+
+  scale_colour_manual(values = Alg_colour_map)
+
+library(dplyr)
+
+count_data <- fusions_Huh7_types %>%
+  filter(!fusionType %in% c(
+    "Mitochondrial:Genomic",
+    "Mitochondrial:Mitochondrial",
+    "Self-Misalignment"
+  )) %>%
+  count(RNA_sample, Algorithm, fusionType, library_type, Platform)
+
+ggplot(
+  count_data,
+  aes(x = RNA_sample, y = n)
+) +
+  geom_boxplot(aes(group = RNA_sample), outlier.shape = NA) +
+  geom_jitter(aes(colour = Algorithm), width = 0.2, size = 2) +
+  theme_bw() +
+  labs(
+    title = "",
+    subtitle = "minimum read support of 2",
+    x = "",
+    y = "Count"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5),
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 12)
+  ) +
+  facet_grid(fusionType ~ library_type + Platform) +
+  scale_y_log10() +
+  scale_colour_manual(values = Alg_colour_map)
+
+library(dplyr)
+library(tidyr)
+
+paired_data <- count_data %>%
+  filter(RNA_sample %in% c("B1", "B2")) %>%
+  pivot_wider(
+    names_from = RNA_sample,
+    values_from = n
+  ) %>%
+  filter(!is.na(B1) & !is.na(B2))
+
