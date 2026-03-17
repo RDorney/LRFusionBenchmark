@@ -40,12 +40,13 @@ platformlibsamp_colourmap <- c(platformlibsamp_colours)
 scales::show_col(pal_npg("nrc")(7))
 Algorithm_Colours <- c(
   "CTAT-LR-Fusion"="#E64B35FF",
-  "FusionSeeker"="#4DBBD5FF",
-  "Genion" ="#00A087FF",
+  "FusionSeeker"="#F39B7FFF",
+  "Genion" ="#4DBBD5FF",
   "GFSeeker" ="#3C5488FF",
-  "JAFFAL" ="#F39B7FFF",
-  "LongGF" ="#8491B4FF",
-  "JAFFA-direct" ="#91D1C2FF")
+  "JAFFAL" ="#00A087FF",
+  "JAFFA-direct" ="#91D1C2FF",
+  "LongGF" ="#8491B4FF"
+  )
 Alg_colour_map <- c(Algorithm_Colours)
 ```
 
@@ -150,15 +151,16 @@ source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/lab
 Check FusionTypes
 ```{r}
 source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/CheckFalseFusions.R")
-
 source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/LabelSenseAntisense.R")
-
 source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/LabelFusionTypes.R")
-
 ```
 Labelled Fusions can be found in /bioinformatics/ryley/Gencode44/Huh7_Library/
 Check Known Fusion
 ```{r}
+#make space by clearing the heavier objects
+rm(c(JAFFAL_mitocheck_annotated, JAFFAL_mitocheck, JAFFAL_sensecheck_annotated, Huh7_JAFFAL_ensemblID, Huh7_JAFFAL))
+gc()
 
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/CheckKnownFusions.R")
 ```
 

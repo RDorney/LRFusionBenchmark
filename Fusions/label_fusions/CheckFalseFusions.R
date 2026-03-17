@@ -159,10 +159,11 @@ ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)),
        aes(x = RNA_sample, colour = Algorithm)) +
   geom_point(stat = "count") +
   theme_minimal() +
-  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "", y = "Count")+
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))+
+  theme_bw()+
   facet_grid(fusionType~library_type+Platform) +
   labs(fill = "Algorithm")+
   scale_y_log10()+
@@ -173,7 +174,7 @@ ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)),
        aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +
   geom_point(stat = "count") +
   theme_minimal() +
-  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "", y = "Count")+
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))+

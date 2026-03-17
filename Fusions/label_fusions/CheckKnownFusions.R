@@ -10,7 +10,7 @@ View(KnownHuh7Fusions_ah)
 # Check CTAT-LR-Fusion
 #######################
 CTATLR_Huh7_Known <- Annot_CTATLR_Huh7
-
+KnownHuh7Fusions_ah %>%
 #######################
 # Check JAFFA/L
 #######################

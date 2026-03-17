@@ -379,8 +379,8 @@ bpstop(param)
 #######################
 # Label FusionSeeker 
 #######################
-# Setup the parallel parameters (8 workers as requested)
-param <- SnowParam(workers = 8, progressbar = TRUE)
+# Setup the parallel parameters (10 workers as requested)
+param <- SnowParam(workers = 10, progressbar = TRUE)
 db_path <- dbfile(dbconn(ensembldbv110))
 
 Annot_FusionSeeker_Huh7 <- FusionSeeker_sensecheck_annotated
@@ -506,9 +506,9 @@ Annot_JAFFAL_Huh7_3Gene$fusionType <- "tri-fusion"
 
 write_tsv(Annot_JAFFAL_Huh7_3Gene, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_3Gene_Huh7.tsv")
 
-# Setup the parallel parameters (10 workers as requested)
+# Setup the parallel parameters (5 workers as requested)
 ensembldbv109 <- ah[["AH109606"]]
-param <- SnowParam(workers = 10, progressbar = TRUE)
+param <- SnowParam(workers = 5, progressbar = TRUE)
 db_path <- dbfile(dbconn(ensembldbv109))
 
 Annot_JAFFAL_Huh7 <- JAFFAL_sensecheck_annotated
@@ -523,8 +523,9 @@ Annot_JAFFAL_Huh7$fusionType[inter_idx] <- "inter-chromosomal"
 intra_idx <- idx[Annot_JAFFAL_Huh7$chrom1[idx] == Annot_JAFFAL_Huh7$chrom2[idx]]
 length(Annot_JAFFAL_Huh7$fusionType[intra_idx])
 length(unique(paste(Annot_JAFFAL_Huh7$Gene1[intra_idx], Annot_JAFFAL_Huh7$Gene2[intra_idx])))
+length(unique(paste(Annot_JAFFAL_Huh7$ensembl_gene_id.x[intra_idx], Annot_JAFFAL_Huh7$ensembl_gene_id.y[intra_idx])))
 
-Annot_JAFFAL_Huh7$fusionType[intra_idx] <- bpmapply(function(g1, g2, chr1, chr2, str1, str2,
+Annot_JAFFAL_Huh7$fusionType[intra_idx] <- bpmapply(function(g1, g2, id1, id2, chr1, chr2, str1, str2,
                                                              path_to_db, func1, func2) {
   # Check if worker_db already exists in this worker's environment
   if (!exists("worker_db", envir = .GlobalEnv)) {
@@ -542,15 +543,16 @@ Annot_JAFFAL_Huh7$fusionType[intra_idx] <- bpmapply(function(g1, g2, chr1, chr2,
     chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
     if (chr1 == chr2) {
       if (str1 == str2) {
-      is_neighbour <- func1(g1, g2, edb, id_type = "symbol", chr_left = chromosome, chr_right = chromosome)
+      is_neighbour <- func1(id1, id2, edb, id_type = "geneid", chr_left = chromosome, chr_right = chromosome)
       if (is_neighbour) { return("read-through") }
       } else if (str1 != str2) {
-      is_SAGe <- func2(g1, g2, edb, id_type = "symbol", chr_left = chromosome, chr_right = chromosome) 
+      is_SAGe <- func2(id1, id2, edb, id_type = "geneid", chr_left = chromosome, chr_right = chromosome) 
       if (is_SAGe) { return("SAGe") } 
       }
       return("intra-chromosomal")
     } 
 } , Annot_JAFFAL_Huh7$Gene1[intra_idx], Annot_JAFFAL_Huh7$Gene2[intra_idx], 
+Annot_JAFFAL_Huh7$ensembl_gene_id.x[intra_idx], Annot_JAFFAL_Huh7$ensembl_gene_id.y[intra_idx],
 Annot_JAFFAL_Huh7$chrom1[intra_idx], Annot_JAFFAL_Huh7$chrom2[intra_idx],
 Annot_JAFFAL_Huh7$strand1[intra_idx], Annot_JAFFAL_Huh7$strand2[intra_idx],
 MoreArgs = list(path_to_db = db_path, 

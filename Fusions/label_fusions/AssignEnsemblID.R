@@ -30,8 +30,7 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keys = unique(c(LongGF_Huh7$Gene1, LongGF_Huh7$Gene2)), 
                                keytype = "SYMBOL", 
                                columns = c("GENEID", "SYMBOL", "SEQNAME")) %>%  
-  dplyr::filter(SEQNAME %in% standard_chrs) %>%                         
-  distinct(SYMBOL, .keep_all = TRUE) %>%                                 
+  dplyr::filter(SEQNAME %in% standard_chrs) %>%                               
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id" = "GENEID")
 
@@ -50,7 +49,6 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keytype = "SYMBOL", 
                                columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
-  distinct(SYMBOL, .keep_all = TRUE) %>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
 
@@ -68,7 +66,6 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keytype = "SYMBOL", 
                                columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
-  distinct(SYMBOL, .keep_all = TRUE) %>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
 
@@ -88,7 +85,6 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keytype = "GENEID", 
                                columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
-  distinct(SYMBOL, .keep_all = TRUE) %>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
 
@@ -101,21 +97,58 @@ FusionSeeker_Huh7_ensemblID <- left_join(FusionSeeker_Huh7, gene_info, by  = c("
 ########################
 query(ah, c("EnsDb", "Hsapiens", "109"))
 ensembldbv109 <- ah[["AH109606"]]
-gene_info <- ensembldb::select(ensembldbv109, 
-                               keys = unique(c(Huh7_JAFFAL$Gene1, Huh7_JAFFAL$Gene2, 
-                                               Huh7_JAFFAL_3Gene$Gene1, Huh7_JAFFAL_3Gene$Gene2, Huh7_JAFFAL_3Gene$Gene3)), 
-                               keytype = "SYMBOL", 
-                               columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
-  dplyr::filter(SEQNAME %in% standard_chrs)%>%
-  distinct(SYMBOL, .keep_all = TRUE) %>%
-  dplyr::rename("external_gene_name" = "SYMBOL", 
-                "ensembl_gene_id"="GENEID")
 
-Huh7_JAFFAL_ensemblID <-left_join(Huh7_JAFFAL, gene_info, 
-                               by = c("Gene1"="external_gene_name")) %>% 
-  left_join(gene_info, by  = c("Gene2"="external_gene_name"))%>% 
+#gene_info <- ensembldb::select(ensembldbv109, 
+#                               keys = unique(c(Huh7_JAFFAL$Gene1, Huh7_JAFFAL$Gene2)), 
+#                               keytype = "SYMBOL", 
+#                               columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
+#  dplyr::filter(SEQNAME %in% standard_chrs)%>%
+#  dplyr::rename("external_gene_name" = "SYMBOL", 
+#                "ensembl_gene_id"="GENEID")
+
+#Huh7_JAFFAL_ensemblID <-left_join(Huh7_JAFFAL, gene_info, 
+#                               by = c("Gene1"="external_gene_name")) %>% 
+#  left_join(gene_info, by  = c("Gene2"="external_gene_name"))%>% 
+#  mutate(ensembl_gene_id.y = coalesce(ensembl_gene_id.y, Gene2), ensembl_gene_id.x = coalesce(ensembl_gene_id.x, Gene1)) %>%  
+#  unique() 
+
+#gene_info <- ensembldb::select(ensembldbv109, 
+#                               keys = "NPIPA9", 
+#                               keytype = "SYMBOL", 
+#                               columns = c("GENEID", "SYMBOL","SEQNAME", "GENESEQSTART", "GENESEQEND"))%>%
+#  dplyr::filter(SEQNAME %in% standard_chrs)%>%
+#  dplyr::rename("external_gene_name" = "SYMBOL", 
+#                "ensembl_gene_id"="GENEID")
+
+gene_info <- ensembldb::select(ensembldbv109, 
+                               keys = unique(c(Huh7_JAFFAL$Gene1, Huh7_JAFFAL$Gene2)), 
+                               keytype = "SYMBOL", 
+                               columns = c("GENEID", "SYMBOL", "SEQNAME", "GENESEQSTART", "GENESEQEND")) %>%
+  dplyr::filter(SEQNAME %in% standard_chrs) %>%
+  dplyr::rename("external_gene_name" = "SYMBOL", "ensembl_gene_id" = "GENEID") %>%
+  dplyr::filter(!grepl("^LRG_", ensembl_gene_id))%>%
+  dplyr::mutate(SEQNAME = paste0("chr", SEQNAME))
+
+Huh7_JAFFAL_ensemblID<- left_join(Huh7_JAFFAL, gene_info, 
+                 by = c("Gene1"="external_gene_name", "chrom1"="SEQNAME")) %>% 
+  mutate(ensembl_gene_id = coalesce(ensembl_gene_id, Gene1)) %>%  
+  unique() %>%
+  filter(base1 >= (GENESEQSTART - 5000), base1 <= (GENESEQEND + 5000)) %>%
+  rename("G1START" = "GENESEQSTART", "G1END" = "GENESEQEND")%>%
+  left_join(gene_info, by  = c("Gene2"="external_gene_name", "chrom2"="SEQNAME"))%>%
+  unique() %>%
+  filter(base2 >= (GENESEQSTART - 5000), base2 <= (GENESEQEND + 5000)) %>%
+  rename("G2START" = "GENESEQSTART", "G2END" = "GENESEQEND")%>% 
   mutate(ensembl_gene_id.y = coalesce(ensembl_gene_id.y, Gene2), ensembl_gene_id.x = coalesce(ensembl_gene_id.x, Gene1)) %>%  
   unique() 
+
+gene_info <- ensembldb::select(ensembldbv109, 
+                              keys = unique(c(Huh7_JAFFAL_3Gene$Gene1, Huh7_JAFFAL_3Gene$Gene2, Huh7_JAFFAL_3Gene$Gene3)), 
+                              keytype = "SYMBOL", 
+                              columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
+  dplyr::filter(SEQNAME %in% standard_chrs)%>%
+  dplyr::rename("external_gene_name" = "SYMBOL", 
+                "ensembl_gene_id"="GENEID")
 
 Huh7_JAFFAL_3Gene_ensemblID <-left_join(Huh7_JAFFAL_3Gene, gene_info, 
                                      by  = c("Gene1"="external_gene_name")) %>% 
@@ -129,5 +162,3 @@ Huh7_JAFFAL_3Gene_ensemblID <-left_join(Huh7_JAFFAL_3Gene, gene_info,
 ##################################
 # Not necessary for Genion
 ##################################
-
-

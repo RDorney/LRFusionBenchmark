@@ -235,8 +235,8 @@ sensecheck_fusions$full_label <- factor(sensecheck_fusions$full_label, levels = 
 ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
        aes(x = RNA_sample, colour = Algorithm)) +
   geom_point(stat = "count") +
-  theme_minimal() +
-  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  theme_bw() +
+  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "", y = "Count")+
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))+
@@ -248,8 +248,8 @@ ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"),
 ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
        aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +
   geom_point(stat = "count") +
-  theme_minimal() +
-  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
+  theme_bw() +
+  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "", y = "Count")+
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
         axis.text = element_text(size = 12),
         axis.title = element_text(size = 12))+
