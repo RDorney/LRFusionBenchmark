@@ -502,7 +502,7 @@ bpstop(param)
 # Label JAFFAL 
 #######################
 #Repeat for tri-gene fusions
-Annot_JAFFAL_Huh7_3Gene <- Huh7_JAFFAL_3Gene
+Annot_JAFFAL_Huh7_3Gene <- Huh7_JAFFAL_3Gene_ensemblID
 Annot_JAFFAL_Huh7_3Gene$fusionType <- "tri-fusion"
 Annot_JAFFAL_Huh7_3Gene$Algorithm <- "JAFFAL"
 write_tsv(Annot_JAFFAL_Huh7_3Gene, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_3Gene_Huh7.tsv")

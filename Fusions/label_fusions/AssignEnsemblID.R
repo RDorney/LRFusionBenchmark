@@ -147,6 +147,7 @@ gene_info <- ensembldb::select(ensembldbv109,
                               keytype = "SYMBOL", 
                               columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
+  dplyr::filter(!grepl("^LRG_", GENEID))%>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
 

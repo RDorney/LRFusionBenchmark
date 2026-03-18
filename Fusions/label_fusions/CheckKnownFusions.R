@@ -5,16 +5,57 @@
 ################################
 # Load in Known Fusions List
 source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Known_Fusions/ImportFormat_Known_Huh7.R")
-View(KnownHuh7Fusions_ah)
+View(huh7fusions_manualannot)
+#huh7fusions_manualannot$Discovery <- "Known"
 #######################
 # Check CTAT-LR-Fusion
 #######################
-CTATLR_Huh7_Known <- Annot_CTATLR_Huh7
-KnownHuh7Fusions_ah %>%
+Annot_CTATLR_Huh7_Discovery<- bind_rows(
+  # Forward match
+  inner_join(Annot_CTATLR_Huh7, huh7fusions_manualannot, 
+            by = c("ensembl_gene_id.x" = "GENEID.x", "ensembl_gene_id.y" = "GENEID.y")) %>%
+    mutate(Discovery = "Known"),
+  
+  # Reverse match
+  inner_join(Annot_CTATLR_Huh7, huh7fusions_manualannot, 
+            by = c("ensembl_gene_id.x" = "GENEID.y", "ensembl_gene_id.y" = "GENEID.x")) %>%
+    mutate(Discovery = "Reverse Known") # or "Reverse Known" if you want to distinguish them
+)%>%
+  right_join(Annot_CTATLR_Huh7)%>%
+  # If Discovery is still NA, it didn't find a match in either direction
+  mutate(Discovery = if_else(is.na(Discovery), "Putative Novel", Discovery))
 #######################
 # Check JAFFA/L
 #######################
-JAFFAL_Huh7_Known <- Annot_JAFFAL_Huh7
+JAFFAL_Huh7_Discovery <- bind_rows(
+  # Forward match
+  inner_join(Annot_JAFFAL_Huh7, huh7fusions_manualannot, 
+            by = c("ensembl_gene_id.x" = "GENEID.x", "ensembl_gene_id.y" = "GENEID.y")) %>%
+    mutate(Discovery = "Known"),
+  
+  # Reverse match
+  inner_join(Annot_JAFFAL_Huh7, huh7fusions_manualannot, 
+            by = c("ensembl_gene_id.x" = "GENEID.y", "ensembl_gene_id.y" = "GENEID.x")) %>%
+    mutate(Discovery = "Reverse Known"))%>% 
+  right_join(Annot_JAFFAL_Huh7)%>%
+  # If Discovery is still NA, it didn't find a match in either direction
+  mutate(Discovery = if_else(is.na(Discovery), "Putative Novel", Discovery))
+#check 3 gene
+JAFFAL3Gene_Huh7_Discovery <- bind_rows(
+  # Forward match
+  inner_join(Annot_JAFFAL_Huh7_3Gene, huh7fusions_manualannot, 
+            by = c("ensembl_gene_id.x" = "GENEID.x", "ensembl_gene_id.y" = "GENEID.y")) %>%
+    mutate(Discovery = "contains Known 1.2"),
+  
+  # Reverse match
+  inner_join(Annot_JAFFAL_Huh7_3Gene, huh7fusions_manualannot, 
+            by = c("ensembl_gene_id.y" = "GENEID.x", "ensembl_gene_id" = "GENEID.y")) %>%
+    mutate(Discovery = "contains Known 2.3") # or "Reverse Known" if you want to distinguish them
+)%>%
+  right_join(JAFFAL3Gene_Huh7_Discovery)%>%
+  # If Discovery is still NA, it didn't find a match in either direction
+  mutate(Discovery = if_else(is.na(Discovery), "Putative Novel", Discovery))
+
 #######################
 # Check LongGF
 #######################
