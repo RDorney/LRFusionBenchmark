@@ -265,14 +265,28 @@ write_tsv(Annot_CTATLR_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Librar
 #######################
 # Label Genion 
 #######################
-# Setup the parallel parameters (5 workers as requested)
-param <- SnowParam(workers = 5, progressbar = TRUE)
+# Setup the parallel parameters (2 workers as requested)
+param <- SnowParam(workers = 2, progressbar = TRUE)
 db_path <- dbfile(dbconn(ensembldbv110))
 
 Annot_Genion_Huh7 <- Genion_sensecheck_annotated
-Annot_Genion_Huh7$fusionType <- bpmapply(function(g1, g2, g3, 
+library(dplyr)
+
+Annot_Genion_Huh7 <- Annot_Genion_Huh7 %>%
+  mutate(fusionType = case_when(
+    # 1. Tetra-fusion: chr4 has a value
+    chr4 != "" & !is.na(chr4) ~ "tetra-fusion",
+    
+    # 2. Tri-fusion: chr3 has a value AND chr4 is empty
+    (chr3 != "" & !is.na(chr3)) & (chr4 == "" | is.na(chr4)) ~ "tri-fusion",
+    
+    # 3. Inter-chromosomal: chr1 and chr2 are different (and not tri/tetra)
+    chr1 != chr2 ~ "inter-chromosomal"
+  ))
+
+Annot_Genion_Huh7$fusionType <- bpmapply(function(g1, g2, 
                                                  current_type, 
-                                                 chr1, chr2, chr3, chr4,
+                                                 chr1, chr2,
                                                  gene_name1, gene_name2,
                                                  path_to_db, func1, func2) {
 
@@ -289,18 +303,9 @@ Annot_Genion_Huh7$fusionType <- bpmapply(function(g1, g2, g3,
   
   # Check if the current fusionType is empty
   if (current_type == "" || is.na(current_type)) {
-    #check for multi-fusion
-    if (!is.na(chr4)) return("tetra-fusion")
-    #check for tri-fusion
-    if (!is.na(g3) && is.na(chr4)) return("tri-fusion")
-    
-    # Check for inter-chromosomal first
-    if (chr1 != chr2) return("inter-chromosomal") 
-    
     # Handle intra-chromosomal
     # This calls the function defined above
     # It will return TRUE if they are direct neighbors on the same strand
-    
     if (chr1 == chr2) {
       chromosome <-  chr1   
       is_neighbour <- func1(g1, g2, edb, id_type = "geneid", chr_left = chromosome, chr_right = chromosome)
@@ -313,13 +318,13 @@ Annot_Genion_Huh7$fusionType <- bpmapply(function(g1, g2, g3,
   }
   return(current_type)
 } , 
-Annot_Genion_Huh7$V1.1, Annot_Genion_Huh7$V1.2,  Annot_Genion_Huh7$V1.3, 
+Annot_Genion_Huh7$V1.1, Annot_Genion_Huh7$V1.2,  
 Annot_Genion_Huh7$fusionType, 
-Annot_Genion_Huh7$chr1, Annot_Genion_Huh7$chr2 , Annot_Genion_Huh7$chr3, Annot_Genion_Huh7$chr4, 
+Annot_Genion_Huh7$chr1, Annot_Genion_Huh7$chr2,
 Annot_Genion_Huh7$V2.1, Annot_Genion_Huh7$V2.2,
 MoreArgs = list(path_to_db = db_path, 
-                func1 = check_readthrough, # Pass actual function objects
-                func2 = check_SAGe),
+                func1 = m_check_readthrough, # Pass actual function objects
+                func2 = m_check_SAGe),
 BPPARAM = param)
 
 write_tsv(Annot_Genion_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7.tsv")
@@ -569,31 +574,42 @@ bpstop(param)
 #####################################
 # Plot fusion types
 #####################################
-fusions_Huh7_types <- rbind(dplyr::select(Annot_CTATLR_Huh7, 
+cols <- c("RNA_sample", "Platform", "Cell_Line", "Algorithm", "library_type", "fusionType", "full_label")
+df_list <- list(
+  Annot_CTATLR_Huh7, Annot_Genion_Huh7, Annot_LongGF_Huh7, 
+  Annot_FusionSeeker_Huh7, Annot_GFSeeker_Huh7, 
+  Annot_JAFFAL_Huh7, Annot_JAFFAL_Huh7_3Gene
+)
+fusions_Huh7_types <- df_list %>%
+  map(~ .x %>% unique() %>% select(all_of(cols))) %>%
+  bind_rows()
+
+
+fusions_Huh7_types <- rbind(dplyr::select(unique(Annot_CTATLR_Huh7), 
                                           c("RNA_sample", "Platform", "Cell_Line", 
                                             "Algorithm", "library_type",    
                                             "fusionType", "full_label")),
-                            dplyr::select(Annot_Genion_Huh7, 
+                            dplyr::select(unique(Annot_Genion_Huh7), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",   
                                              "fusionType", "full_label")),
-                            dplyr::select(Annot_LongGF_Huh7, 
+                            dplyr::select(unique(Annot_LongGF_Huh7), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",    
                                             "fusionType", "full_label")), 
-                            dplyr::select(Annot_FusionSeeker_Huh7, 
+                            dplyr::select(unique(Annot_FusionSeeker_Huh7), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",   
                                              "fusionType", "full_label")),
-                            dplyr::select(Annot_GFSeeker_Huh7, 
+                            dplyr::select(unique(Annot_GFSeeker_Huh7), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",    
                                             "fusionType", "full_label")),
-                            dplyr::select(Annot_JAFFAL_Huh7, 
+                            dplyr::select(unique(Annot_JAFFAL_Huh7), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",    
                                             "fusionType", "full_label")),
-                            dplyr::select(Annot_JAFFAL_Huh7_3Gene, 
+                            dplyr::select(unique(Annot_JAFFAL_Huh7_3Gene), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",    
                                             "fusionType", "full_label")))
@@ -609,9 +625,8 @@ fusions_Huh7_types$full_label <- factor(fusions_Huh7_types$full_label, levels = 
 
 write_tsv(fusions_Huh7_types, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/fusions_Huh7_types.tsv")
 
-
 ggplot(fusions_Huh7_types, 
-       aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +
+       aes(x = RNA_sample, colour = Algorithm)) +
   geom_point(stat = "count") +
   theme_bw() +
   labs(title = "Fusion Types", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
@@ -621,7 +636,8 @@ ggplot(fusions_Huh7_types,
   facet_grid(fusionType~library_type+Platform) +
   #labs(fill = "Fusion Type")+
   scale_y_log10()+
-  scale_colour_manual(values = platformlibsamp_colourmap)
+  scale_colour_manual(values = Alg_colour_map)
+
 
 ggplot(dplyr::filter(fusions_Huh7_types, !fusionType %in% c(
   "Mitochondrial:Genomic",
@@ -672,14 +688,5 @@ ggplot(
   scale_y_log10() +
   scale_colour_manual(values = Alg_colour_map)
 
-library(dplyr)
-library(tidyr)
 
-paired_data <- count_data %>%
-  filter(RNA_sample %in% c("B1", "B2")) %>%
-  pivot_wider(
-    names_from = RNA_sample,
-    values_from = n
-  ) %>%
-  filter(!is.na(B1) & !is.na(B2))
 

@@ -144,7 +144,7 @@ FusionSeeker_Huh7 <- FusionSeeker_Huh7 %>%
   unite("fusionGene", c(Gene1, Gene2), sep="::", remove= FALSE, na.rm = TRUE)%>%
   mutate(across(c(Gene1, Gene2), ~ gsub("\\..*","", .)))%>%
   tidyr::separate(fusionGene, into= c('Gene1_vID','Gene2_vID'), sep = "::", remove = FALSE) %>%
-  unite("fusion.gene.id", c(Gene1, Gene2), sep=":", remove= FALSE, na.rm = TRUE) %>%
+  unite("fusion.gene.id", c(Gene1, Gene2), sep="::", remove= FALSE, na.rm = TRUE) %>%
   dplyr::filter(NumSupp >= 2)%>%
   mutate(Algorithm = "FusionSeeker",
          library_type = dplyr::case_when(grepl('FBA22517|FBA22660|dRNA', Source)  ~ "direct_RNA",
