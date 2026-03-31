@@ -96,7 +96,7 @@ CTATLR_sensecheck_annotated <- CTATLR_mitocheck_annotated %>%
     fusionType = if_else(!is.na(gene_a_id), "Sense-Antisense", fusionType)
   ) %>%
   select(-gene_a_id, -gene_b_id) # Clean up join columns
-write_tsv(CTATLR_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7_sensecheck.tsv")
+write_tsv(CTATLR_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7_sensecheck.tsv.gz")
 
 ########
 # Genion
@@ -112,7 +112,7 @@ Genion_sensecheck_annotated <- Genion_mitocheck_annotated %>%
   ) %>%
   # Clean up temporary helper columns
   select(-gene_a_name, -gene_b_name)
-write_tsv(Genion_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7_sensecheck.tsv")
+write_tsv(Genion_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7_sensecheck.tsv.gz")
 
 ##############
 # FusionSeeker
@@ -128,7 +128,7 @@ FusionSeeker_sensecheck_annotated <- FusionSeeker_mitocheck_annotated %>%
   ) %>%
   # Clean up temporary helper columns
   select(-gene_a_name, -gene_b_name)
-write_tsv(FusionSeeker_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker_Huh7_sensecheck.tsv")
+write_tsv(FusionSeeker_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker_Huh7_sensecheck.tsv.gz")
 
 #########
 # LongGF
@@ -139,7 +139,7 @@ LongGF_sensecheck_annotated <- LongGF_mitocheck_annotated %>%
     fusionType = if_else(!is.na(gene_a_id), "Sense-Antisense", fusionType)
   ) %>%
   select(-gene_a_id, -gene_b_id) # Clean up join columns
-write_tsv(LongGF_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF_Huh7_sensecheck.tsv")
+write_tsv(LongGF_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF_Huh7_sensecheck.tsv.gz")
 
 ##########
 # GFSeeker
@@ -151,7 +151,7 @@ GFSeeker_sensecheck_annotated <- GFSeeker_mitocheck_annotated %>%
   ) %>%
   select(-gene_a_id, -gene_b_id) # Clean up join columns
 
-write_tsv(GFSeeker_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/GFSeeker_Huh7_sensecheck.tsv")
+write_tsv(GFSeeker_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/GFSeeker_Huh7_sensecheck.tsv.gz")
 
 ########################
 # JAFFAL/JAFFA-Direct

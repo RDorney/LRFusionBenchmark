@@ -261,16 +261,15 @@ Annot_CTATLR_Huh7$chrom1[intra_idx] , Annot_CTATLR_Huh7$chrom2[intra_idx] ,
 Annot_CTATLR_Huh7$strand1[intra_idx] , Annot_CTATLR_Huh7$strand2[intra_idx] , 
 Annot_CTATLR_Huh7$LeftGene[intra_idx] , Annot_CTATLR_Huh7$RightGene[intra_idx])
 
-write_tsv(Annot_CTATLR_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7.tsv")
+write_tsv(Annot_CTATLR_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7.tsv.gz")
 #######################
 # Label Genion 
 #######################
-# Setup the parallel parameters (2 workers as requested)
-param <- SnowParam(workers = 2, progressbar = TRUE)
+# Setup the parallel parameters (4 workers as requested)
+param <- SnowParam(workers = 4, progressbar = TRUE)
 db_path <- dbfile(dbconn(ensembldbv110))
 
 Annot_Genion_Huh7 <- Genion_sensecheck_annotated
-library(dplyr)
 
 Annot_Genion_Huh7 <- Annot_Genion_Huh7 %>%
   mutate(fusionType = case_when(
@@ -379,7 +378,7 @@ MoreArgs = list(path_to_db = db_path,
                 func2 = check_SAGe),
 BPPARAM = param)
 
-write_tsv(Annot_LongGF_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF_Huh7.tsv")
+write_tsv(Annot_LongGF_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF_Huh7.tsv.gz")
 
 bpstop(param)
 #######################
@@ -444,7 +443,7 @@ Annot_FusionSeeker_Huh7$fusionType[intra_idx] <- bpmapply(
   BPPARAM = param
 )
 
-write_tsv(Annot_FusionSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker_Huh7.tsv")
+write_tsv(Annot_FusionSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker_Huh7.tsv.gz")
 bpstop(param)
 
 #######################
@@ -464,7 +463,6 @@ length(Annot_GFSeeker_Huh7$fusionType[inter_idx])
 intra_idx <- idx[Annot_GFSeeker_Huh7$chrom1[idx] == Annot_GFSeeker_Huh7$chrom2[idx]]
 length(Annot_GFSeeker_Huh7$fusionType[intra_idx])
 length(unique(paste(Annot_GFSeeker_Huh7$gene1_name[intra_idx], Annot_GFSeeker_Huh7$gene2_name[intra_idx])))
-
 
 Annot_GFSeeker_Huh7$fusionType[intra_idx] <- bpmapply(function(g1, g2,chr1, chr2,
                                                                path_to_db, func1, func2) {
@@ -500,7 +498,7 @@ MoreArgs = list(path_to_db = db_path,
                 func2 = m_check_SAGe),
 BPPARAM = param)
 
-write_tsv(Annot_GFSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/GFSeeker_Huh7.tsv")
+write_tsv(Annot_GFSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/GFSeeker_Huh7.tsv.gz")
 
 bpstop(param)
 #######################
@@ -655,8 +653,6 @@ ggplot(dplyr::filter(fusions_Huh7_types, !fusionType %in% c(
   labs(fill = "Algorithm")+
   scale_y_log10()+
   scale_colour_manual(values = Alg_colour_map)
-
-library(dplyr)
 
 count_data <- fusions_Huh7_types %>%
   filter(!fusionType %in% c(

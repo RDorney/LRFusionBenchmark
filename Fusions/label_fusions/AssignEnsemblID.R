@@ -30,7 +30,8 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keys = unique(c(LongGF_Huh7$Gene1, LongGF_Huh7$Gene2)), 
                                keytype = "SYMBOL", 
                                columns = c("GENEID", "SYMBOL", "SEQNAME")) %>%  
-  dplyr::filter(SEQNAME %in% standard_chrs) %>%                               
+  dplyr::filter(SEQNAME %in% standard_chrs) %>%  
+  dplyr::filter(!grepl("^LRG_", GENEID))%>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id" = "GENEID")
 
@@ -49,6 +50,7 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keytype = "SYMBOL", 
                                columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
+  dplyr::filter(!grepl("^LRG_", GENEID))%>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
 
@@ -66,6 +68,7 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keytype = "SYMBOL", 
                                columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
+  dplyr::filter(!grepl("^LRG_", GENEID))%>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
 
@@ -85,6 +88,7 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keytype = "GENEID", 
                                columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
+  dplyr::filter(!grepl("^LRG_", GENEID))%>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
 
