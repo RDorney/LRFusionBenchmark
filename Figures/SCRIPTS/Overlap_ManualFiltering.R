@@ -4,6 +4,8 @@
 #Repeat analysis with removed obvious false chimeras to see if they have any influence. 
 #Any differences observed are negligible
 combined_data_with_heuristic <- filter(combined_data, read_supp >= 2) %>%  
+  dplyr::group_by(across(-read_supp)) %>%
+  dplyr::summarise(read_supp = sum(read_supp), .groups = "drop") %>%  
   mutate(stat_category = case_when(
     grepl("false_fusion:mitochondrial|false_fusion:self_misalignment", fusionType) ~ "obvious_false",
     TRUE ~ "other")) %>% filter(stat_category == "other") %>% dplyr::select(-'stat_category')

@@ -2,7 +2,9 @@
 # Manual Filtering                             #
 # Assess if using heuristics changes the stats #
 ################################################
-manual_filtering <- filter(combined_data, read_supp >=2) %>%  
+manual_filtering <- filter(combined_data, read_supp >=2)%>%  
+  dplyr::group_by(across(-read_supp)) %>%
+  dplyr::summarise(read_supp = sum(read_supp), .groups = "drop") %>%  
   mutate(stat_category = case_when(
     grepl("false_fusion:mitochondrial|false_fusion:self_misalignment", fusionType) ~ "obvious_false",
     TRUE ~ "other")) %>% filter(stat_category == "other") %>% dplyr::select(-'stat_category')%>%  
@@ -30,8 +32,8 @@ ggplot(filter(manual_filtering, control == 'positive'))+
   geom_point(aes(x = Precision, y= Recall, colour = Algorithm))+
   facet_grid(depth ~ Sequence_Identity)+
   labs(title = "Recall and Precision", subtitle = "heuristic filtering", x = "Precision", y = "Recall")+
-  ylim(c(0,1.00))+
-  xlim(c(0,1.00))
+  ylim(c(0,0.50))+
+  xlim(c(0,0.75))
 
 calculate_read_filt_statistics <- function(data, min_read_supp) {
   data %>%
@@ -58,9 +60,9 @@ calculate_read_filt_statistics <- function(data, min_read_supp) {
            Sensitivity = True_Point / (True_Point + (Spiked_Number - True_Point)))
 }
 
-manual_readsupp_filtering <- calculate_read_filt_statistics(combined_data, 2) 
-for(number in unique(sort(combined_data$read_supp))){
-  result <- calculate_read_filt_statistics(combined_data, number)
+manual_readsupp_filtering <- calculate_read_filt_statistics(collapsed_combined_data, 2) 
+for(number in unique(sort(collapsed_combined_data$read_supp))){
+  result <- calculate_read_filt_statistics(collapsed_combined_data, number)
   manual_readsupp_filtering <- rbind(result, manual_readsupp_filtering) 
 }
 manual_readsupp_filtering$minimum_read_support <- as.numeric(manual_readsupp_filtering$minimum_read_support)

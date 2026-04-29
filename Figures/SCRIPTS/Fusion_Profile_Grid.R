@@ -47,7 +47,7 @@ PRC <- ggplot(filter(fusion_profile_stat_summary, control == "positive", recall_
   labs(x = "Depth",
        y = "Mean Sequence Identity",
        fill =  "#Fusions") +
-  theme_minimal() +
+  theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="lightgrey")) 
 ggsave("~/LongReadFusionCallerBenchmark/Figures/Partial_Recall_category.pdf", plot = PRC, width = 210, height = 300, units = "mm")
 ggsave("~/LongReadFusionCallerBenchmark/Figures/Partial_Recall_category.png", plot = PRC, width = 210, height = 300, units = "mm")

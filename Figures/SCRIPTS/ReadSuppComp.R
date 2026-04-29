@@ -12,7 +12,7 @@ Figure3B <-ggplot(filter(fusions_in_all_algorithms, depth == "100GB",
   theme_minimal() +
   facet_nested(~ recall_category , scales = "free_x", space = "free",
                labeller = as_labeller(c("Partial_Recall" = "Partial Recall", "True_Recall" = "True Recall")))+
-  scale_fill_viridis()+
+  #scale_fill_viridis()+
   scale_alpha_continuous(range = c(0.1, 1)) + 
   theme(strip.text.x = element_text(size = 12),
         legend.position = "right",

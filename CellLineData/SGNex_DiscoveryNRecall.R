@@ -279,3 +279,17 @@ ggplot(filter(super_SGNex_summary, Sequencing_Depth == "Total", novelnumber > 0)
         axis.text = element_text(size = 11),
         axis.title = element_text(size = 11))+
   scale_colour_npg()
+
+ggplot(filter(super_SGNex_summary, Sequencing_Depth == "Total", novelnumber > 0))+ 
+  geom_point(aes(y = knownnumber, x = novelnumber, col = Algorithm, shape=Library))+
+  facet_grid(Cell_Lines~fusionType) +
+  theme_bw() +
+  labs(title = "",
+       subtitle = "")+
+  #ylim(c(0,50))+ 
+  scale_x_log10()+
+  theme(strip.text = element_text(size = 12),
+        plot.title = element_text(size = 11),
+        axis.text = element_text(size = 11),
+        axis.title = element_text(size = 11))+
+  scale_colour_npg()

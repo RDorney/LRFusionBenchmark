@@ -1,7 +1,9 @@
 ###############################
 # Fusion Profile Stat Summary #
 ###############################
-fusion_profile_stat_summary <- combined_data %>%  filter(read_supp >=2) %>% 
+fusion_profile_stat_summary <-  filter(combined_data, read_supp >=2)%>%  
+  dplyr::group_by(across(-read_supp)) %>%
+  dplyr::summarise(read_supp = sum(read_supp), .groups = "drop") %>% 
   unique()%>% group_by(control, depth, Sequence_Identity, Algorithm, fusionType) %>%
   summarise(fusion_type_count = n(), .groups = 'drop')%>% 
   ungroup() %>% 
@@ -37,6 +39,6 @@ FCC <- ggplot(filter(fusion_profile_stat_summary, recall_category == "False_Call
   labs(x = "Depth",
        y = "Mean Sequence Identity",
        fill =  "#Fusions") +
-  theme_minimal() +
+  theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="lightgrey")) 
 ggsave("~/LongReadFusionCallerBenchmark/Figures/False_fusion_category_counts.pdf", plot = FCC, width = 210, height = 297, units = "mm")

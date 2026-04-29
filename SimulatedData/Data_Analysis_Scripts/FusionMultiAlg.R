@@ -3,8 +3,9 @@
 ##################################
 # identify fusions in more than one algorithm
 #consolidate reads for duplicate fusion calls due to different breakpoints
-Total_Read_Supp_summary <- combined_data%>% 
-  filter(read_supp >=2)%>% unique() %>% #remove duplicates as a result of annotations
+Total_Read_Supp_summary <- filter(combined_data, read_supp >= 2) %>%  
+  dplyr::group_by(across(-read_supp)) %>%
+  dplyr::summarise(read_supp = sum(read_supp), .groups = "drop")%>% unique() %>% #remove duplicates as a result of annotations
   group_by(fusion.gene.id, Sequence_Identity, depth, control, Algorithm, fusionType)  %>%
   summarise(Total_Read_Supp = sum(read_supp), .groups = "drop")
 

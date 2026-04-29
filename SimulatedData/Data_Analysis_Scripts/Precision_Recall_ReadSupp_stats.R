@@ -1,5 +1,7 @@
 #Calculate Recall vs Precision
 stat_summary <- filter(combined_data, read_supp >= 2, control == "positive") %>%  
+  dplyr::group_by(across(-read_supp)) %>%
+  dplyr::summarise(read_supp = sum(read_supp), .groups = "drop")%>%
   unique() %>%
   mutate(stat_category = case_when(
     grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType) ~ "FALSE_CALL",
@@ -45,10 +47,10 @@ calculate_read_filt_statistics <- function(data, min_read_supp) {
            minimum_read_support = min_read_supp)
 }
 
-readsupp_filtering <- calculate_read_filt_statistics(combined_data, 2) 
+readsupp_filtering <- calculate_read_filt_statistics(collapsed_combined_data, 2) 
 
-for(number in seq(3, max(sort(unique(combined_data$read_supp))))){
-  result <- calculate_read_filt_statistics(combined_data, number)
+for(number in seq(3, max(sort(unique(collapsed_combined_data$read_supp))))){
+  result <- calculate_read_filt_statistics(collapsed_combined_data, number)
   readsupp_filtering <- rbind(result, readsupp_filtering) 
 }
 readsupp_filtering$minimum_read_support <- as.numeric(readsupp_filtering$minimum_read_support)

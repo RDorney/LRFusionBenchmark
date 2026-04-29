@@ -42,18 +42,27 @@ combined_data$read_supp <- as.numeric(combined_data$read_supp)
 write_tsv(combined_data, paste0(Analysis_output_folder, "combined_data_FusionCalls.tsv"))
 write_tsv(combined_data, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/combined_data.tsv")
 
-combined_data_annotation <- filter(combined_data, read_supp >= 2) %>% 
-  unique() %>% mutate(recall_category = case_when(
+collapsed_combined_data <- filter(combined_data, read_supp >= 2) %>%  
+  dplyr::group_by(across(-read_supp)) %>%
+  dplyr::summarise(read_supp = sum(read_supp), .groups = "drop")
+write_tsv(collapsed_combined_data, paste0(Analysis_output_folder, "collapsed_combined_data_FusionCalls.tsv"))
+write_tsv(collapsed_combined_data, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/collapsed_combined_data.tsv")
+
+
+combined_data_annotation <- dplyr::filter(combined_data, read_supp >= 2) %>% 
+  dplyr::group_by(across(-read_supp)) %>%
+  dplyr::summarise(read_supp = sum(read_supp), .groups = "drop")%>%
+  unique() %>% dplyr::mutate(recall_category = case_when(
   grepl("false", fusionType) ~ "False_Call",
   grepl("truncated|reverse|chromosomal_misalignment|wrong", fusionType) ~ "Partial_Recall",
   TRUE ~ "True_Recall"))%>%
-  group_by(control, depth, Sequence_Identity, Algorithm, recall_category) %>%
-  summarise(RECALL_COUNT = n()) %>%
-  summarise(False_Call_Number = sum(RECALL_COUNT[recall_category == "False_Call"], na.rm = TRUE),
+  dplyr::group_by(control, depth, Sequence_Identity, Algorithm, recall_category) %>%
+  dplyr::summarise(RECALL_COUNT = n()) %>%
+  dplyr::summarise(False_Call_Number = sum(RECALL_COUNT[recall_category == "False_Call"], na.rm = TRUE),
             Partial_Call_Number = sum(RECALL_COUNT[recall_category == "Partial_Recall"], na.rm = TRUE),
             True_Call_Number = sum(RECALL_COUNT[recall_category == "True_Recall"], na.rm = TRUE))%>% 
-  ungroup() %>% 
-  complete(control, depth, Sequence_Identity, Algorithm, fill = list(False_Call_Number = 0, Partial_Call_Number = 0, True_Call_Number = 0))
+  dplyr::ungroup() %>% 
+  tidyr::complete(control, depth, Sequence_Identity, Algorithm, fill = list(False_Call_Number = 0, Partial_Call_Number = 0, True_Call_Number = 0))
 combined_data_annotation$depth <- factor(combined_data_annotation$depth, levels = c("1GB", "10GB", "100GB"))
 combined_data_annotation$Sequence_Identity <- factor(combined_data_annotation$Sequence_Identity, levels = c("85%", "90%", "95%"))
 
