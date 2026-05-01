@@ -121,6 +121,13 @@ CTATLR_sensemito_annotated <- CTATLR_sensecheck_annotated %>%
     )
   )
 
+CTATLR_sensemito_annotated_collapsed <- CTATLR_sensemito_annotated %>%
+dplyr::group_by(across(c("#FusionName","LeftGene","RightGene",
+"chrom1","chrom2",
+"Source","Cell_Lines","Algorithm",
+"Sequencing_Depth","Library","fusionType"))) %>%
+dplyr::summarise(read_supp = sum(num_LR), .groups = "drop")
+
 ###########################
 # Check Genion
 ###########################
@@ -171,6 +178,12 @@ Genion_sensemito_annotated <- Genion_sensecheck_annotated %>%
     )
   )
 
+Genion_sensemito_annotated_collapsed <- Genion_sensemito_annotated %>%
+dplyr::group_by(across(c("V1","chr1","chr2",
+"Source","Cell_Lines","Algorithm",
+"Sequencing_Depth","Library","fusionType"))) %>%
+dplyr::summarise(read_supp = sum(V5), .groups = "drop")
+
 ###########################
 # Check FusionSeeker
 ###########################
@@ -214,6 +227,11 @@ FusionSeeker_sensemito_annotated <- FusionSeeker_sensecheck_annotated %>%
       TRUE ~ fusionType
     )
   )
+FusionSeeker_sensemito_annotated_collapsed <- FusionSeeker_sensemito_annotated %>%
+  dplyr::group_by(across(c("fusionGene","Chrom1","Chrom2",
+                           "Source","Cell_Lines","Algorithm",
+                           "Sequencing_Depth","Library","fusionType"))) %>%
+  dplyr::summarise(read_supp = sum(NumSupp), .groups = "drop")
 
 ###########################
 # Check LongGF
@@ -258,6 +276,11 @@ LongGF_sensemito_annotated <- LongGF_sensecheck_annotated %>%
       TRUE ~ fusionType
     )
   )
+LongGF_sensemito_annotated_collapsed <- LongGF_sensemito_annotated %>%
+  dplyr::group_by(across(c("V2","chromosome1","chromosome2",
+                           "Source","Cell_Lines","Algorithm",
+                           "Sequencing_Depth","Library","fusionType"))) %>%
+  dplyr::summarise(read_supp = sum(V3), .groups = "drop")
 
 ##################################
 # Check GFSeeker
@@ -303,6 +326,11 @@ GFSeeker_sensemito_annotated <- GFSeeker_sensecheck_annotated %>%
     )
   )
 
+GFSeeker_sensemito_annotated_collapsed <- GFSeeker_sensemito_annotated %>%
+  dplyr::group_by(across(c("gene1_name","gene2_name","chrom1","chrom2",
+                           "Source","Cell_Lines","Algorithm",
+                           "Sequencing_Depth","Library","fusionType"))) %>%
+  dplyr::summarise(read_supp = sum(`support num`), .groups = "drop")
 ##################################
 # Check JAFFAL and update function
 ##################################
@@ -410,30 +438,35 @@ JAFFAL_sensemito_annotated <- JAFFAL_sensecheck_annotated %>%
     )
   )
 
+JAFFAL_sensemito_annotated_collapsed <- JAFFAL_sensemito_annotated %>%
+  dplyr::group_by(across(c("sample","fusion.genes","chrom1","chrom2",
+                           "Source","Cell_Lines","Algorithm",
+                           "Sequencing_Depth","Library","fusionType"))) %>%
+  dplyr::summarise(read_supp = sum(spanning.reads), .groups = "drop")
 ###########################
 # combined dataframes
 ###########################
-sensemito_fusions <- rbind(dplyr::select(CTATLR_sensemito_annotated, 
+sensemito_fusions <- rbind(dplyr::select(CTATLR_sensemito_annotated_collapsed, 
                                          c("Source", "Cell_Lines", 
                                            "Algorithm", "Sequencing_Depth",    
                                            "Library", "fusionType")),
-                           dplyr::select(Genion_sensemito_annotated, 
+                           dplyr::select(Genion_sensemito_annotated_collapsed, 
                                          c("Source", "Cell_Lines", 
                                            "Algorithm", "Sequencing_Depth",    
                                            "Library", "fusionType")),
-                           dplyr::select(LongGF_sensemito_annotated, 
+                           dplyr::select(LongGF_sensemito_annotated_collapsed, 
                                          c("Source", "Cell_Lines", 
                                            "Algorithm", "Sequencing_Depth",    
                                            "Library", "fusionType")), 
-                           dplyr::select(FusionSeeker_sensemito_annotated, 
+                           dplyr::select(FusionSeeker_sensemito_annotated_collapsed, 
                                          c("Source", "Cell_Lines", 
                                            "Algorithm", "Sequencing_Depth",    
                                            "Library", "fusionType")),
-                           dplyr::select(GFSeeker_sensemito_annotated, 
+                           dplyr::select(GFSeeker_sensemito_annotated_collapsed, 
                                          c("Source", "Cell_Lines", 
                                            "Algorithm", "Sequencing_Depth",    
                                            "Library", "fusionType")),
-                           dplyr::select(JAFFAL_sensemito_annotated, 
+                           dplyr::select(JAFFAL_sensemito_annotated_collapsed, 
                                          c("Source", "Cell_Lines", 
                                            "Algorithm", "Sequencing_Depth",    
                                            "Library", "fusionType")))

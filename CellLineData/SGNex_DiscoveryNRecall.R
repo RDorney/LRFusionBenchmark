@@ -26,6 +26,7 @@ SGNex_summary_JAFFAL_df <- disc_JAFFAL_SGNex%>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
+
 total_counts_SGNex_JAFFAL_df <- SGNex_summary_JAFFAL_df %>% 
   group_by(Source, Cell_Lines, Sequencing_Depth, Algorithm, Library) %>%
   summarise(knownnumber = sum(knowncount), novelnumber= sum(novelcount))
@@ -123,6 +124,8 @@ disc_CTATLR_SGNex <- left_join(CTATLR_SGNex_Annot, known_fusions_manual_annotati
                                       "Cell_Lines"="Cell_Line")) %>% 
   mutate(discovery = if_else(is.na(discovery), "novel", discovery)) %>% 
   mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y))
+
+
 check <- disc_CTATLR_SGNex$fusionGeneID[disc_CTATLR_SGNex$discovery=="known"] %>% 
   unique()
 disc_CTATLR_SGNex<-disc_CTATLR_SGNex%>% 
