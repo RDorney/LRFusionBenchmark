@@ -22,7 +22,11 @@ disc_JAFFAL_SGNex_3Gene <- JAFFAL_SGNex_Annot_3Gene %>%
 
 SGNex_summary_JAFFAL_df <- disc_JAFFAL_SGNex%>% 
   full_join(disc_JAFFAL_SGNex_3Gene) %>%
-  group_by(across(all_of(colnames(JAFFAL_SGNex)))) %>%
+  dplyr::group_by(across(c("sample","fusion.genes","chrom1","chrom2",
+                           "Source","Cell_Lines","Algorithm",
+                           "Sequencing_Depth","Library","fusionType",
+                           "discovery","fusionGeneID" ))) %>%
+  dplyr::summarise(read_supp = sum(spanning.reads), .groups = "drop")%>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
@@ -49,7 +53,11 @@ disc_Genion_SGNex <- disc_Genion_SGNex%>%  mutate(discovery = case_when(
   is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
   TRUE ~ discovery))
 SGNex_summary_Genion_df <- disc_Genion_SGNex%>%
-  group_by(across(all_of(colnames(Genion_SGNex)))) %>%
+  dplyr::group_by(across(c("V1","chr1","chr2",
+                           "Source","Cell_Lines","Algorithm",
+                           "Sequencing_Depth","Library","fusionType",
+                           "discovery","fusion.gene.id"))) %>%
+  dplyr::summarise(read_supp = sum(V5), .groups = "drop") %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
@@ -77,7 +85,11 @@ disc_FusionSeeker_SGNex<-disc_FusionSeeker_SGNex%>%
   is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
   TRUE ~ discovery))
 SGNex_summary_FusionSeeker_df <- disc_FusionSeeker_SGNex%>%
-  group_by(across(all_of(colnames(disc_FusionSeeker_SGNex[1:19])))) %>%
+  group_by(across(c("fusionGene.x","Chrom1","Chrom2",
+                  "Source","Cell_Lines","Algorithm",
+                  "Sequencing_Depth","Library","fusionType",
+                  "discovery","fusionGeneID"))) %>%
+  dplyr::summarise(read_supp = sum(NumSupp), .groups = "drop") %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
@@ -104,7 +116,11 @@ disc_LongGF_SGNex<-disc_LongGF_SGNex%>%  mutate(discovery = case_when(
   is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
   TRUE ~ discovery))
 SGNex_summary_LongGF_df <- disc_LongGF_SGNex%>%
-  group_by(across(all_of(colnames(LongGF_SGNex)))) %>%
+  dplyr::group_by(across(c("V2","chromosome1","chromosome2",
+                           "Source","Cell_Lines","Algorithm",
+                           "Sequencing_Depth","Library","fusionType",
+                           "discovery","fusionGeneID"))) %>%
+  dplyr::summarise(read_supp = sum(V3), .groups = "drop") %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
@@ -134,7 +150,12 @@ disc_CTATLR_SGNex<-disc_CTATLR_SGNex%>%
   is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
   TRUE ~ discovery))
 SGNex_summary_CTATLR_df <- disc_CTATLR_SGNex%>%
-  group_by(across(all_of(colnames(CTATLR_SGNex)))) %>%
+  dplyr::group_by(across(c("#FusionName","LeftGene","RightGene",
+                           "chrom1","chrom2",
+                           "Source","Cell_Lines","Algorithm",
+                           "Sequencing_Depth","Library","fusionType",
+                           "discovery","fusionGeneID"))) %>%
+  dplyr::summarise(read_supp = sum(num_LR), .groups = "drop")%>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
@@ -160,7 +181,11 @@ disc_GFSeeker_SGNex<-disc_GFSeeker_SGNex%>%  mutate(discovery = case_when(
   is.na(discovery) ~ "novel",         # if discovery is NA, label as novel
   TRUE ~ discovery))
 SGNex_summary_GFSeeker_df <- disc_GFSeeker_SGNex%>%
-  group_by(across(all_of(colnames(GFSeeker_SGNex)))) %>%
+  dplyr::group_by(across(c("gene1_name","gene2_name","chrom1","chrom2",
+                           "Source","Cell_Lines","Algorithm",
+                           "Sequencing_Depth","Library","fusionType",
+                           "discovery","fusionGeneID"))) %>%
+  dplyr::summarise(read_supp = sum(`support num`), .groups = "drop") %>%
   mutate(
     knowncount = case_when(discovery == "known" ~ 1, TRUE ~ 0),
     novelcount = case_when(discovery == "novel" ~ 1, TRUE ~ 0))
@@ -187,6 +212,8 @@ super_SGNex_summary$Sequencing_Depth<- factor(super_SGNex_summary$Sequencing_Dep
 super_SGNex_summary$Library<- factor(super_SGNex_summary$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
 # Quick check: filter out "Total" depth entries
 super_SGNex_summary %>% filter(Sequencing_Depth != "Total")
+write_tsv(counts_SGNex_summary, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/counts_SGNex_summary.tsv.gz")
+write_tsv(super_SGNex_summary, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/super_SGNex_summary.tsv.gz")
 
 
 #Figure 5 ####
