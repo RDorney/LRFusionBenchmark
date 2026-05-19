@@ -262,6 +262,16 @@ Annot_CTATLR_Huh7$strand1[intra_idx] , Annot_CTATLR_Huh7$strand2[intra_idx] ,
 Annot_CTATLR_Huh7$LeftGene[intra_idx] , Annot_CTATLR_Huh7$RightGene[intra_idx])
 
 write_tsv(Annot_CTATLR_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7.tsv.gz")
+
+Annot_CTATLR_Huh7_collapsed <- Annot_CTATLR_Huh7 %>%
+  dplyr::group_by(across(c("#FusionName","LeftGene","RightGene",
+                           "chrom1","chrom2",
+                           "Source", "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform","fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(num_LR), .groups = "drop") 
+write_tsv(Annot_CTATLR_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7_collapsed.tsv.gz")
+
 #######################
 # Label Genion 
 #######################
@@ -331,6 +341,16 @@ write_tsv(Annot_Genion_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Librar
 # 3. Clean up
 bpstop(param) 
 
+Annot_Genion_Huh7_collapsed <- Annot_Genion_Huh7 %>%
+  dplyr::group_by(across(c("Source","V1",
+                           "V8",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(V5), .groups = "drop") 
+write_tsv(Annot_Genion_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7_collapsed.tsv")
+
 #######################
 # Label LongGF 
 #######################
@@ -381,6 +401,17 @@ BPPARAM = param)
 write_tsv(Annot_LongGF_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF_Huh7.tsv.gz")
 
 bpstop(param)
+
+Annot_LongGF_Huh7_collapsed <- Annot_LongGF_Huh7 %>%
+  dplyr::group_by(across(c("V1","Source","V2",
+                           "chromosome1","chromosome2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(V3), .groups = "drop")
+write_tsv(Annot_LongGF_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF_Huh7_collapsed.tsv.gz")
+
 #######################
 # Label FusionSeeker 
 #######################
@@ -446,6 +477,16 @@ Annot_FusionSeeker_Huh7$fusionType[intra_idx] <- bpmapply(
 write_tsv(Annot_FusionSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker_Huh7.tsv.gz")
 bpstop(param)
 
+Annot_FusionSeeker_Huh7_collapsed <- Annot_FusionSeeker_Huh7%>%
+  dplyr::group_by(across(c("Source","fusionGene",
+                           "Chrom1","Chrom2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(NumSupp), .groups = "drop") 
+
+write_tsv(Annot_FusionSeeker_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker_Huh7_collapsed.tsv.gz")
 #######################
 # Label GFSeeker 
 #######################
@@ -501,6 +542,16 @@ BPPARAM = param)
 write_tsv(Annot_GFSeeker_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/GFSeeker_Huh7.tsv.gz")
 
 bpstop(param)
+Annot_GFSeeker_Huh7_collapsed <- Annot_GFSeeker_Huh7 %>%
+  dplyr::group_by(across(c("gene1_name","gene2_name",
+                           "chrom1","chrom2",
+                           "Source", "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform", 
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(`support num`), .groups = "drop") 
+write_tsv(Annot_GFSeeker_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/GFSeeker_Huh7_collapsed.tsv.gz")
+
 #######################
 # Label JAFFAL 
 #######################
@@ -569,6 +620,16 @@ write_tsv(Annot_JAFFAL_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Librar
 length(which(Annot_JAFFAL_Huh7$fusionType == "read-through" | Annot_JAFFAL_Huh7$fusionType == "SAGe"))
 
 bpstop(param)
+
+Annot_JAFFAL_Huh7_collapsed <- Annot_JAFFAL_Huh7%>%
+  dplyr::group_by(across(c("sample","fusion.genes","Gene1","Gene2",
+                           "chrom1","chrom2",
+                           "Cell_Line","Algorithm", "fusionType",
+                           "RNA_sample","library_type","Platform","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_pairs = sum(spanning.pairs), tot_span_read = sum(spanning.reads), .groups = "drop") 
+write_tsv(Annot_JAFFAL_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_JAFFAdirect_Huh7_collapsed.tsv")
+
 #####################################
 # Plot fusion types
 #####################################

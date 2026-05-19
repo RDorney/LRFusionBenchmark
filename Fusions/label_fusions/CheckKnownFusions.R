@@ -36,6 +36,16 @@ unique(Annot_CTATLR_Huh7) %>% nrow()
 
 write_tsv(Annot_CTATLR_Huh7_Discovery, file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_CTATLR_Huh7_Discovery.tsv.gz")
 
+Annot_CTATLR_Huh7_Discovery_collapsed <- Annot_CTATLR_Huh7_Discovery%>%
+  dplyr::group_by(across(c("#FusionName","LeftGene","RightGene",
+                           "chrom1","chrom2",
+                           "Source", "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform","fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(num_LR), .groups = "drop") 
+write_tsv(Annot_CTATLR_Huh7_Discovery_collapsed, 
+          file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_CTATLR_Huh7_Discovery_collapsed.tsv.gz")
+
 #######################
 # Check JAFFA/L
 #######################
@@ -76,6 +86,16 @@ Annot_JAFFAL_Huh7_Discovery %>% nrow()
 
 #write_tsv(Annot_JAFFAL_Huh7_Discovery, file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_JAFFAL_Huh7_Discovery.tsv.gz")
 write_tsv(Annot_JAFFAL_Huh7_Discovery, xzfile("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_JAFFAL_Huh7_Discovery.tsv.xz", compression = 9))
+
+Annot_JAFFAL_Huh7_Discovery_collasped <- Annot_JAFFAL_Huh7_Discovery %>%
+  dplyr::group_by(across(c("sample","fusion.genes","Gene1","Gene2",
+                           "chrom1","chrom2",
+                           "Cell_Line","Algorithm", "fusionType",
+                           "RNA_sample","library_type","Platform","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_pairs = sum(spanning.pairs), tot_span_read = sum(spanning.reads), .groups = "drop") 
+write_tsv(Annot_JAFFAL_Huh7_Discovery_collasped, 
+          xzfile("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_JAFFAL_Huh7_Discovery_collasped.tsv.xz", compression = 9))
 
 #check 3 gene
 JAFFAL3Gene_Huh7_12 <- inner_join(Annot_JAFFAL_Huh7_3Gene, huh7fusions_manualannot, 
@@ -126,6 +146,17 @@ nrow(Annot_LongGF_Huh7)
 
 write_tsv(Annot_LongGF_Huh7_Discovery, file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_LongGF_Huh7_Discovery.tsv.gz")
 
+Annot_LongGF_Huh7_Discovery_collapsed <- Annot_LongGF_Huh7_Discovery %>%
+  dplyr::group_by(across(c("V1","Source","V2",
+                           "chromosome1","chromosome2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(V3), .groups = "drop")
+write_tsv(Annot_LongGF_Huh7_Discovery_collapsed, 
+          file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_LongGF_Huh7_Discovery_collapsed.tsv.gz")
+
 #######################
 # Check FusionSeeker
 #######################
@@ -153,6 +184,19 @@ Annot_FusionSeeker_Huh7_Discovery %>% nrow()
 nrow(Annot_FusionSeeker_Huh7)
 
 write_tsv(Annot_FusionSeeker_Huh7_Discovery, file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_FusionSeeker_Huh7_Discovery.tsv.gz")
+
+Annot_FusionSeeker_Huh7_Discovery_collapsed <- Annot_FusionSeeker_Huh7_Discovery %>%
+  dplyr::group_by(across(c("Source","fusionGene",
+                           "Chrom1","Chrom2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(NumSupp), .groups = "drop") 
+
+write_tsv(Annot_FusionSeeker_Huh7_Discovery_collapsed, 
+          file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_FusionSeeker_Huh7_Discovery_collapsed.tsv.gz")
+
 
 #######################
 # Check GFSeeker
@@ -182,6 +226,17 @@ Annot_GFSeeker_Huh7_Discovery %>% nrow()
 nrow(Annot_GFSeeker_Huh7)
 
 write_tsv(Annot_GFSeeker_Huh7_Discovery, file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_GFSeeker_Huh7_Discovery.tsv.gz")
+
+Annot_GFSeeker_Huh7_Discovery_collapsed <- Annot_GFSeeker_Huh7_Discovery%>%
+  dplyr::group_by(across(c("gene1_name","gene2_name",
+                           "chrom1","chrom2",
+                           "Source", "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform", 
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(`support num`), .groups = "drop") 
+write_tsv(Annot_GFSeeker_Huh7_Discovery_collapsed, 
+          file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_GFSeeker_Huh7_Discovery_collapsed.tsv.gz")
 
 #######################
 # Check Genion
@@ -240,6 +295,19 @@ Annot_Genion_Huh7_Discovery %>% nrow()
 nrow(Annot_Genion_Huh7)
 
 write_tsv(Annot_Genion_Huh7_Discovery, file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_Genion_Huh7_Discovery.tsv.gz")
+
+Annot_Genion_Huh7_Discovery_collapsed <- Annot_Genion_Huh7_Discovery%>%
+  dplyr::group_by(across(c("Source","V1",
+                           "V8",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(V5), .groups = "drop") 
+
+write_tsv(Annot_Genion_Huh7_Discovery_collapsed, 
+          file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/Discovery/Annot_Genion_Huh7_Discovery_collapsed.tsv.gz")
+
 
 #################################
 # Prepare Dataframe for plotting
