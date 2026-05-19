@@ -96,8 +96,19 @@ CTATLR_sensecheck_annotated <- CTATLR_mitocheck_annotated %>%
     fusionType = if_else(!is.na(gene_a_id), "Sense-Antisense", fusionType)
   ) %>%
   select(-gene_a_id, -gene_b_id) # Clean up join columns
-write_tsv(CTATLR_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7_sensecheck.tsv.gz")
 
+
+write_tsv(CTATLR_sensecheck_annotated_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7_sensecheck_collapsed.tsv.gz")
+
+CTATLR_sensecheck_annotated_collapsed <- CTATLR_sensecheck_annotated %>%
+  dplyr::group_by(across(c("#FusionName","LeftGene","RightGene",
+                           "chrom1","chrom2",
+                           "Source", "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform","fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(num_LR), .groups = "drop") 
+
+write_tsv(CTATLR_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7_sensecheck.tsv.gz")
 ########
 # Genion
 ########
@@ -112,7 +123,18 @@ Genion_sensecheck_annotated <- Genion_mitocheck_annotated %>%
   ) %>%
   # Clean up temporary helper columns
   select(-gene_a_name, -gene_b_name)
+
 write_tsv(Genion_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7_sensecheck.tsv.gz")
+
+Genion_sensecheck_annotated_collapsed <- Genion_sensecheck_annotated %>%
+  dplyr::group_by(across(c("Source","V1",
+                           "V8",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(V5), .groups = "drop") 
+write_tsv(Genion_sensecheck_annotated_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7_sensecheck_collapsed.tsv.gz")
 
 ##############
 # FusionSeeker
@@ -130,6 +152,16 @@ FusionSeeker_sensecheck_annotated <- FusionSeeker_mitocheck_annotated %>%
   select(-gene_a_name, -gene_b_name)
 write_tsv(FusionSeeker_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker_Huh7_sensecheck.tsv.gz")
 
+FusionSeeker_sensecheck_annotated_collapsed <- FusionSeeker_sensecheck_annotated %>%
+  dplyr::group_by(across(c("Source","fusionGene",
+                           "Chrom1","Chrom2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(NumSupp), .groups = "drop") 
+write_tsv(FusionSeeker_sensecheck_annotated_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker_Huh7_sensecheck_collapsed.tsv.gz")
+
 #########
 # LongGF
 #########
@@ -140,6 +172,16 @@ LongGF_sensecheck_annotated <- LongGF_mitocheck_annotated %>%
   ) %>%
   select(-gene_a_id, -gene_b_id) # Clean up join columns
 write_tsv(LongGF_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF_Huh7_sensecheck.tsv.gz")
+
+LongGF_sensecheck_annotated_collapsed <- LongGF_sensecheck_annotated %>%
+  dplyr::group_by(across(c("V1","Source","V2",
+                           "chromosome1","chromosome2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(V3), .groups = "drop")
+write_tsv(LongGF_sensecheck_annotated_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF_Huh7_sensecheck_collapsed.tsv.gz")
 
 ##########
 # GFSeeker
@@ -152,6 +194,16 @@ GFSeeker_sensecheck_annotated <- GFSeeker_mitocheck_annotated %>%
   select(-gene_a_id, -gene_b_id) # Clean up join columns
 
 write_tsv(GFSeeker_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/GFSeeker_Huh7_sensecheck.tsv.gz")
+
+GFSeeker_sensecheck_annotated_collapsed <- GFSeeker_sensecheck_annotated %>%
+  dplyr::group_by(across(c("gene1_name","gene2_name",
+                           "chrom1","chrom2",
+                           "Source", "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform", 
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(`support num`), .groups = "drop") 
+write_tsv(GFSeeker_sensecheck_annotated_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/GFSeeker_Huh7_sensecheck_collapsed.tsv.gz")
 
 ########################
 # JAFFAL/JAFFA-Direct
@@ -193,34 +245,42 @@ JAFFAL_sensecheck_annotated <- JAFFAL_mitocheck_annotated %>%
 
 write_tsv(JAFFAL_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_Huh7_sensecheck.tsv")
 
+JAFFAL_sensecheck_annotated_collapsed <- JAFFAL_sensecheck_annotated  %>%
+  dplyr::group_by(across(c("sample","fusion.genes","Gene1","Gene2",
+                           "chrom1","chrom2",
+                           "Cell_Line","Algorithm", "fusionType",
+                           "RNA_sample","library_type","Platform","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_pairs = sum(spanning.pairs), tot_span_read = sum(spanning.reads), .groups = "drop") 
+write_tsv(JAFFAL_sensecheck_annotated_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_Huh7_sensecheck_collapsed.tsv")
+
 #############################
 #Plot Sense-Antisense Fusions
 #############################
-sensecheck_fusions <- rbind(dplyr::select(CTATLR_sensecheck_annotated, 
+sensecheck_fusions <- rbind(dplyr::select(CTATLR_sensecheck_annotated_collapsed, 
                                          c("RNA_sample", "Platform", "Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType", "full_label")),
-                           dplyr::select(Genion_sensecheck_annotated, 
+                           dplyr::select(Genion_sensecheck_annotated_collapsed, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType", "full_label")),
-                           dplyr::select(LongGF_sensecheck_annotated, 
+                           dplyr::select(LongGF_sensecheck_annotated_collapsed, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType", "full_label")), 
-                           dplyr::select(FusionSeeker_sensecheck_annotated, 
+                           dplyr::select(FusionSeeker_sensecheck_annotated_collapsed, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType", "full_label")),
-                           dplyr::select(GFSeeker_sensecheck_annotated, 
+                           dplyr::select(GFSeeker_sensecheck_annotated_collapsed, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType", "full_label")),
-                           dplyr::select(JAFFAL_sensecheck_annotated, 
+                           dplyr::select(JAFFAL_sensecheck_annotated_collapsed, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType", "full_label")))
-
 sensecheck_fusions$Platform <- factor(sensecheck_fusions$Platform, levels = c("Illumina", "PacBio", "ONT")) 
 
 sensecheck_fusions$library_type <- factor(sensecheck_fusions$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
@@ -245,15 +305,72 @@ ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"),
   scale_y_log10()+
   scale_colour_manual(values = Alg_colour_map)
 
-ggplot(dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense"), 
-       aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +
-  geom_point(stat = "count") +
+
+sensecount_data <- dplyr::filter(sensecheck_fusions, fusionType== "Sense-Antisense") %>%
+  count(RNA_sample, Algorithm, fusionType, library_type, Platform)
+
+ggplot(
+  sensecount_data,
+  aes(x = RNA_sample, y = n)
+) +
+  geom_boxplot(aes(group = RNA_sample), outlier.shape = NA) +
+  geom_jitter(aes(colour = Algorithm), width = 0.2, size = 2) +
   theme_bw() +
-  labs(title = "Sense-Antisense", subtitle = "minimum read support of 2", x = "", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(fusionType~library_type+Platform) +
-  #labs(fill = "Fusion Type")+
-  scale_y_log10()+
-  scale_colour_manual(values = platformlibsamp_colourmap)
+  labs(
+    title = "",
+    subtitle = "minimum read support of 2",
+    x = "",
+    y = "Count"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5),
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 12)
+  ) +
+  facet_grid(fusionType ~ library_type + Platform) +
+  scale_y_log10() +
+  scale_colour_manual(values = Alg_colour_map)
+
+ggplot(
+  sensecount_data,
+  aes(x = Platform, y = n)
+) +
+  geom_boxplot(aes(group = Platform), outlier.shape = NA) +
+  geom_jitter(aes(colour = Algorithm), width = 0.2, size = 2) +
+  theme_bw() +
+  labs(
+    title = "",
+    subtitle = "minimum read support of 2",
+    x = "",
+    y = "Count"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5),
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 12)
+  ) +
+  facet_grid(fusionType ~ library_type) +
+  scale_y_log10() +
+  scale_colour_manual(values = Alg_colour_map)
+
+ggplot(
+  sensecount_data,
+  aes(x = Platform, y = n)
+) +
+  geom_boxplot(aes(group = Platform), outlier.shape = NA) +
+  geom_jitter(aes(colour = Algorithm), width = 0.2, size = 2) +
+  theme_bw() +
+  labs(
+    title = "",
+    subtitle = "minimum read support of 2",
+    x = "",
+    y = "Count"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5),
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 12)
+  ) +
+  facet_grid(fusionType ~ library_type) +
+  #scale_y_log10() +
+  scale_colour_manual(values = Alg_colour_map)

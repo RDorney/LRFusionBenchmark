@@ -15,7 +15,7 @@ INPUT_DIR=${DATA_DIR}
 ALIGNED_DIR=/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker
 
 #thread
-threads=5
+threads=2
 
 #shared default values
 min_read_supp=2

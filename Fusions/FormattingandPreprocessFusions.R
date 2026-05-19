@@ -47,7 +47,7 @@ JAFFAL_Illumina_Huh7 <- read.csv("/bioinformatics/ryley/JAFFA_Promethion/jaffa_r
                                 grepl('B2', sample) ~ "B2"))
 
 Huh7_JAFFAL <- rbind(JAFFAL_Illumina_Huh7, JAFFAL_LR_Huh7) %>% #
-  mutate(full_label = interaction(Platform,library_type,RNA_sample, sep = ".")) %>%
+  dplyr::mutate(full_label = interaction(Platform,library_type,RNA_sample, sep = ".")) %>%
   tidyr::separate(fusion.genes, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) %>%
   dplyr::filter(chrom1 %in% standard_chrs)%>%
   dplyr::filter(chrom2 %in% standard_chrs)%>%
@@ -84,6 +84,15 @@ Huh7_JAFFAL_3Gene <- rbind(file_1, file_2,
   tidyr::separate(Fusion, sep=":" ,into = c("Gene1", "Gene2", "Gene3"), 
            remove = FALSE)
 
+Huh7_JAFFAL_collapsed <- Huh7_JAFFAL %>%
+  dplyr::group_by(across(c("sample","fusion.genes","Gene1","Gene2",
+                           "chrom1","chrom2","full_label",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           ))) %>%
+  dplyr::summarise(tot_span_pairs = sum(spanning.pairs), tot_span_read = sum(spanning.reads), .groups = "drop") 
+write_tsv(Huh7_JAFFAL_collapsed, 
+          file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Huh7_JAFFAL_collapsed.tsv.gz")
 ################################################################
 #Read in data from Genion
 ################################################################
@@ -117,7 +126,15 @@ Genion_Huh7<- Genion_Huh7 %>%
          Cell_Line = "Huh7",
          full_label = interaction(Platform,library_type,RNA_sample, sep = "."))
            
-
+Huh7_Genion_collapsed <- Genion_Huh7 %>%
+  dplyr::group_by(across(c("Source","V1",
+                           "V8",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(V5), .groups = "drop") 
+write_tsv(Huh7_Genion_collapsed, 
+          file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Huh7_Genion_collapsed.tsv.gz")
 ################################################################
 #Read in data from FusionSeeker
 ################################################################
@@ -158,6 +175,16 @@ FusionSeeker_Huh7 <- FusionSeeker_Huh7 %>%
          full_label = interaction(Platform,library_type,RNA_sample, sep = ".")
   )
 
+Huh7_FusionSeeker_collapsed <- FusionSeeker_Huh7 %>%
+  dplyr::group_by(across(c("Source","fusionGene",
+                           "Chrom1","Chrom2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(NumSupp), .groups = "drop") 
+write_tsv(Huh7_FusionSeeker_collapsed, 
+          file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Huh7_FusionSeeker_collapsed.tsv.gz")
+
 ################################################################
 #Read in data from LongGF
 ################################################################
@@ -167,8 +194,8 @@ system(grep_command)
 
 LongGF_Huh7 <- read.table(paste0(LongGF_Huh7_Directory, "/LongGF_Huh7_summary.tsv"))
 LongGF_Huh7 <- LongGF_Huh7 %>% 
-  mutate(V1 = gsub("/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF/LongGF.run.", "", V1)) %>%
-  mutate(V1 =gsub(".log:SumGF", "", V1))%>%
+  mutate(Source = gsub("/bioinformatics/ryley/Gencode44/Huh7_Library/LongGF/LongGF.run.", "", V1)) %>%
+  mutate(Source = gsub(".log:SumGF", "", Source))%>%
   tidyr::separate(V2, into = c("Gene1", "Gene2"), sep = ":", remove = FALSE) %>% 
   tidyr::separate(V4, into = c("chromosome1", "breakpoint1"), sep = ":", remove = FALSE) %>% 
   tidyr::separate(V5, into = c("chromosome2", "breakpoint2"), sep = ":", remove = FALSE) %>%
@@ -186,6 +213,15 @@ LongGF_Huh7 <- LongGF_Huh7 %>%
          Cell_Line = "Huh7",
          full_label = interaction(Platform,library_type,RNA_sample, sep = "."))
 
+Huh7_LongGF_collapsed <- LongGF_Huh7 %>%
+  dplyr::group_by(across(c("V1","Source","V2",
+                           "chromosome1","chromosome2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(V3), .groups = "drop") 
+write_tsv(Huh7_LongGF_collapsed, 
+          file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Huh7_LongGF_collapsed.tsv.gz")
 ################################################################
 #Read in data from GFSeeker
 ################################################################
@@ -225,6 +261,16 @@ GFSeeker_Huh7 <- GFSeeker_Huh7  %>%
 
 og_GFSeeker_Huh7 <- GFSeeker_Huh7
 
+Huh7_GFSeeker_collapsed <- GFSeeker_Huh7 %>%
+  dplyr::group_by(across(c("gene1_name","gene2_name",
+                           "chrom1","chrom2",
+                           "Source", "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(`support num`), .groups = "drop") 
+
+write_tsv(Huh7_GFSeeker_collapsed, 
+          file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Huh7_GFSeeker_collapsed.tsv.gz")
 ################################################################
 #Read in data from CTAT-LR-Fusion
 ################################################################
@@ -258,3 +304,14 @@ CTATLR_Huh7 <- CTATLR_Huh7  %>%
   mutate(Algorithm = "CTAT-LR-Fusion")
 
 og_CTATLR_Huh7 <- CTATLR_Huh7
+
+Huh7_CTATLR_collapsed <- CTATLR_Huh7 %>%
+  dplyr::group_by(across(c("#FusionName","LeftGene","RightGene",
+                           "chrom1","chrom2",
+                           "Source", "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(num_LR), .groups = "drop") 
+
+write_tsv(Huh7_CTATLR_collapsed, 
+          file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Huh7_CTATLR_collapsed.tsv.gz")

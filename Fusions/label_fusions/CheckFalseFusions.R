@@ -35,7 +35,13 @@ CTATLR_mitocheck_annotated <- CTATLR_mitocheck %>%
       TRUE ~ NA 
     )
   )
-
+CTATLR_mitocheck_annotated_collapsed <- CTATLR_mitocheck_annotated %>%
+  dplyr::group_by(across(c("#FusionName","LeftGene","RightGene",
+                           "chrom1","chrom2",
+                           "Source", "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform","fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(num_LR), .groups = "drop") 
 ###########################
 # Check Genion
 ###########################
@@ -57,6 +63,15 @@ Genion_mitocheck_annotated <- Genion_mitocheck %>%
     )
   )
 
+Genion_mitocheck_annotated_collapsed <- Genion_mitocheck_annotated%>%
+  dplyr::group_by(across(c("Source","V1",
+                           "V8",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(V5), .groups = "drop") 
+
 ###########################
 # Check FusionSeeker
 ###########################
@@ -70,6 +85,14 @@ FusionSeeker_mitocheck_annotated <- FusionSeeker_mitocheck %>%
       TRUE ~ NA 
     )
   )
+FusionSeeker_mitocheck_annotated_collapsed <- FusionSeeker_mitocheck_annotated %>%
+  dplyr::group_by(across(c("Source","fusionGene",
+                           "Chrom1","Chrom2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(NumSupp), .groups = "drop") 
 
 ###########################
 # Check LongGF
@@ -84,6 +107,14 @@ LongGF_mitocheck_annotated <- LongGF_mitocheck %>%
       TRUE ~ NA 
     )
   )
+LongGF_mitocheck_annotated_collapsed <- LongGF_mitocheck_annotated %>%
+  dplyr::group_by(across(c("V1","Source","V2",
+                           "chromosome1","chromosome2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(V3), .groups = "drop")
 
 ##################################
 # Check GFSeeker
@@ -98,7 +129,14 @@ GFSeeker_mitocheck_annotated <- GFSeeker_mitocheck %>%
       TRUE ~ NA 
     )
   )
-
+GFSeeker_mitocheck_annotated_collapsed <- GFSeeker_mitocheck_annotated %>%
+  dplyr::group_by(across(c("gene1_name","gene2_name",
+                           "chrom1","chrom2",
+                           "Source", "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform", 
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_read = sum(`support num`), .groups = "drop") 
 ##################################
 # Check JAFFAL and update function
 ##################################
@@ -112,31 +150,38 @@ JAFFAL_mitocheck_annotated <- JAFFAL_mitocheck %>%
       TRUE ~ NA 
     )
   )
+JAFFAL_mitocheck_annotated_collapsed <- JAFFAL_mitocheck_annotated %>%
+  dplyr::group_by(across(c("sample","fusion.genes","Gene1","Gene2",
+                           "chrom1","chrom2",
+                           "Cell_Line","Algorithm", "fusionType",
+                           "RNA_sample","library_type","Platform","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_pairs = sum(spanning.pairs), tot_span_read = sum(spanning.reads), .groups = "drop") 
 
 ###########################
 # combined dataframes
 ###########################
-mitocheck_fusions <- rbind(dplyr::select(CTATLR_mitocheck_annotated, 
+mitocheck_fusions <- rbind(dplyr::select(CTATLR_mitocheck_annotated_collapsed, 
                                          c("RNA_sample", "Platform", "Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType","full_label")),
-                           dplyr::select(Genion_mitocheck_annotated, 
+                           dplyr::select(Genion_mitocheck_annotated_collapsed, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType","full_label")),
-                           dplyr::select(LongGF_mitocheck_annotated, 
+                           dplyr::select(LongGF_mitocheck_annotated_collapsed, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType","full_label")), 
-                           dplyr::select(FusionSeeker_mitocheck_annotated, 
+                           dplyr::select(FusionSeeker_mitocheck_annotated_collapsed, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType","full_label")),
-                           dplyr::select(GFSeeker_mitocheck_annotated, 
+                           dplyr::select(GFSeeker_mitocheck_annotated_collapsed, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType","full_label")),
-                           dplyr::select(JAFFAL_mitocheck_annotated, 
+                           dplyr::select(JAFFAL_mitocheck_annotated_collapsed, 
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType","full_label")))
@@ -156,7 +201,7 @@ mitocheck_fusions$full_label <- factor(mitocheck_fusions$full_label, levels = c(
 
 
 ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)), 
-       aes(x = RNA_sample, colour = Algorithm)) +
+       aes(x = RNA_sample, colour = Algorithm, shape=)) +
   geom_point(stat = "count") +
   theme_minimal() +
   labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "", y = "Count")+

@@ -69,30 +69,13 @@ Quality control
 ```{bash}
 #Read Lengths and Quality
 #Nanoplot
-conda create --name nanoplot_env
-conda activate nanoplot_env
-conda install -c bioconda nanoplot
+pip install nanoplot
 
 NanoPlot -t 10 --bam /bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker/*sorted.bam --minlength 100 -o Huh7_bam_summary_plots
 
 NanoPlot -t 10 --summary/bioinformatics/ryley/Library_Benchmark/raw_files/Huh*/*/*/sequencing*txt -o ONT_Only_summary-plots
 
-#SQANTI-reads
-export PATH=$HOME/anacondaPy37/bin:$PATH
-conda -V
-conda update conda
-conda create --name sqanti_env
-cd /bioinformatics/ryley
-wget https://github.com/ConesaLab/SQANTI3/releases/download/v5.5.4/SQANTI3_v5.5.4.zip
-mkdir sqanti3
-unzip SQANTI3_v5.5.4.zip -d sqanti3
 
-python sqanti3_reads.py
-    --raw_data_dir ./example/sqanti_reads_test \
-     --output ./example/sqanti_reads_test/new_output \
-     --design ./example/sqanti_reads_test/sqR_design_file.csv \
-     --refGTF test/test_data/reference/test_reference.gtf \
-     --refFasta test/test_data/genome/genome_test.fasta
 #LongReadSum
 ```
 

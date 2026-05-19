@@ -664,9 +664,9 @@ count_data <- fusions_Huh7_types %>%
 
 ggplot(
   count_data,
-  aes(x = RNA_sample, y = n)
+  aes(x = Platform, y = n)
 ) +
-  geom_boxplot(aes(group = RNA_sample), outlier.shape = NA) +
+  geom_boxplot(aes(group = Platform), outlier.shape = NA) +
   geom_jitter(aes(colour = Algorithm), width = 0.2, size = 2) +
   theme_bw() +
   labs(
