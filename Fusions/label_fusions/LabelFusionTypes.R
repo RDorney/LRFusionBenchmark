@@ -633,87 +633,44 @@ write_tsv(Annot_JAFFAL_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/H
 #####################################
 # Plot fusion types
 #####################################
-cols <- c("RNA_sample", "Platform", "Cell_Line", "Algorithm", "library_type", "fusionType", "full_label")
-df_list <- list(
-  Annot_CTATLR_Huh7, Annot_Genion_Huh7, Annot_LongGF_Huh7, 
-  Annot_FusionSeeker_Huh7, Annot_GFSeeker_Huh7, 
-  Annot_JAFFAL_Huh7, Annot_JAFFAL_Huh7_3Gene
-)
-fusions_Huh7_types <- df_list %>%
-  map(~ .x %>% unique() %>% select(all_of(cols))) %>%
-  bind_rows()
-
-
-fusions_Huh7_types <- rbind(dplyr::select(unique(Annot_CTATLR_Huh7), 
+fusions_Huh7_types <- rbind(dplyr::select(unique(Annot_CTATLR_Huh7_collapsed), 
                                           c("RNA_sample", "Platform", "Cell_Line", 
                                             "Algorithm", "library_type",    
-                                            "fusionType", "full_label")),
-                            dplyr::select(unique(Annot_Genion_Huh7), 
+                                            "fusionType")),
+                            dplyr::select(unique(Annot_Genion_Huh7_collapsed), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",   
-                                             "fusionType", "full_label")),
-                            dplyr::select(unique(Annot_LongGF_Huh7), 
+                                             "fusionType")),
+                            dplyr::select(unique(Annot_LongGF_Huh7_collapsed), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",    
-                                            "fusionType", "full_label")), 
-                            dplyr::select(unique(Annot_FusionSeeker_Huh7), 
+                                            "fusionType")), 
+                            dplyr::select(unique(Annot_FusionSeeker_Huh7_collapsed), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",   
-                                             "fusionType", "full_label")),
-                            dplyr::select(unique(Annot_GFSeeker_Huh7), 
+                                             "fusionType")),
+                            dplyr::select(unique(Annot_GFSeeker_Huh7_collapsed), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",    
-                                            "fusionType", "full_label")),
-                            dplyr::select(unique(Annot_JAFFAL_Huh7), 
+                                            "fusionType")),
+                            dplyr::select(unique(Annot_JAFFAL_Huh7_collapsed), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",    
-                                            "fusionType", "full_label")),
+                                            "fusionType")),
                             dplyr::select(unique(Annot_JAFFAL_Huh7_3Gene), 
                                           c("RNA_sample",  "Platform","Cell_Line", 
                                             "Algorithm", "library_type",    
-                                            "fusionType", "full_label")))
+                                            "fusionType")))
 
 fusions_Huh7_types$Platform <- factor(fusions_Huh7_types$Platform, levels = c("Illumina", "PacBio", "ONT")) 
 
 fusions_Huh7_types$library_type <- factor(fusions_Huh7_types$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
-fusions_Huh7_types$full_label <- factor(fusions_Huh7_types$full_label, levels = c("Illumina.PCR_cDNA.B1", "Illumina.PCR_cDNA.B2", 
-                                                                                  "PacBio.PCR_cDNA.B1", "PacBio.PCR_cDNA.B2", 
-                                                                                  "ONT.PCR_cDNA.B1","ONT.PCR_cDNA.B2", 
-                                                                                  "ONT.direct_cDNA.B1", "ONT.direct_cDNA.B2", 
-                                                                                  "ONT.direct_RNA.B1", "ONT.direct_RNA.B2"))
+                                                                           "ONT.PCR_cDNA.B1","ONT.PCR_cDNA.B2", 
+                                                                           "ONT.direct_cDNA.B1", "ONT.direct_cDNA.B2",                                                                                 
+                                                                           "ONT.direct_RNA.B1", "ONT.direct_RNA.B2"))
 
 write_tsv(fusions_Huh7_types, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/fusions_Huh7_types.tsv")
 
-ggplot(fusions_Huh7_types, 
-       aes(x = RNA_sample, colour = Algorithm)) +
-  geom_point(stat = "count") +
-  theme_bw() +
-  labs(title = "Fusion Types", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(fusionType~library_type+Platform) +
-  #labs(fill = "Fusion Type")+
-  scale_y_log10()+
-  scale_colour_manual(values = Alg_colour_map)
-
-
-ggplot(dplyr::filter(fusions_Huh7_types, !fusionType %in% c(
-  "Mitochondrial:Genomic",
-  "Mitochondrial:Mitochondrial",
-  "Self-Misalignment"
-)), 
-       aes(x = RNA_sample, colour = Algorithm)) +
-  geom_point(stat = "count") +
-  theme_bw() +
-  labs(title = "", subtitle = "minimum read support of 2", x = "", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(fusionType~library_type+Platform) +
-  labs(fill = "Algorithm")+
-  scale_y_log10()+
-  scale_colour_manual(values = Alg_colour_map)
 
 count_data <- fusions_Huh7_types %>%
   filter(!fusionType %in% c(
