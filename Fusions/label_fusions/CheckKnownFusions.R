@@ -5,7 +5,9 @@
 ################################
 library(tidyverse)
 # Load in Known Fusions List
-source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Known_Fusions/ImportFormat_Known_Huh7.R")
+#source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Known_Fusions/ImportFormat_Known_Huh7.R")
+huh7fusions_manualannot<- read.csv("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Known_Fusions/KnownHuh7Fusion_ah.csv")
+
 View(huh7fusions_manualannot)
 huh7fusions_manualannot<- huh7fusions_manualannot%>% mutate(fusion.gene.id = paste0(GENEID.x, "::", GENEID.y))
 #huh7fusions_manualannot$Discovery <- "Known"
@@ -40,7 +42,8 @@ Annot_CTATLR_Huh7_Discovery_collapsed <- Annot_CTATLR_Huh7_Discovery%>%
   dplyr::group_by(across(c("#FusionName","LeftGene","RightGene",
                            "chrom1","chrom2",
                            "Source", "Cell_Line","Algorithm",
-                           "RNA_sample","library_type","Platform","fusionType","full_label"
+                           "RNA_sample","library_type","Platform","fusionType",
+                           "full_label", "Discovery"
   ))) %>%
   dplyr::summarise(tot_span_read = sum(num_LR), .groups = "drop") 
 write_tsv(Annot_CTATLR_Huh7_Discovery_collapsed, 
@@ -91,7 +94,8 @@ Annot_JAFFAL_Huh7_Discovery_collasped <- Annot_JAFFAL_Huh7_Discovery %>%
   dplyr::group_by(across(c("sample","fusion.genes","Gene1","Gene2",
                            "chrom1","chrom2",
                            "Cell_Line","Algorithm", "fusionType",
-                           "RNA_sample","library_type","Platform","full_label"
+                           "RNA_sample","library_type","Platform",
+                           "full_label", "Discovery"
   ))) %>%
   dplyr::summarise(tot_span_pairs = sum(spanning.pairs), tot_span_read = sum(spanning.reads), .groups = "drop") 
 write_tsv(Annot_JAFFAL_Huh7_Discovery_collasped, 
@@ -151,7 +155,7 @@ Annot_LongGF_Huh7_Discovery_collapsed <- Annot_LongGF_Huh7_Discovery %>%
                            "chromosome1","chromosome2",
                            "Cell_Line","Algorithm",
                            "RNA_sample","library_type","Platform",
-                           "fusionType","full_label"
+                           "fusionType","full_label", "Discovery"
   ))) %>%
   dplyr::summarise(tot_span_read = sum(V3), .groups = "drop")
 write_tsv(Annot_LongGF_Huh7_Discovery_collapsed, 
@@ -190,7 +194,7 @@ Annot_FusionSeeker_Huh7_Discovery_collapsed <- Annot_FusionSeeker_Huh7_Discovery
                            "Chrom1","Chrom2",
                            "Cell_Line","Algorithm",
                            "RNA_sample","library_type","Platform",
-                           "fusionType","full_label"
+                           "fusionType","full_label", "Discovery"
   ))) %>%
   dplyr::summarise(tot_span_read = sum(NumSupp), .groups = "drop") 
 
@@ -232,7 +236,7 @@ Annot_GFSeeker_Huh7_Discovery_collapsed <- Annot_GFSeeker_Huh7_Discovery%>%
                            "chrom1","chrom2",
                            "Source", "Cell_Line","Algorithm",
                            "RNA_sample","library_type","Platform", 
-                           "fusionType","full_label"
+                           "fusionType","full_label", "Discovery"
   ))) %>%
   dplyr::summarise(tot_span_read = sum(`support num`), .groups = "drop") 
 write_tsv(Annot_GFSeeker_Huh7_Discovery_collapsed, 
@@ -301,7 +305,7 @@ Annot_Genion_Huh7_Discovery_collapsed <- Annot_Genion_Huh7_Discovery%>%
                            "V8",
                            "Cell_Line","Algorithm",
                            "RNA_sample","library_type","Platform",
-                           "fusionType","full_label"
+                           "fusionType","full_label", "Discovery"
   ))) %>%
   dplyr::summarise(tot_span_read = sum(V5), .groups = "drop") 
 

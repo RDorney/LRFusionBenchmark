@@ -665,9 +665,6 @@ fusions_Huh7_types <- rbind(dplyr::select(unique(Annot_CTATLR_Huh7_collapsed),
 fusions_Huh7_types$Platform <- factor(fusions_Huh7_types$Platform, levels = c("Illumina", "PacBio", "ONT")) 
 
 fusions_Huh7_types$library_type <- factor(fusions_Huh7_types$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
-                                                                           "ONT.PCR_cDNA.B1","ONT.PCR_cDNA.B2", 
-                                                                           "ONT.direct_cDNA.B1", "ONT.direct_cDNA.B2",                                                                                 
-                                                                           "ONT.direct_RNA.B1", "ONT.direct_RNA.B2"))
 
 write_tsv(fusions_Huh7_types, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/fusions_Huh7_types.tsv")
 
@@ -698,7 +695,7 @@ ggplot(
     axis.text = element_text(size = 12),
     axis.title = element_text(size = 12)
   ) +
-  facet_grid(fusionType ~ library_type + Platform) +
+  facet_grid(fusionType ~ library_type, scales = "free") +
   scale_y_log10() +
   scale_colour_manual(values = Alg_colour_map)
 
