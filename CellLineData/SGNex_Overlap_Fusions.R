@@ -56,7 +56,7 @@ Overlap_CellData_algorithms$Sequencing_Depth<- factor(Overlap_CellData_algorithm
 Overlap_CellData_algorithms$Library<- factor(Overlap_CellData_algorithms$Library, 
                                              levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
 
-Overlap_CellData_discovery <- left_join(Overlap_CellData_algorithms, known_fusions_biomart[c(1,6,7,10:12)], 
+Overlap_CellData_discovery <- left_join(Overlap_CellData_algorithms, known_fusions_manual_annotation, 
                                         by = c("fusionGeneID", "Cell_Lines"="Cell_Line")) %>%  
   mutate(discovery = if_else(is.na(discovery), "novel", discovery))
 

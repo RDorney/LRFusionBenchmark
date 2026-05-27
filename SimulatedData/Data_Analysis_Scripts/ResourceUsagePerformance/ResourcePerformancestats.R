@@ -14,3 +14,10 @@ filter(RUP_table, size_category != "100GB") %>%
          wall_time_minutes = (wall_time_seconds/60))%>%
   filter(spiked == "yes")%>%
   View()
+RUP_TABLE_Suppl<- filter(RUP_table, size_category != "100GB") %>%
+  select(!c(dataset_type, input_size_gb)) %>%
+  arrange(desc(peak_ram_gb)) %>%
+  mutate(user_time_minutes = (user_time_seconds/60),
+         wall_time_minutes = (wall_time_seconds/60))%>%
+  filter(spiked == "yes")
+write_tsv(RUP_TABLE_Suppl,"~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/ResourceUsagePerformance/Benchmark_metrics_supplementary.tsv")

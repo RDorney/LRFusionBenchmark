@@ -3,7 +3,7 @@ stat_summary <- filter(combined_data, read_supp >= 2, control == "positive") %>%
   dplyr::group_by(across(-read_supp)) %>%
   dplyr::summarise(read_supp = sum(read_supp), .groups = "drop")%>%
   unique() %>%
-  mutate(stat_category = case_when(
+  dplyr::mutate(stat_category = case_when(
     grepl("false|wrong|truncated|reverse|chromosomal_misalignment", fusionType) ~ "FALSE_CALL",
     TRUE ~ "TRUE_CALL")) %>%
   
@@ -14,7 +14,7 @@ stat_summary <- filter(combined_data, read_supp >= 2, control == "positive") %>%
             True_Point = sum(CALL_COUNT[stat_category == "TRUE_CALL"], na.rm = TRUE)) %>%
   left_join(Spiked_Counts_wo_SF[c(2:4)])%>%
   # Compute final statistics
-  mutate(FDR = False_Point / (False_Point + True_Point),
+  dplyr::mutate(FDR = False_Point / (False_Point + True_Point),
          Precision = True_Point / (True_Point + False_Point),
          Recall = True_Point / Spiked_Number,  
          F1 = (2 * (Precision * Recall)) / (Precision + Recall),
