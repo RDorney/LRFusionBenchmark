@@ -9,7 +9,7 @@ CONDA_PREFIX="$HOME/anaconda3/envs/Arriba251"
 ARRIBA_FILES=$CONDA_PREFIX/var/lib/arriba
 
 ## Set up directories
-PROJ_DIR="/bioinformatics/ryley/Gencode44/Huh7_Library/"
+PROJ_DIR="/bioinformatics/ryley/Gencode44/Huh7_Library"
 mkdir -p ${PROJ_DIR}/Arriba_Huh7
 cd ${PROJ_DIR}/Arriba_Huh7 || exit 1
 
