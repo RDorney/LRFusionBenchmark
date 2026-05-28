@@ -14,7 +14,7 @@ ln -sf /bioinformatics/ryley/Library_Benchmark/raw_files/AGRF_Sequencing_Data/Il
 ##################
 # Important note #
 ##################
-# Make sure the fastq file names are in "%_*.fastq.gz" format. 
+# Make sure the fastq file names are in "%_*.fastq.gz" format. htop
 # Caution if :
 #   more than one or no "_" in name
 
