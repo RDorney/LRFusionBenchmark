@@ -315,3 +315,32 @@ Huh7_CTATLR_collapsed <- CTATLR_Huh7 %>%
 
 write_tsv(Huh7_CTATLR_collapsed, 
           file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Huh7_CTATLR_collapsed.tsv.gz")
+
+######################
+# Arriba
+######################
+myfiles<-list.files(path = "/bioinformatics/ryley/Gencode44/Huh7_Library/Arriba_Huh7/results", 
+                    pattern = "fusions.tsv", full.names = TRUE, recursive = TRUE)
+Arriba_Huh7B1<- read_tsv("/bioinformatics/ryley/Gencode44/Huh7_Library/Arriba_Huh7/results/Huh7B1_fusions.tsv") %>% 
+  mutate(library_type = "PCR_cDNA",           
+         RNA_sample = "B1",
+         Platform = "Illumina",
+         Algorithm = "Arriba")
+Arriba_Huh7B2<- read_tsv("/bioinformatics/ryley/Gencode44/Huh7_Library/Arriba_Huh7/results/Huh7B1_fusions.tsv") %>% 
+  mutate(library_type = "PCR_cDNA",
+         RNA_sample = "B2",
+         Platform = "Illumina",
+         Algorithm = "Arriba")
+
+Huh7_Arriba_filt <- rbind(Arriba_Huh7B1, Arriba_Huh7HB2) %>% #
+  dplyr::mutate(full_label = interaction(Platform,library_type,RNA_sample, sep = ".")) %>%
+  tidyr::separate(breakpoint1, into = c("chrom1", "base1"), ":", remove=FALSE) %>% 
+  tidyr::separate(breakpoint2, into = c("chrom2", "base2"), ":", remove=FALSE)%>%
+  dplyr::filter((split_reads1 + split_reads2) >= 2 |
+                  discordant_mates >= 2 |
+                  ((split_reads1 + split_reads2) & discordant_mates >= 1)
+  )
+
+write_tsv(Huh7_Arriba_filt, 
+          file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Huh7_Arriba_filt_notcollapsed.tsv.gz")
+

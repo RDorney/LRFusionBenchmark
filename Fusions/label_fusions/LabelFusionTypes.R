@@ -667,15 +667,13 @@ fusions_Huh7_types$Platform <- factor(fusions_Huh7_types$Platform, levels = c("I
 fusions_Huh7_types$library_type <- factor(fusions_Huh7_types$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
 
 write_tsv(fusions_Huh7_types, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/fusions_Huh7_types.tsv")
-
+fusions_Huh7_types<- read_tsv("/bioinformatics/ryley/Gencode44/Huh7_Library/fusions_Huh7_types.tsv")
 
 count_data <- fusions_Huh7_types %>%
-  filter(!fusionType %in% c(
-    "Mitochondrial:Genomic",
-    "Mitochondrial:Mitochondrial",
-    "Self-Misalignment"
-  )) %>%
   count(RNA_sample, Algorithm, fusionType, library_type, Platform)
+
+View(fusions_Huh7_types %>%
+  count(fusionType, library_type, Platform))
 
 ggplot(
   count_data,
