@@ -104,8 +104,8 @@ SGNex_summary_FusionSeeker_df <- SGNex_summary_FusionSeeker_df %>%
 # LongGF
 #####################
 disc_LongGF_SGNex <- left_join(LongGF_SGNex_Annot, known_fusions_manual_annotation, 
-                              by = c("Gene1" = "ensembl_gene_id.x", 
-                                     "Gene2" = "ensembl_gene_id.y", 
+                              by = c("ensembl_gene_id.x", 
+                                     "ensembl_gene_id.y", 
                                      "Cell_Lines"="Cell_Line")) %>% 
   mutate(discovery = if_else(is.na(discovery), "novel", discovery)) %>% 
   mutate(fusionGeneID = paste0(ensembl_gene_id.x, "::", ensembl_gene_id.y))
