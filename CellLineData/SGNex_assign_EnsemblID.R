@@ -30,7 +30,8 @@ gene_info <- ensembldb::select(ensembldbv110,
                                  keytype = "SYMBOL", 
                                  columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
-  distinct(SYMBOL, .keep_all = TRUE) %>%
+  dplyr::filter(grepl("^ENSG", GENEID)) %>%
+  dplyr::distinct(SYMBOL, .keep_all = TRUE) %>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
          "ensembl_gene_id"="GENEID")
 LongGF_SGNex_Annot <-left_join(LongGF_SGNex_Annot, gene_info, by  = c("Gene1"="external_gene_name")) %>% 
@@ -55,7 +56,8 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keytype = "SYMBOL", 
                                columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
-  distinct(SYMBOL, .keep_all = TRUE) %>%
+  dplyr::filter(grepl("^ENSG", GENEID)) %>%
+  dplyr::distinct(SYMBOL, .keep_all = TRUE) %>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
 
@@ -80,6 +82,7 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keytype = "SYMBOL", 
                                columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
+  dplyr::filter(grepl("^ENSG", GENEID)) %>%
   distinct(SYMBOL, .keep_all = TRUE) %>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
@@ -109,6 +112,7 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keytype = "SYMBOL", 
                                columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
+  dplyr::filter(grepl("^ENSG", GENEID)) %>%
   distinct(SYMBOL, .keep_all = TRUE) %>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
@@ -138,6 +142,7 @@ gene_info <- ensembldb::select(ensembldbv109,
                                keytype = "SYMBOL", 
                                columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
   dplyr::filter(SEQNAME %in% standard_chrs)%>%
+  dplyr::filter(grepl("^ENSG", GENEID)) %>%
   distinct(SYMBOL, .keep_all = TRUE) %>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
