@@ -323,3 +323,4 @@ ggplot(filter(super_SGNex_summary, Sequencing_Depth == "Total", novelnumber > 0)
         axis.text = element_text(size = 11),
         axis.title = element_text(size = 11))+
   scale_colour_npg()
+
