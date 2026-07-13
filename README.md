@@ -212,7 +212,9 @@ If you use this repository in your work, please cite the accompanying publicatio
 ## Authors
 
 **Ryley Dorney**
+
 **Siyuan (Thaddeus) Wu**
+
 **Ulf Schmitz**
 
 ComBioLab @ James Cook University
