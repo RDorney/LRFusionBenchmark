@@ -1,117 +1,226 @@
-# LongReadFusionCallerBenchmark
+# LRS-FusionBench
 
-This repository contains code, workflows, and analysis files used to evaluate multiple algorithms for identifying **gene fusions in long-read RNA sequencing data**.  
-Benchmarking is performed across multiple **sequencing depths** and **read quality levels**.
+**LRS-FusionBench** is a collection of scripts, datasets, and analysis workflows used to benchmark long-read RNA sequencing fusion detection tools. The repository contains code for preprocessing sequencing data, standardising fusion caller outputs, benchmarking discovery performance, evaluating known fusions, analysing computational resource usage, and generating publication-quality figures.
 
-The project includes benchmarking of **real and simulated Oxford Nanopore Technologies (ONT) data**, with a focus on fusion detection accuracy, breakpoint precision, false-positive rates, and cross-algorithm comparisons.
-
----
-
-## 🔬 Project Overview
-
-Long-read RNA sequencing captures full-length transcripts, making it a powerful approach for detecting gene fusions and complex transcript structures.  
-This repository aims to:
-
-- Compare long-read RNA library preparation and analysis strategies  
-- Benchmark fusion detection tools:
-  - **JAFFAL**
-  - **LongGF**
-  - **FusionSeeker**
-  - **Genion**
-- Evaluate breakpoint accuracy and fusion classification
-- Quantify false-positive and partial fusion calls
-- Characterize algorithm performance across:
-  - Sequencing depth (1–100 GB)
-  - Read quality (e.g. Q85–Q95)
-  - Simulated vs real cell line datasets
-- Provide reproducible pipelines and analysis scripts for long-read fusion benchmarking
+This repository accompanies ongoing work benchmarking long-read fusion detection algorithms using both simulated datasets and real sequencing data, including Huh7 hepatocellular carcinoma (HCC) cell line datasets.
 
 ---
 
-## 📁 Repository Structure
+## Repository structure
 
-### 📂 `CellLineData/`
-
-Analysis of **real cell line datasets** (K562 and MCF7).
-
-**Key contents:**
-
-- R Markdown workflows for algorithm benchmarking:
-  - `2025_Algorithm_Cell_lines_K562_MCF7_analysis.rmd`
-  - `K562_MCF7_analysis.rmd`
-- Fusion preprocessing and filtering scripts:
-  - `PreprocessSGNexFusions.R`
-  - `CheckAtypicalFusions.R`
-  - `Mito_Chimeras_SGNex.R`
-  - `LongGF_extractSumGF.sh`
-- Curated fusion references:
-  - `known_fusions_manual_annotation.xlsx`
-  - `real_gene_fusions.tsv`
-- Summary figures and reports:
-  - `Cell_Line_novelvsknown.pdf`
-
----
-
-### 📂 `Figures/`
-
-Final and supplementary figures used in the manuscript, along with scripts used to generate them.
-
-- Manuscript and supplementary figures (`.pdf`, `.png`, `.jpeg`)
-- Figure-generation scripts
-
-#### 📂 `Figures/SCRIPTS/`
-
-Modular R scripts used to generate specific plots and summaries, including:
-
-- Fusion recall, precision, and F1 analyses
-- Breakpoint statistics
-- Fusion type overlap (UpSet plots)
-- Read-support comparisons
-- Manual filtering and true-call overlap analyses
+```
+LRS-FusionBench/
+│
+├── CellLineData/
+│   Analysis of SGNex K562 and MCF7 cell line fusion datasets
+│
+├── Figures/
+│   Scripts and input data used to generate publication figures
+│
+├── Fusions/ 
+│   Huh7 Fusion preprocessing, discovery benchmarking, resource analysis,
+│   fusion labelling and promiscuity analyses
+│
+├── Known_Fusions/
+│   Compilation of known cancer fusion databases and Huh7 reference fusions
+│
+├── PreprocessingReads/
+│   Shell scripts for adapter trimming, read filtering and preprocessing
+│
+├── ReadLengths/
+│   Read length analyses and summary statistics
+│
+├── SimulatedData/
+│   Scripts for analysing simulated benchmarking datasets
+│
+├── Huh7_JAFFAL_data_analysis.R
+├── Preparing_data.rmd
+└── README.md
+```
 
 ---
 
-### 📂 `SimulatedData/`
+## Repository contents
 
-All resources related to **simulated fusion benchmarking**.
+### PreprocessingReads/
 
-#### 📂 `SimulatedData/Data_Analysis_Scripts/`
+Scripts for preparing sequencing reads prior to fusion detection.
 
-Scripts for preprocessing, consolidation, and benchmarking simulated datasets:
+* `DoradoTrimAdaptor.sh` — Adapter trimming using Dorado.
+* `Fastp_trim_and_filter.sh` — Read trimming and quality filtering with Fastp.
+* `Filter_NanoporeReads_Chopper.sh` — Read filtering using Chopper.
+* `sequencing_data_shortcuts.sh` — Convenience commands for managing sequencing datasets.
 
-- Preprocessing pipelines for JAFFAL, Genion, FusionSeeker, and LongGF
-- Precision/recall and read-support analyses
-- Breakpoint accuracy and overlap statistics
-- Resource usage and performance monitoring scripts
-- R Markdown analysis:
-  - `simulated_reads_recall.rmd`
+---
 
-#### 📂 `SimulatedData/FASTQC_files/`
+### Fusions/
 
-FastQC reports for simulated and spike-in datasets across multiple:
+Contains the primary benchmarking workflows performed on our Huh7 Data.
 
-- Sequencing depths
-- Read quality thresholds
+Major components include:
 
-#### 📂 `SimulatedData/SantiyCheck/`
+* Formatting and standardisation of fusion caller outputs
+* Fusion discovery benchmarking
+* Fusion labelling and annotation
+* Resource usage benchmarking
+* Fusion promiscuity analyses
+* Tool execution scripts
 
-Quality-control checks to validate spike-in recovery:
+Key files:
 
-- `Check_Spiked_in_Fusions.Rmd`
+* `FormattingandPreprocessFusions.R`
+* `fusions_Huh7_discovery.tsv.gz`
+* `fusions_readsupport_Huh7_discovery.tsv.gz`
 
-#### 📂 `SimulatedData/simulated_data_info/`
+Subdirectories include:
 
-Metadata and reference files describing simulated fusion datasets:
+* `Discovery/`
+* `label_fusions/`
+* `Promiscuity/`
+* `resource_benchmark/`
+* `runtools/`
 
-- `FUSIM_benchmark_fusions.txt`  
-  *(FUSIM output describing simulated fusion events)*
-- `Fusion_ReadCounts.csv`  
-  *(Read counts per fusion per simulation)*
-- `simulated_fusion_info_with_GeneID.tsv`
-- `Spiked_Fusions.csv`
-- `Spiked_Fusions_no_chimeras.csv`
-- `Spiked_Fusions_with_chimeras.csv`
-- `Porechop_simulate_files.rmd`
+---
 
+### Known_Fusions/
+
+Compilation of publicly available fusion databases together with manually curated Huh7 fusion references.
+
+Included resources:
+
+* COSMIC Fusion
+* ChimerDB
+* ChimerSeq
+* ChimerPub
+* Mitelman Database
+* DepMap Fusion data
+* TCGA fusion datasets
+
+Scripts are provided to:
+
+* import and standardise database formats
+* merge multiple databases
+* generate reference fusion sets for benchmarking
+
+---
+
+### CellLineData/
+
+Analysis scripts for publicly available long-read sequencing datasets.
+
+Includes analyses of:
+
+* SGNex datasets
+* -  K562
+* - MCF7
+
+Example analyses include:
+
+* fusion overlap
+* fusion discovery and recall
+* atypical fusion detection
+* mitochondrial chimeras
+* annotation using Ensembl identifiers
+
+---
+
+### SimulatedData/
+
+Benchmarking analyses using simulated long-read RNA sequencing datasets.
+
+Contains scripts for:
+
+* simulated dataset analysis
+* FASTQC summaries
+* sanity checks
+* simulation metadata
+
+---
+
+### ReadLengths/
+
+Scripts analysing sequencing read length distributions.
+
+---
+
+### Figures/
+
+Contains scripts and intermediate data used to generate publication figures.
+
+---
+
+## Workflow overview
+
+A typical benchmarking workflow consists of:
+
+1. Preprocess sequencing reads.
+2. Run one or more long-read fusion callers.
+3. Standardise fusion outputs.
+4. Merge results across tools.
+5. Annotate fusion characteristics.
+6. Compare against known fusion databases.
+7. Calculate discovery, recall and precision metrics.
+8. Generate summary tables and figures.
+
+---
+
+## Software
+
+Most analyses are performed in **R**.
+
+Common R packages include:
+
+* dplyr
+* tidyr
+* ggplot2
+* data.table
+* ComplexUpset
+* ensembldb
+* AnnotationHub
+* BiocGenerics
+* GenomicRanges
+
+Shell scripts additionally make use of common bioinformatics tools including:
+
+* Dorado
+* Fastp
+* Chopper
+* samtools
+
+---
+
+## Data
+
+The repository contains:
+
+* processed benchmarking datasets
+* curated known fusion reference sets
+* Huh7 discovery fusion datasets
+* read length summaries
+* scripts for reproducing analyses
+
+Several reference databases (e.g. COSMIC, ChimerDB and DepMap) are redistributed only for convenience. Users should ensure they comply with the respective database licensing terms.
+
+---
+
+## Citation
+
+If you use this repository in your work, please cite the accompanying publication (to be added).
+
+---
+
+## Authors
+
+**Ryley Dorney**
+**Siyuan (Thaddeus) Wu**
+**Ulf Schmitz**
+
+ComBioLab @ James Cook University
+
+Research focus:
+
+* Long-read RNA sequencing
+* Gene fusion detection
+* Bioinformatics benchmarking
 ---
 
