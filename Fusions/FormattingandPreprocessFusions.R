@@ -251,8 +251,8 @@ GFSeeker_Huh7<- bind_rows(
 
 GFSeeker_Huh7 <- GFSeeker_Huh7  %>%
   dplyr::filter("support num" >= 2)%>% 
-  rename(gene1_name = "#gene1 name")%>%
-  rename(gene2_name = "gene2 name")%>%
+  dplyr::rename(gene1_name = "#gene1 name")%>%
+  dplyr::rename(gene2_name = "gene2 name")%>%
   tidyr::separate("break points", into = c("Breakpoint1", "Breakpoint2"), ";", remove=TRUE) %>% 
   tidyr::separate(Breakpoint1, into = c("chrom1", "base1"), ":", remove=FALSE)%>%
   dplyr::mutate(Breakpoint2 = gsub("^ " , "", Breakpoint2)) %>%
@@ -325,14 +325,16 @@ Arriba_Huh7B1<- read_tsv("/bioinformatics/ryley/Gencode44/Huh7_Library/Arriba_Hu
   mutate(library_type = "PCR_cDNA",           
          RNA_sample = "B1",
          Platform = "Illumina",
-         Algorithm = "Arriba")
-Arriba_Huh7B2<- read_tsv("/bioinformatics/ryley/Gencode44/Huh7_Library/Arriba_Huh7/results/Huh7B1_fusions.tsv") %>% 
+         Algorithm = "Arriba",
+         Cell_Line = "Huh7")
+Arriba_Huh7B2<- read_tsv("/bioinformatics/ryley/Gencode44/Huh7_Library/Arriba_Huh7/results/Huh7B2_fusions.tsv") %>% 
   mutate(library_type = "PCR_cDNA",
          RNA_sample = "B2",
          Platform = "Illumina",
-         Algorithm = "Arriba")
+         Algorithm = "Arriba",
+         Cell_Line = "Huh7")
 
-Huh7_Arriba_filt <- rbind(Arriba_Huh7B1, Arriba_Huh7HB2) %>% #
+Huh7_Arriba_filt <- rbind(Arriba_Huh7B1, Arriba_Huh7B2) %>% #
   dplyr::mutate(full_label = interaction(Platform,library_type,RNA_sample, sep = ".")) %>%
   tidyr::separate(breakpoint1, into = c("chrom1", "base1"), ":", remove=FALSE) %>% 
   tidyr::separate(breakpoint2, into = c("chrom2", "base2"), ":", remove=FALSE)%>%
@@ -344,3 +346,32 @@ Huh7_Arriba_filt <- rbind(Arriba_Huh7B1, Arriba_Huh7HB2) %>% #
 write_tsv(Huh7_Arriba_filt, 
           file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Huh7_Arriba_filt_notcollapsed.tsv.gz")
 
+######################
+# STAR-Fusion
+######################
+myfiles<-list.files(path = "/bioinformatics/ryley/Gencode44/Huh7_Library/STARFusion", 
+                    pattern = ".abridged.tsv", full.names = TRUE, recursive = TRUE)
+STARFusion_Huh7B1<- read_tsv("/bioinformatics/ryley/Gencode44/Huh7_Library/STARFusion/starfusion_Huh7B1/star-fusion.fusion_predictions.abridged.tsv") %>% 
+  mutate(library_type = "PCR_cDNA",           
+         RNA_sample = "B1",
+         Platform = "Illumina",
+         Algorithm = "STAR-Fusion",
+         Cell_Line = "Huh7")
+STARFusion_Huh7B2<- read_tsv("/bioinformatics/ryley/Gencode44/Huh7_Library/STARFusion/starfusion_Huh7B2/star-fusion.fusion_predictions.abridged.tsv") %>% 
+  mutate(library_type = "PCR_cDNA",
+         RNA_sample = "B2",
+         Platform = "Illumina",
+         Algorithm = "STAR-Fusion",
+         Cell_Line = "Huh7")
+
+Huh7_STARFusion_filt <- rbind(STARFusion_Huh7B1, STARFusion_Huh7B2) %>% #
+  dplyr::mutate(full_label = interaction(Platform,library_type,RNA_sample, sep = ".")) %>%
+  tidyr::separate(LeftBreakpoint, into = c("chrom1", "base1", "strand1"), ":", remove=FALSE) %>% 
+  tidyr::separate(RightBreakpoint, into = c("chrom2", "base2", "strand2"), ":", remove=FALSE)%>%
+  dplyr::filter((JunctionReadCount) >= 2 |
+                  SpanningFragCount >= 2 |
+                  ((JunctionReadCount) & SpanningFragCount >= 1)
+  )
+
+write_tsv(Huh7_STARFusion_filt, 
+          file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Huh7_STARFusion_filt_notcollapsed.tsv.gz")

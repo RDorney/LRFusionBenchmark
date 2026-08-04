@@ -9,6 +9,8 @@ FusionSeeker_mitocheck_annotated
 LongGF_mitocheck_annotated
 GFSeeker_mitocheck_annotated
 JAFFAL_mitocheck_annotated
+STARFusion_mitocheck_annotated
+Arriba_mitocheck_annotated
 ########################################
 # Make function to find antisense genes
 ########################################
@@ -97,8 +99,7 @@ CTATLR_sensecheck_annotated <- CTATLR_mitocheck_annotated %>%
   ) %>%
   select(-gene_a_id, -gene_b_id) # Clean up join columns
 
-
-write_tsv(CTATLR_sensecheck_annotated_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7_sensecheck_collapsed.tsv.gz")
+write_tsv(CTATLR_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7_sensecheck.tsv.gz")
 
 CTATLR_sensecheck_annotated_collapsed <- CTATLR_sensecheck_annotated %>%
   dplyr::group_by(across(c("#FusionName","LeftGene","RightGene",
@@ -107,8 +108,60 @@ CTATLR_sensecheck_annotated_collapsed <- CTATLR_sensecheck_annotated %>%
                            "RNA_sample","library_type","Platform","fusionType","full_label"
   ))) %>%
   dplyr::summarise(tot_span_read = sum(num_LR), .groups = "drop") 
+write_tsv(CTATLR_sensecheck_annotated_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7_sensecheck_collapsed.tsv.gz")
+##############
+# STAR-Fusion
+##############
+STARFusion_sensecheck_annotated <- STARFusion_mitocheck_annotated %>%
+  left_join(
+    antisense_lookup, 
+    by = c("GENEID1" = "gene_a_id", "GENEID2" = "gene_b_id")
+  ) %>%
+  mutate(
+    # If a match was found in the lookup table, label it
+    fusionType = if_else(!is.na(gene_a_name), "Sense-Antisense", fusionType)
+  ) %>%
+  # Clean up temporary helper columns
+  select(-gene_a_name, -gene_b_name)
+write_tsv(STARFusion_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/STARFusion_Huh7_sensecheck.tsv.gz")
 
-write_tsv(CTATLR_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/CTATLR_Huh7_sensecheck.tsv.gz")
+STARFusion_sensecheck_annotated_collapsed <- STARFusion_sensecheck_annotated %>%
+  dplyr::group_by(across(c("#FusionName",
+                           "LeftGene", "RightGene",
+                           "chrom1" , "chrom2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_pairs = sum(SpanningFragCount), tot_span_read = sum(JunctionReadCount), .groups = "drop")  
+write_tsv(STARFusion_sensecheck_annotated_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/STARFusion_Huh7_sensecheck_collapsed.tsv.gz")
+
+##############
+# Arriba
+##############
+Arriba_sensecheck_annotated <- Arriba_mitocheck_annotated%>%
+  left_join(
+    antisense_lookup, 
+    by = c("GENEID1" = "gene_a_id", "GENEID2" = "gene_b_id")
+  ) %>%
+  mutate(
+    # If a match was found in the lookup table, label it
+    fusionType = if_else(!is.na(gene_a_name), "Sense-Antisense", fusionType)
+  ) %>%
+  # Clean up temporary helper columns
+  select(-gene_a_name, -gene_b_name)
+write_tsv(Arriba_sensecheck_annotated, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Arriba_Huh7_sensecheck.tsv.gz")
+
+Arriba_sensecheck_annotated_collapsed <- Arriba_sensecheck_annotated %>%
+  dplyr::group_by(across(c("#gene1","gene2",
+                           "chrom1" , "chrom2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_pairs = sum(discordant_mates), tot_span_read = sum((split_reads1 + split_reads2)), .groups = "drop")  
+write_tsv(Arriba_sensecheck_annotated_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Arriba_Huh7_sensecheck_collapsed.tsv.gz")
+
 ########
 # Genion
 ########
@@ -257,7 +310,15 @@ write_tsv(JAFFAL_sensecheck_annotated_collapsed, file = "/bioinformatics/ryley/G
 #############################
 #Plot Sense-Antisense Fusions
 #############################
-sensecheck_fusions <- rbind(dplyr::select(CTATLR_sensecheck_annotated_collapsed, 
+sensecheck_fusions <- rbind(dplyr::select(Arriba_sensecheck_annotated_collapsed, 
+                                          c("RNA_sample", "Platform", "Cell_Line", 
+                                            "Algorithm", "library_type", 
+                                            "fusionType", "full_label")),
+                            dplyr::select(STARFusion_sensecheck_annotated_collapsed, 
+                                          c("RNA_sample", "Platform", "Cell_Line", 
+                                            "Algorithm", "library_type", 
+                                            "fusionType", "full_label")),
+                            dplyr::select(CTATLR_sensecheck_annotated_collapsed, 
                                          c("RNA_sample", "Platform", "Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType", "full_label")),

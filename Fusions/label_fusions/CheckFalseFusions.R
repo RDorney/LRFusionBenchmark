@@ -16,7 +16,8 @@ Genion_mitocheck <- Genion_Huh7
 FusionSeeker_mitocheck <- FusionSeeker_Huh7_ensemblID
 LongGF_mitocheck <- LongGF_Huh7_ensemblID
 GFSeeker_mitocheck <- GFSeeker_Huh7_ensemblID
-
+Arriba_mitocheck <-Huh7_Arriba_EnsemblID
+STARFusion_mitocheck <- Huh7_STARFusion_EnsemblID
 ###########################
 # Check CTAT-LR
 ###########################
@@ -157,11 +158,57 @@ JAFFAL_mitocheck_annotated_collapsed <- JAFFAL_mitocheck_annotated %>%
                            "RNA_sample","library_type","Platform","full_label"
   ))) %>%
   dplyr::summarise(tot_span_pairs = sum(spanning.pairs), tot_span_read = sum(spanning.reads), .groups = "drop") 
+###########################
+# Arriba
+###########################
+Arriba_mitocheck_annotated<-Arriba_mitocheck  %>%
+  mutate(
+    fusionType = case_when(
+      chrom1 == "chrM" & chrom2 == "chrM" ~ "Mitochondrial:Mitochondrial",
+      xor("chrM" == chrom1, "chrM" == chrom2) ~ "Mitochondrial:Genomic",
+      (GENEID1 == GENEID2) ~ "Self-Misalignment",
+      TRUE ~ NA 
+    )
+  )
+Arriba_mitocheck_annotated_collapsed <- Arriba_mitocheck_annotated %>%
+  dplyr::group_by(across(c(`#gene1`, "gene2",
+                           "chrom1","chrom2",
+                           "Cell_Line","Algorithm", "fusionType",
+                           "RNA_sample","library_type","Platform","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_pairs = sum(discordant_mates), tot_span_read = sum(split_reads1 + split_reads2), .groups = "drop") 
+###########################
+# STAR-Fusion
+###########################
+STARFusion_mitocheck_annotated<-STARFusion_mitocheck  %>%
+  mutate(
+    fusionType = case_when(
+      chrom1 == "chrM" & chrom2 == "chrM" ~ "Mitochondrial:Mitochondrial",
+      xor("chrM" == chrom1, "chrM" == chrom2) ~ "Mitochondrial:Genomic",
+      (GENEID1 == GENEID2) ~ "Self-Misalignment",
+      TRUE ~ NA 
+    )
+  )
+STARFusion_mitocheck_annotated_collapsed <- STARFusion_mitocheck_annotated %>%
+  dplyr::group_by(across(c("#FusionName","LeftGene","RightGene",
+                           "chrom1","chrom2",
+                           "Cell_Line","Algorithm", "fusionType",
+                           "RNA_sample","library_type","Platform","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_pairs = sum(SpanningFragCount), tot_span_read = sum(JunctionReadCount), .groups = "drop") 
 
 ###########################
 # combined dataframes
 ###########################
-mitocheck_fusions <- rbind(dplyr::select(CTATLR_mitocheck_annotated_collapsed, 
+mitocheck_fusions <- rbind(dplyr::select(STARFusion_mitocheck_annotated_collapsed, 
+                                         c("RNA_sample", "Platform", "Cell_Line", 
+                                           "Algorithm", "library_type", 
+                                           "fusionType","full_label")),
+                           dplyr::select(Arriba_mitocheck_annotated_collapsed, 
+                                         c("RNA_sample", "Platform", "Cell_Line", 
+                                           "Algorithm", "library_type", 
+                                           "fusionType","full_label")),
+                           dplyr::select(CTATLR_mitocheck_annotated_collapsed, 
                                          c("RNA_sample", "Platform", "Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType","full_label")),
@@ -185,6 +232,7 @@ mitocheck_fusions <- rbind(dplyr::select(CTATLR_mitocheck_annotated_collapsed,
                                          c("RNA_sample",  "Platform","Cell_Line", 
                                            "Algorithm", "library_type", 
                                            "fusionType","full_label")))
+write_tsv(mitocheck_fusions, file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/mitocheck_fusions.tsv.gz")
 
 ################
 # plots

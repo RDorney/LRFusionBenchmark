@@ -36,8 +36,8 @@ platformlibsamp_colourmap <- c(platformlibsamp_colours)
 #df$Platform <- factor(df$Platform, levels = c("Illumina", "PacBio", "ONT")) 
 #df$library_type <- factor(df$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
 ###########
-
-scales::show_col(pal_npg("nrc")(7))
+library(ggsci)
+scales::show_col(pal_npg("nrc")(9))
 Algorithm_Colours <- c(
   "CTAT-LR-Fusion"="#E64B35FF",
   "FusionSeeker"="#F39B7FFF",
@@ -45,7 +45,9 @@ Algorithm_Colours <- c(
   "GFSeeker" ="#3C5488FF",
   "JAFFAL" ="#00A087FF",
   "JAFFA-direct" ="#91D1C2FF",
-  "LongGF" ="#8491B4FF"
+  "LongGF" ="#8491B4FF",
+  "STAR-Fusion"="#DC0000FF",
+  "Arriba"="#7E6148FF"
   )
 Alg_colour_map <- c(Algorithm_Colours)
 ```
@@ -73,12 +75,16 @@ pip install nanoplot
 
 NanoPlot -t 10 --bam /bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker/*sorted.bam --minlength 100 -o Huh7_bam_summary_plots
 
-NanoPlot -t 10 --summary/bioinformatics/ryley/Library_Benchmark/raw_files/Huh*/*/*/sequencing*txt -o ONT_Only_summary-plots
+NanoPlot -t 10 --summary /bioinformatics/ryley/Library_Benchmark/raw_files/Huh*/*/*/sequencing*txt -o ONT_Only_summary-plots
 
+pip install NanoComp
+
+NanoComp -t 5 --verbose --minlength 100 --readtype 1D --summary /bioinformatics/ryley/Library_Benchmark/raw_files/Huh*/*/*/sequencing*txt -o ONT_Only_NanoComp
+
+NanoComp -t 5 --verbose --minlength 100 --readtype 1D --bam /bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker/*sorted.bam -o Huh7_bam_nanocomp_plots
 
 #LongReadSum
 ```
-
 
 ```{bash}
 for input_file in /bioinformatics/ryley/Library_Benchmark/*.sorted.bam; do
@@ -145,5 +151,12 @@ rm(c(JAFFAL_mitocheck_annotated, JAFFAL_mitocheck, JAFFAL_sensecheck_annotated, 
 gc()
 
 source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/CheckKnownFusions.R")
+```
+
+Prepare Dataframes for plotting
+```{r}
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/recoverandreadenvironment.R")
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/PrepareDataframeforPlotting.R")
+source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/PrepareCollapsedDataframeforPlotting.R")
 ```
 

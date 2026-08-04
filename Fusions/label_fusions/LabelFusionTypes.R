@@ -561,9 +561,9 @@ Annot_JAFFAL_Huh7_3Gene$fusionType <- "tri-fusion"
 Annot_JAFFAL_Huh7_3Gene$Algorithm <- "JAFFAL"
 write_tsv(Annot_JAFFAL_Huh7_3Gene, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_3Gene_Huh7.tsv")
 
-# Setup the parallel parameters (5 workers as requested)
+# Setup the parallel parameters (10 workers as requested)
 ensembldbv109 <- ah[["AH109606"]]
-param <- SnowParam(workers = 5, progressbar = TRUE)
+param <- SnowParam(workers = 10, progressbar = TRUE)
 db_path <- dbfile(dbconn(ensembldbv109))
 
 Annot_JAFFAL_Huh7 <- JAFFAL_sensecheck_annotated
@@ -625,15 +625,144 @@ Annot_JAFFAL_Huh7_collapsed <- Annot_JAFFAL_Huh7%>%
   dplyr::group_by(across(c("sample","fusion.genes","Gene1","Gene2",
                            "chrom1","chrom2",
                            "Cell_Line","Algorithm", "fusionType",
-                           "RNA_sample","library_type","Platform","full_label"
+                           "RNA_sample","library_type","Platform"
   ))) %>%
   dplyr::summarise(tot_span_pairs = sum(spanning.pairs), tot_span_read = sum(spanning.reads), .groups = "drop") 
 write_tsv(Annot_JAFFAL_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_JAFFAdirect_Huh7_collapsed.tsv")
+#####################################
+# STAR-Fusion
+#####################################
+Annot_STARFusion_Huh7 <- STARFusion_sensecheck_annotated
+param <- SnowParam(workers = 2, progressbar = TRUE)
+db_path <- dbfile(dbconn(ensembldbv110))
+
+idx <- which(is.na(Annot_STARFusion_Huh7$fusionType) | Annot_STARFusion_Huh7$fusionType == "")# Check if the current fusionType is empty
+inter_idx <- idx[Annot_STARFusion_Huh7$chrom1[idx] != Annot_STARFusion_Huh7$chrom2[idx]] #label inter-chromosomal fusions
+Annot_STARFusion_Huh7$fusionType[inter_idx] <- "inter-chromosomal"
+intra_idx <- idx[Annot_STARFusion_Huh7$chrom1[idx] == Annot_STARFusion_Huh7$chrom2[idx]]
+length(Annot_STARFusion_Huh7$fusionType[intra_idx])
+length(unique(paste(Annot_STARFusion_Huh7$GENEID1[intra_idx], Annot_STARFusion_Huh7$GENEID2[intra_idx])))
+
+Annot_STARFusion_Huh7$fusionType[intra_idx] <-  bpmapply(function(g1, g2, chr1, chr2,
+                                                              path_to_db, func1, func2) {
+  # Check if worker_db already exists in this worker's environment
+  if (!exists("worker_db", envir = .GlobalEnv)) {
+    libs <- c("stats","ensembldb", "GenomicRanges", "dplyr", "AnnotationFilter")
+    lapply(libs, library, character.only = TRUE) 
+    
+    assign("worker_db", EnsDb(path_to_db), envir = .GlobalEnv)
+  }
+  # Now use get("worker_db", envir = .GlobalEnv) 
+  edb <- get("worker_db", envir = .GlobalEnv)
+  
+  # Handle intra-chromosomal
+  # This calls the function defined above
+  # It will return TRUE if they are direct neighbors on the same strand
+  chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
+  is_neighbour <- func1(g1, g2, edb, id_type = "geneid", chr_left = chromosome, chr_right = chromosome)
+  if (is_neighbour) { return("read-through") }
+  
+  is_SAGe <- func2(g1, g2, edb, id_type = "geneid", chr_left = chromosome, chr_right = chromosome) 
+  if (is_SAGe) { return("SAGe") } 
+  
+  return("intra-chromosomal")
+}
+, Annot_STARFusion_Huh7$GENEID1[intra_idx], Annot_STARFusion_Huh7$GENEID2[intra_idx], 
+Annot_STARFusion_Huh7$chrom1[intra_idx], Annot_STARFusion_Huh7$chrom2[intra_idx],
+MoreArgs = list(path_to_db = db_path, 
+                func1 = check_readthrough, # Pass actual function objects
+                func2 = check_SAGe),
+BPPARAM = param)
+
+write_tsv(Annot_STARFusion_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/STARFusion_Huh7.tsv.gz")
+
+bpstop(param)
+
+Annot_STARFusion_Huh7_collapsed <- Annot_STARFusion_Huh7  %>%
+  dplyr::group_by(across(c("#FusionName",
+                           "LeftGene", "RightGene",
+                           "chrom1" , "chrom2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_pairs = sum(SpanningFragCount), tot_span_read = sum(JunctionReadCount), .groups = "drop") 
+write_tsv(Annot_STARFusion_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/STARFusion_Huh7_collapsed.tsv.gz")
+
+#####################################
+# Arriba
+#####################################
+Annot_Arriba_Huh7 <- Arriba_sensecheck_annotated
+param <- SnowParam(workers = 4, progressbar = TRUE)
+db_path <- dbfile(dbconn(ensembldbv110))
+
+Annot_Arriba_Huh7 <- Arriba_sensecheck_annotated
+
+idx <- which(is.na(Annot_Arriba_Huh7$fusionType) | Annot_Arriba_Huh7$fusionType == "")# Check if the current fusionType is empty
+inter_idx <- idx[Annot_Arriba_Huh7$chrom1[idx] != Annot_Arriba_Huh7$chrom2[idx]] #label inter-chromosomal fusions
+Annot_Arriba_Huh7$fusionType[inter_idx] <- "inter-chromosomal"
+intra_idx <- idx[Annot_Arriba_Huh7$chrom1[idx] == Annot_Arriba_Huh7$chrom2[idx]]
+length(Annot_Arriba_Huh7$fusionType[intra_idx])
+length(unique(paste(Annot_Arriba_Huh7$GENEID1[intra_idx], Annot_Arriba_Huh7$GENEID2[intra_idx])))
+
+Annot_Arriba_Huh7$fusionType[intra_idx] <-  bpmapply(function(g1, g2, chr1, chr2,
+                                                                  path_to_db, func1, func2) {
+  # Check if worker_db already exists in this worker's environment
+  if (!exists("worker_db", envir = .GlobalEnv)) {
+    libs <- c("stats","ensembldb", "GenomicRanges", "dplyr", "AnnotationFilter")
+    lapply(libs, library, character.only = TRUE) 
+    
+    assign("worker_db", EnsDb(path_to_db), envir = .GlobalEnv)
+  }
+  # Now use get("worker_db", envir = .GlobalEnv) 
+  edb <- get("worker_db", envir = .GlobalEnv)
+  
+  # Handle intra-chromosomal
+  # This calls the function defined above
+  # It will return TRUE if they are direct neighbors on the same strand
+  chromosome <- sub("^chr", "", chr1,  ignore.case = TRUE)
+  is_neighbour <- func1(g1, g2, edb, id_type = "geneid", chr_left = chromosome, chr_right = chromosome)
+  if (is_neighbour) { return("read-through") }
+  
+  is_SAGe <- func2(g1, g2, edb, id_type = "geneid", chr_left = chromosome, chr_right = chromosome) 
+  if (is_SAGe) { return("SAGe") } 
+  
+  return("intra-chromosomal")
+}
+, Annot_Arriba_Huh7$GENEID1[intra_idx], Annot_Arriba_Huh7$GENEID2[intra_idx], 
+Annot_Arriba_Huh7$chrom1[intra_idx], Annot_Arriba_Huh7$chrom2[intra_idx],
+MoreArgs = list(path_to_db = db_path, 
+                func1 = check_readthrough, # Pass actual function objects
+                func2 = check_SAGe),
+BPPARAM = param)
+
+write_tsv(Annot_Arriba_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Arriba_Huh7.tsv.gz")
+
+bpstop(param)
+
+Annot_Arriba_Huh7_collapsed <- Annot_Arriba_Huh7  %>%
+  dplyr::group_by(across(c("#gene1","gene2",
+                           "chrom1" , "chrom2",
+                           "Cell_Line","Algorithm",
+                           "RNA_sample","library_type","Platform",
+                           "fusionType","full_label"
+  ))) %>%
+  dplyr::summarise(tot_span_pairs = sum(discordant_mates), tot_span_read = sum((split_reads1 + split_reads2)), .groups = "drop")  
+
+write_tsv(Annot_Arriba_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Arriba_Huh7_collapsed.tsv.gz")
 
 #####################################
 # Plot fusion types
 #####################################
-fusions_Huh7_types <- rbind(dplyr::select(unique(Annot_CTATLR_Huh7_collapsed), 
+fusions_Huh7_types <- rbind(dplyr::select(unique(Annot_STARFusion_Huh7_collapsed), 
+                                          c("RNA_sample", "Platform", "Cell_Line", 
+                                            "Algorithm", "library_type",    
+                                            "fusionType")),
+                            dplyr::select(unique(Annot_Arriba_Huh7_collapsed), 
+                                          c("RNA_sample",  "Platform","Cell_Line", 
+                                            "Algorithm", "library_type",   
+                                            "fusionType")),
+                            dplyr::select(unique(Annot_CTATLR_Huh7_collapsed), 
                                           c("RNA_sample", "Platform", "Cell_Line", 
                                             "Algorithm", "library_type",    
                                             "fusionType")),
