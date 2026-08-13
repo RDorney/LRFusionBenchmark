@@ -19,26 +19,3 @@ fusion_profile_stat_summary$Sequence_Identity <- factor(fusion_profile_stat_summ
 
 write_tsv(fusion_profile_stat_summary, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/fusion_profile_stat_summary.tsv")
 
-FCC <- ggplot(filter(fusion_profile_stat_summary, recall_category == "False_Call"))+ #, control == "positive"
-  aes(x = depth, y = Sequence_Identity, fill = fusion_type_count) +
-  geom_tile() +
-  geom_text(aes(label = fusion_type_count), color = "black", size = 3, alpha =1) +
-  facet_nested(control + fusionType ~ Algorithm, 
-               labeller = as_labeller(c(c("wrong_order:tri_fusion" = "Wrong Order Tri-fusion", 
-                                          "false_fusion:self_misalignment" = "Self-Misalignment",
-                                          "false_fusion:mitochondrial_genomic" = "Mitochondrial:Genomic",
-                                          "false_fusion:mitochondrial" = "Mitochondrial",
-                                          "false_fusion:Sense-Antisense" = "Sense-Antisense",
-                                          "false_fusion" = "False Chimera"), 
-                                        c("Genion"="Genion", "JAFFAL" = "JAFFAL", "LongGF" = "LongGF", 
-                                          "FusionSeeker" = "FusionSeeker", "GFSeeker" = "GFSeeker",
-                                          "CTAT-LR-Fusion" = "CTAT-LR-Fusion"),
-                                        c("positive"="Postive", "negative" = "Negative"))) ) +  # Separate heatmaps for each algorithm
-  scale_fill_gradient(low = "white", high = "red")+
-  scale_alpha_continuous(range = c(0.2, 1)) +  # Adjust transparency based on fusion_type_count
-  labs(x = "Depth",
-       y = "Mean Sequence Identity",
-       fill =  "#Fusions") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), strip.background = element_rect(color="black", fill="lightgrey")) 
-ggsave("~/LongReadFusionCallerBenchmark/Figures/False_fusion_category_counts.pdf", plot = FCC, width = 210, height = 297, units = "mm")

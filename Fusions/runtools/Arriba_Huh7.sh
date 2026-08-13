@@ -1,4 +1,6 @@
 #!/bin/bash
+# Arriba 2.5.1 (conda package arriba-2.5.1-h87b9561_0), STAR 2.7.11b, GRCh38 primary assembly with
+# the GENCODE v44 annotation.
 #Set up Arriba
 ##Activate Arriba Conda Environment
 set -Eeuo pipefail

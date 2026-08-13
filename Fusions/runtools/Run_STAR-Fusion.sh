@@ -1,6 +1,7 @@
 #!/bin/bash
+# STAR 2.7.11b; reference is the CTAT genome library built on GENCODE v44.
 #Set up STAR-Fusion
-source ~/anaconda3/etc/profile.d/conda.sh 
+source ~/anaconda3/etc/profile.d/conda.sh
 conda activate starfusion_env
 
 PROJ_DIR="/bioinformatics/ryley/Gencode44/Huh7_Library"

@@ -99,7 +99,7 @@ JAF_SGNex_summary_library_level <- disc_JAFFAL_SGNex %>%
   )%>%
   select(Cell_Lines, Algorithm, fusionType, fusionGeneID, knownnumber, novelnumber) %>%
   unique()
-View(JAF_SGNex_summary_library_level)
+# View(JAF_SGNex_summary_library_level)
 
 Gen_SGNex_summary_library_level <- disc_Genion_SGNex%>%
   dplyr::group_by(across(c("V1","chr1","chr2",
@@ -192,5 +192,5 @@ super_SGNex_summary_library_level <- rbind(JAF_SGNex_summary_library_level, Gen_
                                          FusionSeeker_SGNex_summary_library_level, LongGF_SGNex_summary_library_level, 
                                          CTATLR_SGNex_summary_library_level, GFSeeker_SGNex_summary_library_level)
 
-View(super_SGNex_summary_library_level)
+# View(super_SGNex_summary_library_level)
 write_tsv(super_SGNex_summary_library_level, "~/LongReadFusionCallerBenchmark/Figures/Input_dataframes/library_level_SGNex_summary.tsv.gz")

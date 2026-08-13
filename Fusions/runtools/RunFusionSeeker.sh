@@ -33,20 +33,21 @@ run_fusionseeker () {
   local input_bam="$1"
   local output_prefix="$2"
   local threads="$3"
-  
+  local datatype="$4"
+
   local stdout_log="fusionseeker.${output_prefix}.${threads}.out.log"
   local stderr_log="fusionseeker.${output_prefix}.${threads}.err.log"
-  
+
   source "$(conda info --base)/etc/profile.d/conda.sh"
-  conda activate FusionSeeker 
-  
+  conda activate FusionSeeker
+
   local OLD_PATH="$PATH"
   export PATH="/opt/FusionSeeker:/opt/FusionSeeker/bsalign:$PATH"
-  
+
     fusionseeker \
     --bam "$input_bam" \
     -o "fusionseeker_${output_prefix}" \
-    --datatype nanopore \
+    --datatype "$datatype" \
     --ref "$reference_genome" \
     --gtf "$gencode_gtf" \
     --geneid \
@@ -63,16 +64,20 @@ export -f run_fusionseeker
 #############################
 #Loop through tools and files
 #############################
-for input_bam in ${INPUT_DIR}/chopperfiltered_dorado_trimmed_*.sorted.bam; do
+for input_bam in ${INPUT_DIR}/*.sorted.bam; do
     output_prefix=$(basename "${input_bam}" .sorted.bam)
     outdir="fusionseeker_${output_prefix}"
+    case "${output_prefix}" in
+        PB*) datatype="isoseq" ;;
+        *)   datatype="nanopore" ;;
+    esac
     #check if files has been run
     if [[ -d "$outdir" ]]; then
         echo "Skipping FusionSeeker for ${output_prefix} (dir exists)"
         continue
     fi
-    echo "running FusionSeeker on ${output_prefix}"
-    run_fusionseeker "$input_bam" "$output_prefix" "$threads" 
+    echo "running FusionSeeker on ${output_prefix} (${datatype})"
+    run_fusionseeker "$input_bam" "$output_prefix" "$threads" "$datatype"
 done
 
 echo ""

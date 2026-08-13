@@ -50,14 +50,14 @@ CTATLR_mitocheck_annotated_collapsed <- CTATLR_mitocheck_annotated %>%
 Genion_mitocheck_annotated <- Genion_mitocheck %>%
   dplyr::mutate(
     fusionType = dplyr::case_when(
-      grepl("M:", chr1,  ignore.case = TRUE) &
-        grepl("M:", chr2, ignore.case = TRUE) 
+      grepl("^(chr)?MT?$", chr1,  ignore.case = TRUE) &
+        grepl("^(chr)?MT?$", chr2, ignore.case = TRUE)
       ~ "Mitochondrial:Mitochondrial",
       (
-        grepl("M:", chr1,  ignore.case = TRUE) +
-          grepl("M:", chr2, ignore.case = TRUE) +
-          grepl("M:", chr3, ignore.case = TRUE)+
-          grepl("M:", chr4, ignore.case = TRUE)
+        grepl("^(chr)?MT?$", chr1,  ignore.case = TRUE) +
+          grepl("^(chr)?MT?$", chr2, ignore.case = TRUE) +
+          grepl("^(chr)?MT?$", chr3, ignore.case = TRUE)+
+          grepl("^(chr)?MT?$", chr4, ignore.case = TRUE)
       ) == 1 ~ "Mitochondrial:Genomic",
       (V1.1 == V1.2) ~ "Self-Misalignment",
       TRUE ~ NA 
@@ -234,44 +234,3 @@ mitocheck_fusions <- rbind(dplyr::select(STARFusion_mitocheck_annotated_collapse
                                            "fusionType","full_label")))
 write_tsv(mitocheck_fusions, file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/mitocheck_fusions.tsv.gz")
 
-################
-# plots
-################
-mitocheck_fusions$Platform <- factor(mitocheck_fusions$Platform, levels = c("Illumina", "PacBio", "ONT")) 
-
-mitocheck_fusions$library_type <- factor(mitocheck_fusions$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
-#mitocheck_fusions$full_label <- interaction(mitocheck_fusions$Platform,mitocheck_fusions$library_type, mitocheck_fusions$RNA_sample)
-mitocheck_fusions$full_label <- factor(mitocheck_fusions$full_label, levels = c("Illumina.PCR_cDNA.B1", "Illumina.PCR_cDNA.B2", 
-                                                  "PacBio.PCR_cDNA.B1", "PacBio.PCR_cDNA.B2", 
-                                                  "ONT.PCR_cDNA.B1","ONT.PCR_cDNA.B2", 
-                                                  "ONT.direct_cDNA.B1", "ONT.direct_cDNA.B2", 
-                                                  "ONT.direct_RNA.B1", "ONT.direct_RNA.B2"))
-
-
-ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)), 
-       aes(x = RNA_sample, colour = Algorithm, shape=)) +
-  geom_point(stat = "count") +
-  theme_minimal() +
-  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  theme_bw()+
-  facet_grid(fusionType~library_type+Platform) +
-  labs(fill = "Algorithm")+
-  scale_y_log10()+
-  scale_colour_manual(values = Alg_colour_map)
-
-
-ggplot(dplyr::filter(mitocheck_fusions, !is.na(fusionType)), 
-       aes(x = RNA_sample, colour = full_label, shape = Algorithm)) +
-  geom_point(stat = "count") +
-  theme_minimal() +
-  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(fusionType~library_type+Platform) +
-  #labs(fill = "Fusion Type")+
-  scale_y_log10()+
-  scale_colour_manual(values = platformlibsamp_colourmap)

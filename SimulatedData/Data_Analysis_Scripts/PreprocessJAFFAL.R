@@ -68,7 +68,7 @@ get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gen
       strand != target_strand      # opposite strand
     ) %>%
     dplyr::distinct(
-      gene_name, gene_id, gene_type,
+      target_gene_id, gene_name, gene_id, gene_type,
       seqnames, start, end, strand
     ) 
 }
@@ -92,18 +92,24 @@ JAFFAL_antisense_df$query_gene <- genes_to_check[as.integer(JAFFAL_antisense_df$
 JAFFAL_antisense_df$query_gene_index <- NULL
 
 antisense_pairs <- JAFFAL_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
+  dplyr::mutate(target_gene_id = sub("\\..*$", "", target_gene_id),
+                gene_id        = sub("\\..*$", "", gene_id)) %>%
+  dplyr::select(target_gene_id, gene_id) %>%
   distinct()
 ####################################
 # Check gene names
+symbol_to_ensembl <- function(symbols, edb) {
+  ensembldb::select(edb, keys = unique(as.character(symbols)), keytype = "SYMBOL",
+                    columns = c("SYMBOL", "GENEID", "SEQNAME")) %>%
+    dplyr::filter(!grepl("^LRG_", GENEID), SEQNAME %in% c(1:22, "X", "Y", "M", "MT")) %>%
+    dplyr::rename(external_gene_name = SYMBOL, ensembl_gene_id = GENEID,
+                  chromosome_name = SEQNAME) %>%
+    unique()
+}
+
 ####################################
 # fusion.genes = fusion gene name : 
-Gene_Name<-getBM(attributes = c("external_gene_name", 
-                                "ensembl_gene_id", 
-                                "chromosome_name"),
-                 filters = "external_gene_name",
-                 values = unique(c(JAFFAL_Sim$Gene1, JAFFAL_Sim$Gene2)),
-                 mart = ensemblv109) %>% unique()
+Gene_Name<-symbol_to_ensembl(c(JAFFAL_Sim$Gene1, JAFFAL_Sim$Gene2), ensembldbv109)
 Gene_Name$chromosome_name <- paste0("chr", Gene_Name$chromosome_name)
 
 JAFFAL_Sim_ensembl <- left_join(JAFFAL_Sim, Gene_Name, by= c('Gene1'='external_gene_name')) %>% 
@@ -147,7 +153,7 @@ Annot_JAFFAL_Sim$fusionType <- mapply(function(g1, g2, Gen1, Gen2, current_type,
             str_detect(paste(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V1, subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V3, sep = ":"), paste0(g1, ":", g2)))) {
       return("truncated_tri_fusion")
     } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))){
-      matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))]
+      matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1)))]
       return(paste0("reverse_order:", matching_row[1])) 
     } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$fusion.gene.id, paste0(g2, ":", g1))|
                    str_detect(paste(subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V1, subset(Simulated_Fusion_Info_2, fusionType == "tri_fusion")$V3, sep = ":"), paste0(g2, ":", g1)))){
@@ -155,15 +161,15 @@ Annot_JAFFAL_Sim$fusionType <- mapply(function(g1, g2, Gen1, Gen2, current_type,
     } else if (any(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))){
       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))]
       return(paste0("chromosomal_misalignment:", matching_row[1])) 
-    }else if ((grepl("chrM:", chr1, ignore.case = TRUE) & !grepl("chrM:", chr2, ignore.case = TRUE)) | (!grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE))){
+    }else if ((grepl("chrM", chr1, ignore.case = TRUE) & !grepl("chrM", chr2, ignore.case = TRUE)) | (!grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE))){
       return("false_fusion:mitochondrial_genomic") 
-    }else if (grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE)){
+    }else if (grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE)){
       return("false_fusion:mitochondrial") 
     }else if (((g1 == g2)|(Gen1 == Gen2)) & (chr1 != chr2)){
       return("false_fusion:self_misalignment") 
-    }else if (paste(Gen1, Gen2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
-              | 
-              paste(Gen2, Gen1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
+    }else if (paste(g1, g2) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)
+              |
+              paste(g2, g1) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)){
       return("false_fusion:Sense-Antisense") 
     }else {
       return("false_fusion")
@@ -185,10 +191,7 @@ JAFFAL_3Gene_Sim <-  do.call(rbind, lapply(myfiles, function(filename) {
   separate(Fusion, into = c("Gene1", "Gene2", "Gene3"), sep = ":", remove = FALSE) %>%
   filter(Reads >= 2)
 
-Gene_Name<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                       filters = "external_gene_name",
-                       values = unique(c(JAFFAL_3Gene_Sim$Gene1, JAFFAL_3Gene_Sim$Gene2, JAFFAL_3Gene_Sim$Gene3)),
-                       mart = ensemblv109)
+Gene_Name<-symbol_to_ensembl(c(JAFFAL_3Gene_Sim$Gene1, JAFFAL_3Gene_Sim$Gene2, JAFFAL_3Gene_Sim$Gene3), ensembldbv109)
 
 JAFFAL_3Gene_Sim <- left_join(JAFFAL_3Gene_Sim, Gene_Name, by= c('Gene1'='external_gene_name')) %>%
   left_join(Gene_Name, by= c('Gene2'='external_gene_name')) %>%

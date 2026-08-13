@@ -136,12 +136,12 @@ Huh7_JAFFAL_ensemblID<- left_join(Huh7_JAFFAL, gene_info,
                  by = c("Gene1"="external_gene_name", "chrom1"="SEQNAME")) %>% 
   mutate(ensembl_gene_id = coalesce(ensembl_gene_id, Gene1)) %>%  
   unique() %>%
-  filter(base1 >= (GENESEQSTART - 5000), base1 <= (GENESEQEND + 5000)) %>%
+  dplyr::filter(is.na(GENESEQSTART) | (base1 >= (GENESEQSTART - 5000) & base1 <= (GENESEQEND + 5000))) %>%
   dplyr::rename("G1START" = "GENESEQSTART", "G1END" = "GENESEQEND")%>%
   left_join(gene_info, by  = c("Gene2"="external_gene_name", "chrom2"="SEQNAME"))%>%
   unique() %>%
-  filter(base2 >= (GENESEQSTART - 5000), base2 <= (GENESEQEND + 5000)) %>%
-  dplyr::rename("G2START" = "GENESEQSTART", "G2END" = "GENESEQEND")%>% 
+  dplyr::filter(is.na(GENESEQSTART) | (base2 >= (GENESEQSTART - 5000) & base2 <= (GENESEQEND + 5000))) %>%
+  dplyr::rename("G2START" = "GENESEQSTART", "G2END" = "GENESEQEND")%>%
   mutate(ensembl_gene_id.y = coalesce(ensembl_gene_id.y, Gene2), ensembl_gene_id.x = coalesce(ensembl_gene_id.x, Gene1)) %>%  
   unique() 
 

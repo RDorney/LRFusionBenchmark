@@ -14,6 +14,9 @@ REF_DIR=  #/bioinformatics/ryley/Gencode44/reference_v44
 
 INPUT_DIR= #/bioinformatics/ryley/Gencode44/Huh7_Library/FusionSeeker
 
+: "${REF_DIR:?please set REF_DIR to the reference directory}"
+: "${INPUT_DIR:?please set INPUT_DIR to the directory holding the sorted BAMs}"
+
 #thread
 threads=12  #8 is default. currently using 5 on Minion. 
 
@@ -37,14 +40,16 @@ conda activate FusionSeeker
   
 git clone https://github.com/Maggi-Chen/FusionSeeker.git #install FusionSeeker
 cd FusionSeeker/
+git checkout d33b11b26205910cb4d9865ca0e14fce8eef6f7b  # FusionSeeker v1.0.1
 ./fusionseeker -h
 
 git clone https://github.com/ruanjue/bsalign.git #install bsalign v1.2.1
 cd bsalign
+git checkout 1707aabea62f03eca77bdc059c5a02ccb7f9c0fa
 make
 
-local OLD_PATH="$PATH"
-export PATH="/${WORK_DIR}/FusionSeeker:/${WORK_DIR}/FusionSeeker/bsalign:$PATH"
+OLD_PATH="$PATH"
+export PATH="${WORK_DIR}/FusionSeeker:${WORK_DIR}/FusionSeeker/bsalign:$PATH"
 
 cd ${WORK_DIR}
 
@@ -81,13 +86,13 @@ for input_bam in ${INPUT_DIR}/chopperfiltered_dorado_trimmed_*.sorted.bam; do
     output_prefix=$(basename "${input_bam}" .sorted.bam)
     outdir="fusionseeker_${output_prefix}"
     #check if files has been run
-    if [[ -d "$outdir" || -d "${INPUT_DIR}/${outdir}" ]]; then
-      if ! [[ -d "${outdir}/poa_workspace" || -d "${INPUT_DIR}/${outdir}/poa_workspace" ]]; then
-        echo "Skipping FusionSeeker for ${output_prefix} (dir exists)"
-        continue
-      elif [[ -d "${outdir}/poa_workspace" || -d "${INPUT_DIR}/${outdir}/poa_workspace" ]]; then
+    if [[ -d "$outdir" ]]; then
+      if [[ -d "${outdir}/poa_workspace" ]]; then
         rm -r "${outdir}/"
         echo "previous run for ${output_prefix} was incomplete. Redoing"
+      else
+        echo "Skipping FusionSeeker for ${output_prefix} (dir exists)"
+        continue
       fi
     fi
     echo "running FusionSeeker on ${output_prefix}"

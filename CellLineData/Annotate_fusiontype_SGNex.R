@@ -124,10 +124,9 @@ check_readthrough <- function(g_left, g_right, edb, id_type = "symbol", chr_left
   
   #remove genes that overlap the query genes
   query_gr <- c(left_gene_coord, right_gene_coord)
-  hits <- findOverlaps(intervening, query_gr, ignore.strand = FALSE)
-  
-  intervening_clean <- intervening[-queryHits(hits)]
-  
+
+  intervening_clean <- intervening[!intervening %over% query_gr]
+
   #return(intervening)
   #return(intervening_clean)
   return(length(intervening_clean) == 0)

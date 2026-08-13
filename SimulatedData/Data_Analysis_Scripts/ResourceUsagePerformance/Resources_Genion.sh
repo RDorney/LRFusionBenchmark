@@ -13,7 +13,7 @@ mkdir -p "$LOGDIR"
 threads=1
 min_read_supp=2
 
-genomicSuperDups=/home/ryleyd/reference_files/genion_reference_files/genomicSuperDups.txt
+genomicSuperDups=/bioinformatics/ryley/reference_files/genion_reference_files/genomicSuperDups.txt
 annotation=${REF_DIR}/Homo_sapiens.GRCh38.110.chr.gtf
 cdna_self=${REF_DIR}/cdna.GRCh38v110.selfalign.tsv
 input_gtf=${REF_DIR}/gencode.v44.annotation.gtf
@@ -126,9 +126,9 @@ for depth in 1G 10G 100G; do
     for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*${seqid}.fastq.gz; do
       output_prefix=$(basename "$input_fastq" .fastq.gz)
       input_paf="${ALIGNED_DIR}/${output_prefix}.paf"
-      stdout_log="${LOGDIR}/genion.${output_prefix}.out.log"
-      stderr_log="${LOGDIR}/genion.${output_prefix}.err.log"
-      time_log="${LOGDIR}/genion.${output_prefix}.time.log"
+      stdout_log="${LOGDIR}/genion.${output_prefix}.${threads}.out.log"
+      stderr_log="${LOGDIR}/genion.${output_prefix}.${threads}.err.log"
+      time_log="${LOGDIR}/genion.${output_prefix}.${threads}.time.log"
       output_dir="${output_prefix}_genion"
 
       [[ -f "$input_paf" ]] || { echo "Missing PAF: $input_paf"; continue; }

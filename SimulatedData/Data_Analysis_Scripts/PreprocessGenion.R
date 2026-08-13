@@ -48,12 +48,14 @@ Genion_antisense_df$query_gene <- genes_to_check[as.integer(Genion_antisense_df$
 Genion_antisense_df$query_gene_index <- NULL
 
 antisense_pairs <- Genion_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
+  dplyr::mutate(target_gene_id = sub("\\..*$", "", target_gene_id),
+                gene_id        = sub("\\..*$", "", gene_id)) %>%
+  dplyr::select(target_gene_id, gene_id) %>%
   distinct()
 ##########################
 # Annotate fusion types
 ##########################
-Annot_Genion_Sim[c("V1", "V2")] <- lapply(Genion_Sim[c("V1", "V2")], function(x) gsub("::", ":", x))
+Annot_Genion_Sim[c("V1", "V2")] <- lapply(Annot_Genion_Sim[c("V1", "V2")], function(x) gsub("::", ":", x))
 Annot_Genion_Sim <- Annot_Genion_Sim %>% left_join(Simulated_Fusion_Info_2, by = c('V1'='fusion.gene.id')) 
 Annot_Genion_Sim$fusionType <- mapply(function(g1, g2, g3, current_type, chr1, chr2, chr3, gene_name1, gene_name2) {
   # Check if the current fusionType is empty
@@ -82,12 +84,12 @@ Annot_Genion_Sim$fusionType <- mapply(function(g1, g2, g3, current_type, chr1, c
     }
     
     #check if this fusion contains mitochondrial genes 
-    if ((grepl("chrM:", chr1, ignore.case = TRUE) & (!grepl("chrM:", chr2, ignore.case = TRUE) | !grepl("chrM:", chr3, ignore.case = TRUE))) |
-        (grepl("chrM:", chr2, ignore.case = TRUE) & (!grepl("chrM:", chr1, ignore.case = TRUE)| !grepl("chrM:", chr3, ignore.case = TRUE)))|
-        (grepl("chrM:", chr3, ignore.case = TRUE) & (!grepl("chrM:", chr1, ignore.case = TRUE)| !grepl("chrM:", chr2, ignore.case = TRUE)))){
+    if ((grepl("^(chr)?MT?(:|$)", chr1, ignore.case = TRUE) & (!grepl("^(chr)?MT?(:|$)", chr2, ignore.case = TRUE) | !grepl("^(chr)?MT?(:|$)", chr3, ignore.case = TRUE))) |
+        (grepl("^(chr)?MT?(:|$)", chr2, ignore.case = TRUE) & (!grepl("^(chr)?MT?(:|$)", chr1, ignore.case = TRUE)| !grepl("^(chr)?MT?(:|$)", chr3, ignore.case = TRUE)))|
+        (grepl("^(chr)?MT?(:|$)", chr3, ignore.case = TRUE) & (!grepl("^(chr)?MT?(:|$)", chr1, ignore.case = TRUE)| !grepl("^(chr)?MT?(:|$)", chr2, ignore.case = TRUE)))){
       return("false_fusion:mitochondrial_genomic")} 
     
-    else if (grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE) & grepl("chrM:", chr3, ignore.case = TRUE)){
+    else if (grepl("^(chr)?MT?(:|$)", chr1, ignore.case = TRUE) & grepl("^(chr)?MT?(:|$)", chr2, ignore.case = TRUE) & grepl("^(chr)?MT?(:|$)", chr3, ignore.case = TRUE)){
       return("false_fusion:mitochondrial")}
     
     #check if its a butchered tri-fusion
@@ -104,9 +106,9 @@ Annot_Genion_Sim$fusionType <- mapply(function(g1, g2, g3, current_type, chr1, c
     #if blank and none of the above, its just a false fusion
     else if (gene_name1 == gene_name2){
       return("false_fusion:self_misalignment") 
-    }else if (paste(gene_name1, gene_name2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
-              | 
-              paste(gene_name2, gene_name1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
+    }else if (paste(g1, g2) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)
+              |
+              paste(g2, g1) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)){
       return("false_fusion:Sense-Antisense") 
     } else {
       return("false_fusion")}

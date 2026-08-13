@@ -83,7 +83,7 @@ get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gen
       strand != target_strand      # opposite strand
     ) %>%
     dplyr::distinct(
-      gene_name, gene_id, gene_type,
+      target_gene_id, gene_name, gene_id, gene_type,
       seqnames, start, end, strand
     ) 
 }
@@ -119,17 +119,16 @@ CTATLR_antisense_df$query_gene <- genes_to_check[as.integer(CTATLR_antisense_df$
 CTATLR_antisense_df$query_gene_index <- NULL
 
 antisense_pairs <- CTATLR_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
+  dplyr::mutate(target_gene_id = sub("\\..*$", "", target_gene_id),
+                gene_id        = sub("\\..*$", "", gene_id)) %>%
+  dplyr::select(target_gene_id, gene_id) %>%
   distinct()
 
 # Annotate
 CTATLR_SIM_a1 <- CTATLR_SIM %>% separate(LeftBreakpoint, into = c("chrom1", "base1", "strand1"), ":", remove=FALSE) %>% separate(RightBreakpoint, into = c("chrom2", "base2", "strand2"), ":", remove=FALSE)
 CTATLR_SIM_a1["#FusionName"] <- lapply(CTATLR_SIM_a1["#FusionName"], 
                                        function(x) gsub("--", ":", x))
-Gene_Names<-getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                       filters = "external_gene_name",
-                       values = (unique(c(CTATLR_SIM_a1$LeftGene, CTATLR_SIM_a1$RightGene))),
-                       mart = ensemblv110)
+Gene_Names<-symbol_to_ensembl(c(CTATLR_SIM_a1$LeftGene, CTATLR_SIM_a1$RightGene), ensembldbv110)
 Gene_Names$chromosome_name <- paste0("chr", Gene_Names$chromosome_name)
 
 CTATLR_SIM_a2 <- CTATLR_SIM_a1 %>% 
@@ -162,15 +161,15 @@ Annot_CTATLR_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2,
       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))]
       return(paste0("chromosomal_misalignment:", matching_row[1])) 
       #check for false fusions
-    } else if ((grepl("chrM:", chr1, ignore.case = TRUE) & !grepl("chrM:", chr2, ignore.case = TRUE)) | (!grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE))){
+    } else if ((grepl("chrM", chr1, ignore.case = TRUE) & !grepl("chrM", chr2, ignore.case = TRUE)) | (!grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE))){
       return("false_fusion:mitochondrial_genomic") 
-    }else if (grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE)){
+    }else if (grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE)){
       return("false_fusion:mitochondrial") 
     }else if ((gene_name1 == gene_name2) & (chr1 != chr2)){
       return("false_fusion:self_misalignment") 
-    }else if (paste(g1, g2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+    }else if (paste(g1, g2) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)
               | 
-              paste(g2, g1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
+              paste(g2, g1) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)){
       return("false_fusion:Sense-Antisense") 
     }else {
       return("false_fusion")

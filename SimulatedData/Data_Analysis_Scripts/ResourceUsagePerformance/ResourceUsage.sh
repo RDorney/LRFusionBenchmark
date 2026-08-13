@@ -109,7 +109,7 @@ write_metrics() {
 
   # Get output size
   local output_size_bytes=0
-  if [[ -d "$output_dir" ]]; then
+  if [[ -n "$output_dir" && -e "$output_dir" ]]; then
     output_size_bytes=$(du -sb "$output_dir" 2>/dev/null | cut -f1 || echo 0)
   fi
   local output_size_mb=$(echo "scale=2; $output_size_bytes / 1048576" | bc)
@@ -180,9 +180,11 @@ run_fusionseeker () {
     --thread "$threads" \
     --minsupp "$min_read_supp" \
     > "$stdout_log" 2> "$stderr_log"
-    
+    local status=$?
+
     export PATH="$OLD_PATH"
     conda deactivate
+    return $status
 }
 
 run_jaffal () {
@@ -190,18 +192,21 @@ run_jaffal () {
     export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
     export PATH="$JAVA_HOME/bin:$PATH"
 
+  jaffa_out_tag="${jaffa_out_tag:-jaffal_$(printf '%s' "$output_prefix" | md5sum | cut -c1-8)}"
+
   /opt/JAFFA-version-2.3/tools/bin/bpipe run -n "$threads" \
     -p genome=hg38 \
     -p annotation=genCode43 \
     -p exclude=NoSupport \
-    -p jaffa_output="jaffal_results_${output_prefix}" \
+    -p jaffa_output="$jaffa_out_tag" \
     /opt/JAFFA-version-2.3/JAFFAL.groovy \
     "$input_fastq" \
     > "$stdout_log" 2> "$stderr_log"
-    
+    local status=$?
+
     export PATH="$OLD_PATH"
     unset JAVA_HOME
-
+    return $status
 }
 
 export -f run_jaffal
@@ -221,7 +226,14 @@ Bench_Tool() {
   local stdout_log="${LOGDIR}/${tool}.${output_prefix}.${threads}.out.log"
   local stderr_log="${LOGDIR}/${tool}.${output_prefix}.${threads}.err.log"
   local time_log="${LOGDIR}/${tool}.${output_prefix}.${threads}.time.log"
-  local output_dir="${tool}_results_${output_prefix}"
+  local jaffa_out_tag="jaffal_$(printf '%s' "$output_prefix" | md5sum | cut -c1-8)"
+  local output_dir
+  case "$tool" in
+    jaffal)       output_dir="$jaffa_out_tag" ;;
+    fusionseeker) output_dir="fusionseeker_${output_prefix}" ;;
+    genion)       output_dir="${output_prefix}_genion" ;;
+    *)            output_dir="" ;;
+  esac
 
   echo "[$(date)] Running ${tool} on ${output_prefix}"
   export output_prefix input_fastq input_bam input_nbam input_paf threads
@@ -242,9 +254,10 @@ Bench_Tool() {
     ensembl_gtf='$ensembl_gtf'
     cdna_self='$cdna_self'
     output_prefix='$output_prefix'
-    
+    jaffa_out_tag='$jaffa_out_tag'
+
     run_${tool}
-    "
+    " || echo "[WARN] ${tool} on ${output_prefix} exited non-zero, see ${time_log}"
 
   echo "[$(date)] Recording metrics for ${tool} on ${output_prefix}"
   write_metrics "$output_prefix" "$tool" "$input_fastq" "$output_dir" "$time_log" "$threads"
@@ -310,6 +323,8 @@ for depth in 1G 10G ; do #
         for tool in jaffal fusionseeker; do
           Bench_Tool "$tool" "$output_prefix" "$input_fastq" "$threads" &
         done
+      wait
+
     done
   done
 done

@@ -17,25 +17,8 @@ test_results <- test_results %>%
       TRUE ~ "ns"
     )
   )
-breakpoint10095 +
-  geom_text(
-    data = test_results,
-    aes(x = Breakpoint_number, y = 1e8, label = signif, color = Algorithm),
-    position = position_dodge(width = 0.75),
-    size = 6,
-    inherit.aes = FALSE
-  )
 
-ggplot(filter(absolute_Breakpoint_Accuracy, seq_depth == "100GB", seq_id == "95%"), 
-       aes(sample = Distance_from_Simulated_Breakpoint)) +
-  stat_qq() +
-  stat_qq_line(color = "red") +
-  theme_minimal() +
-  labs(title = "Normal Q-Q Plot", x = "Theoretical", y = "Sample")+
-  facet_grid(Algorithm ~ Breakpoint_number)
-
-
-install.packages("TOSTER")
+#install.packages("TOSTER")
 library(TOSTER)
 
 delta <- 100  # equivalence bound (bp)
@@ -113,14 +96,6 @@ cleaned_data <- absolute_Breakpoint_Accuracy %>%
     Distance_from_Simulated_Breakpoint >= (Q1 - 1.5 * IQR_val) & Distance_from_Simulated_Breakpoint <= (Q3 + 1.5 * IQR_val)
   }) %>%
   ungroup()
-
-ggplot(cleaned_data, 
-       aes(sample = Distance_from_Simulated_Breakpoint)) +
-  stat_qq() +
-  stat_qq_line(color = "red") +
-  theme_minimal() +
-  labs(title = "Normal Q-Q Plot", x = "Theoretical", y = "Sample")+
-  facet_grid(Algorithm ~ Breakpoint_number)
 
 delta <- 100  # equivalence bound (bp)
 

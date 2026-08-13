@@ -146,17 +146,18 @@ Genion_antisense_df$query_gene <- genes_to_check[as.integer(Genion_antisense_df$
 Genion_antisense_df$query_gene_index <- NULL
 
 antisense_pairs <- Genion_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
+  dplyr::mutate(gene_id = sub("\\..*$", "", gene_id)) %>%
+  dplyr::select(query_gene, gene_id) %>%
   distinct()
 
 Genion_sensecheck_annotated <- Genion_sensecheck %>%
   mutate(
     fusionType = if_else(
-      paste(V1.1, V1.2) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
-      | 
-        paste(V1.2, V1.1) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
+      paste(V1.1, V1.2) %in%
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_id)
+      |
+        paste(V1.2, V1.1) %in%
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_id),
       "Sense-Antisense",
       NA_character_
     )
@@ -202,17 +203,18 @@ FusionSeeker_antisense_df$query_gene <- genes_to_check[as.integer(FusionSeeker_a
 FusionSeeker_antisense_df$query_gene_index <- NULL
 
 antisense_pairs <- FusionSeeker_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
+  dplyr::mutate(gene_id = sub("\\..*$", "", gene_id)) %>%
+  dplyr::select(query_gene, gene_id) %>%
   distinct()
 
 FusionSeeker_sensecheck_annotated <- FusionSeeker_sensecheck %>%
   mutate(
     fusionType = if_else(
-      paste(Gene1, Gene2) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
-      | 
-        paste(Gene2, Gene1) %in% 
-        paste(antisense_pairs$query_gene, antisense_pairs$gene_name),
+      paste(Gene1, Gene2) %in%
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_id)
+      |
+        paste(Gene2, Gene1) %in%
+        paste(antisense_pairs$query_gene, antisense_pairs$gene_id),
       "Sense-Antisense",
       NA_character_
     )
@@ -470,20 +472,4 @@ sensemito_fusions <- rbind(dplyr::select(CTATLR_sensemito_annotated_collapsed,
                                          c("Source", "Cell_Lines", 
                                            "Algorithm", "Sequencing_Depth",    
                                            "Library", "fusionType")))
-
-################
-# plots
-################
-ggplot(filter(sensemito_fusions, Sequencing_Depth == c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb")), 
-       aes(x = Sequencing_Depth, fill = fusionType)) +
-  geom_bar() +
-  theme_minimal() +
-  labs(title = "atypical fusions", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(Library+Cell_Lines~Algorithm) +
-  scale_y_log10()+
-  labs(fill = "Fusion Type") 
-
 

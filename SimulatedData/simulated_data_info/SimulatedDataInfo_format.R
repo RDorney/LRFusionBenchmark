@@ -65,38 +65,3 @@ Simulated_Fusion_Info_3<-Sim_Info_Names %>%
 write_tsv(Simulated_Fusion_Info_2, file="~/LongReadFusionCallerBenchmark/SimulatedData/simulated_data_info/simulated_fusion_info_with_GeneID.tsv")
 
 
-#################################
-# Old method with BioMaRt
-#################################
-Gene1_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                        filters = "ensembl_gene_id",
-                        values = (Simulated_Fusion_Info$geneName),
-                        mart = ensemblv109),
-                  getBM(attributes = c("external_gene_name", "ensembl_gene_id"),
-                        filters = "ensembl_gene_id",
-                        values = (Simulated_Fusion_Info$geneName),
-                        mart = ensemblv110)) %>% unique()
-External_Gene_Name<-rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "chromosome_name"),
-                                filters = "external_gene_name",
-                                values = unique(Gene1_Name$external_gene_name),
-                                mart = ensemblv109), 
-                          getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "chromosome_name"),
-                                filters = "external_gene_name",
-                                values = unique(Gene1_Name$external_gene_name),
-                                mart = ensemblv110)) %>% unique()
-External_Gene_Name$chromosome_name <- paste0("chr",External_Gene_Name$chromosome_name)
-
-Alternative_Names_Gene_Fusion <- rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                                             filters = "external_gene_name",
-                                             values = (External_Gene_Name$external_gene_name),
-                                             mart = ensemblv109),
-                                       getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                                             filters = "external_gene_name",
-                                             values = (External_Gene_Name$external_gene_name),
-                                             mart = ensemblv110)) %>% unique()
-Alternative_Names_Gene_Fusion$chromosome_name <- paste0("chr", Alternative_Names_Gene_Fusion$chromosome_name)
-
-Sim_Info_Names <- left_join(Simulated_Fusion_Info, Alternative_Names_Gene_Fusion[c(1,2)], by = c("geneName"="ensembl_gene_id"))%>% 
-  left_join(Alternative_Names_Gene_Fusion, by = c("external_gene_name", "chrom" = "chromosome_name")) %>% mutate(
-    alternative_ID = coalesce(ensembl_gene_id, geneName)) %>% dplyr::select(-c(ensembl_gene_id))
-

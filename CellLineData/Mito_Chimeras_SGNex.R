@@ -25,25 +25,6 @@ mito_chimeras_SGNex <-mito_chimeras_SGNex[c(2:8)] %>% rbind(mito_chimeras_Fusion
 
 mito_chimeras_SGNex$Sequencing_Depth<- factor(mito_chimeras_SGNex$Sequencing_Depth, levels = c("1Gb", "2.5Gb", "5Gb", "7.5Gb", "10Gb", "Total"))
 mito_chimeras_SGNex$Library<- factor(mito_chimeras_SGNex$Library, levels = c("direct-RNA", "direct-cDNA", "PCR-cDNA"))
-######################################
-#plot the mito_chimeras_SGNex data
-######################################
-ggplot(filter(mito_chimeras_SGNex, NumSupp >=2), aes(x = Sequencing_Depth, fill = fusionType)) +
-  geom_bar() +
-  theme_minimal() +
-  labs(title = "False calls by each algorithm", subtitle = "minimum read support of 2", x = "Read Depth", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  facet_grid(Library+Cell_Lines~Algorithm) +
-  scale_y_log10()
-
-ggplot(filter(mito_chimeras_SGNex, NumSupp >=2), aes(x = Sequencing_Depth, y = NumSupp)) +
-  geom_boxplot(aes(fill = fusionType)) +
-  labs(title = "Distribution of Read Support for false chimeras",
-       x = "Read Depth",
-       y = "Read Support") +
-  theme_minimal() +
-  facet_grid(Library+Cell_Lines~ Algorithm) +  
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 #####################################
 # Self Aligned Fusions

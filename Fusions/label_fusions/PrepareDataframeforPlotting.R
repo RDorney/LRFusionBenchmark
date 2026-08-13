@@ -86,7 +86,7 @@ STARFusion_Huh7_Discovery <- Annot_STARFusion_Huh7_Discoverydf %>%
 
 Arriba_Huh7_Discovery <- Annot_Arriba_Huh7_Discoverydf %>%
   dplyr::rename(spanning.pairs = discordant_mates) %>%
-  mutate(spanning.reads = sum((split_reads1 + split_reads2)))
+  mutate(spanning.reads = split_reads1 + split_reads2)
 
 cols <- c("library_type", "Platform", 
           "Cell_Line", "RNA_sample",
@@ -107,108 +107,4 @@ fusions_rs_Huh7_discovery <- df_list %>%
   bind_rows()
 
 write_tsv(fusions_rs_Huh7_discovery, file = "~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/fusions_readsupport_Huh7_discovery.tsv.gz")
-
-#########################
-# Plotting
-#########################
-ggplot(dplyr::filter(fusions_Huh7_discovery, !fusionType %in% c(
-  "Mitochondrial:Genomic",
-  "Mitochondrial:Mitochondrial",
-  "Self-Misalignment"
-)), 
-aes(x = Discovery, colour = Algorithm, shape=RNA_sample)) +
-  geom_point(stat = "count") +
-  theme_bw() +
-  labs(title = "", subtitle = "minimum read support of 2", x = "", y = "Count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5),
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12))+
-  facet_grid(library_type~ Platform, scales = "free_y") +
-  labs(fill = "Algorithm")+
-  scale_colour_manual(values = Alg_colour_map)+
-  scale_y_continuous(labels = label_comma()) 
-
-count_data_discovery <- fusions_Huh7_discovery %>%
-  filter(!fusionType %in% c(
-    "Mitochondrial:Genomic",
-    "Mitochondrial:Mitochondrial",
-    "Self-Misalignment"
-  )) %>%
-  count(RNA_sample, Algorithm, fusionType, library_type, Platform, Discovery )
-
-ggplot(
-  count_data_discovery,
-  aes(x = RNA_sample, y = n)
-) +
-  geom_boxplot(aes(group = RNA_sample), outlier.shape = NA) +
-  geom_jitter(aes(colour = Algorithm), width = 0.2, size = 2) +
-  theme_bw() +
-  labs(
-    title = "",
-    subtitle = "minimum read support of 2",
-    x = "",
-    y = "Count"
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5),
-    axis.text = element_text(size = 12),
-    axis.title = element_text(size = 12)
-  ) +
-  facet_grid(fusionType ~ library_type + Platform) +
-  scale_y_log10() +
-  scale_colour_manual(values = Alg_colour_map)
-
-
-count_data_discovery <- fusions_Huh7_discovery %>%
-  filter(!fusionType %in% c(
-    "Mitochondrial:Genomic",
-    "Mitochondrial:Mitochondrial",
-    "Self-Misalignment"
-  )) %>%
-  count(RNA_sample, Algorithm, library_type, Platform, Discovery, Sample, Validation )
-
-
-ggplot(
-  count_data_discovery,
-  aes(x = Platform, y = n)
-) +
-  geom_boxplot(aes(group = Platform), outlier.shape = NA) +
-  geom_jitter(aes(colour = Algorithm), width = 0.2, size = 2) +
-  theme_bw() +
-  labs(
-    title = "",
-    subtitle = "minimum read support of 2",
-    x = "",
-    y = "Count"
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5),
-    axis.text = element_text(size = 12),
-    axis.title = element_text(size = 12)
-  ) +
-  facet_grid(Sample+Discovery~library_type, scales = "free_y") +
-  #scale_y_log10() +
-  scale_colour_manual(values = Alg_colour_map)
-
-ggplot(
-  count_data_discovery,
-  aes(x = Platform, y = n)
-) +
-  geom_boxplot(aes(group = Platform), outlier.shape = NA) +
-  geom_jitter(aes(colour = Algorithm), width = 0.2, size = 2) +
-  theme_bw() +
-  labs(
-    title = "",
-    subtitle = "minimum read support of 2",
-    x = "",
-    y = "Count"
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5),
-    axis.text = element_text(size = 12),
-    axis.title = element_text(size = 12)
-  ) +
-  facet_grid(Sample+Discovery~library_type, scales = "free_y") +
-  scale_y_log10() +
-  scale_colour_manual(values = Alg_colour_map)
 

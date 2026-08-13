@@ -118,10 +118,9 @@ check_readthrough <- function(g_left, g_right, edb, id_type = "symbol", chr_left
   
   #remove genes that overlap the query genes
   query_gr <- c(left_gene_coord, right_gene_coord)
-  hits <- findOverlaps(intervening, query_gr, ignore.strand = FALSE)
-  
-  intervening_clean <- intervening[-queryHits(hits)]
-  
+
+  intervening_clean <- intervening[!intervening %over% query_gr]
+
   #return(intervening)
   #return(intervening_clean)
   return(length(intervening_clean) == 0)
@@ -290,7 +289,9 @@ Annot_Genion_Huh7 <- Annot_Genion_Huh7 %>%
     (chr3 != "" & !is.na(chr3)) & (chr4 == "" | is.na(chr4)) ~ "tri-fusion",
     
     # 3. Inter-chromosomal: chr1 and chr2 are different (and not tri/tetra)
-    chr1 != chr2 ~ "inter-chromosomal"
+    chr1 != chr2 ~ "inter-chromosomal",
+
+    TRUE ~ fusionType
   ))
 
 Annot_Genion_Huh7$fusionType <- bpmapply(function(g1, g2, 
@@ -336,7 +337,7 @@ MoreArgs = list(path_to_db = db_path,
                 func2 = m_check_SAGe),
 BPPARAM = param)
 
-write_tsv(Annot_Genion_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7.tsv")
+write_tsv(Annot_Genion_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7.tsv.gz")
 
 # 3. Clean up
 bpstop(param) 
@@ -349,7 +350,7 @@ Annot_Genion_Huh7_collapsed <- Annot_Genion_Huh7 %>%
                            "fusionType","full_label"
   ))) %>%
   dplyr::summarise(tot_span_read = sum(V5), .groups = "drop") 
-write_tsv(Annot_Genion_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7_collapsed.tsv")
+write_tsv(Annot_Genion_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/Genion_Huh7_collapsed.tsv.gz")
 
 #######################
 # Label LongGF 
@@ -559,7 +560,7 @@ write_tsv(Annot_GFSeeker_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44
 Annot_JAFFAL_Huh7_3Gene <- Huh7_JAFFAL_3Gene_ensemblID
 Annot_JAFFAL_Huh7_3Gene$fusionType <- "tri-fusion"
 Annot_JAFFAL_Huh7_3Gene$Algorithm <- "JAFFAL"
-write_tsv(Annot_JAFFAL_Huh7_3Gene, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_3Gene_Huh7.tsv")
+write_tsv(Annot_JAFFAL_Huh7_3Gene, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_3Gene_Huh7.tsv.gz")
 
 # Setup the parallel parameters (10 workers as requested)
 ensembldbv109 <- ah[["AH109606"]]
@@ -615,7 +616,7 @@ MoreArgs = list(path_to_db = db_path,
                 func2 = m_check_SAGe),
 BPPARAM = param) 
 
-write_tsv(Annot_JAFFAL_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_JAFFAdirect_Huh7.tsv")
+write_tsv(Annot_JAFFAL_Huh7, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_JAFFAdirect_Huh7.tsv.gz")
 
 length(which(Annot_JAFFAL_Huh7$fusionType == "read-through" | Annot_JAFFAL_Huh7$fusionType == "SAGe"))
 
@@ -625,10 +626,10 @@ Annot_JAFFAL_Huh7_collapsed <- Annot_JAFFAL_Huh7%>%
   dplyr::group_by(across(c("sample","fusion.genes","Gene1","Gene2",
                            "chrom1","chrom2",
                            "Cell_Line","Algorithm", "fusionType",
-                           "RNA_sample","library_type","Platform"
+                           "RNA_sample","library_type","Platform","full_label"
   ))) %>%
   dplyr::summarise(tot_span_pairs = sum(spanning.pairs), tot_span_read = sum(spanning.reads), .groups = "drop") 
-write_tsv(Annot_JAFFAL_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_JAFFAdirect_Huh7_collapsed.tsv")
+write_tsv(Annot_JAFFAL_Huh7_collapsed, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/JAFFAL_JAFFAdirect_Huh7_collapsed.tsv.gz")
 #####################################
 # STAR-Fusion
 #####################################
@@ -795,36 +796,7 @@ fusions_Huh7_types$Platform <- factor(fusions_Huh7_types$Platform, levels = c("I
 
 fusions_Huh7_types$library_type <- factor(fusions_Huh7_types$library_type, levels = c("PCR_cDNA", "direct_cDNA", "direct_RNA")) 
 
-write_tsv(fusions_Huh7_types, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/fusions_Huh7_types.tsv")
-fusions_Huh7_types<- read_tsv("/bioinformatics/ryley/Gencode44/Huh7_Library/fusions_Huh7_types.tsv")
-
-count_data <- fusions_Huh7_types %>%
-  count(RNA_sample, Algorithm, fusionType, library_type, Platform)
+write_tsv(fusions_Huh7_types, file = "/bioinformatics/ryley/Gencode44/Huh7_Library/fusions_Huh7_types.tsv.gz")
 
 View(fusions_Huh7_types %>%
   count(fusionType, library_type, Platform))
-
-ggplot(
-  count_data,
-  aes(x = Platform, y = n)
-) +
-  geom_boxplot(aes(group = Platform), outlier.shape = NA) +
-  geom_jitter(aes(colour = Algorithm), width = 0.2, size = 2) +
-  theme_bw() +
-  labs(
-    title = "",
-    subtitle = "minimum read support of 2",
-    x = "",
-    y = "Count"
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5),
-    axis.text = element_text(size = 12),
-    axis.title = element_text(size = 12)
-  ) +
-  facet_grid(fusionType ~ library_type, scales = "free") +
-  scale_y_log10() +
-  scale_colour_manual(values = Alg_colour_map)
-
-
-

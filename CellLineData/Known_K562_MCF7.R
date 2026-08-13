@@ -9,23 +9,6 @@ standard_chrs <- c(1:22, "X", "Y", "M", "MT")
 # if biomart doesn't work, proceed below to use annotation hub
 ################################################################
 options(timeout = 300)  # 5 minutes
-ensemblv110 <- useEnsembl("ensembl", 
-                          dataset = "hsapiens_gene_ensembl", 
-                          host = "https://jul2023.archive.ensembl.org")
-gene_info <- distinct(rbind(getBM(attributes = c("external_gene_name", "external_gene_name", "ensembl_gene_id"),
-                   filters = "external_gene_name",
-                   values = unique(c(known_fusions$Gene1, known_fusions$Gene2)),
-                   mart = ensemblv110), 
-                   getBM(attributes = c("external_gene_name", "ensembl_gene_id", "external_synonym"),
-                    filters = "external_synonym",
-                    values = unique(c(known_fusions$Gene1, known_fusions$Gene2)),
-                    mart = ensemblv110)))
-known_fusions_biomart <- left_join(known_fusions,  gene_info, 
-                                   by  = c("Gene1"="external_gene_name")) %>% 
-  left_join(gene_info, by  = c("Gene2"="external_gene_name"))
-write_tsv(known_fusions_biomart, file="~/LongReadFusionCallerBenchmark/CellLineData/known_fusions_biomart.tsv")
-
-
 ###########################################################
 # If Biomart did not work,
 # use AnnotationHub()
@@ -114,19 +97,23 @@ DepMap_MCF7 <- filter(DepMap_knownfusions, StrippedCellLineName == "MCF7")%>%
     Gene1_ensembl = na_if(Gene1_ensembl, "."),
     Gene2_ensembl = na_if(Gene2_ensembl, "."))
 
-ensembl_current <-  useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl")
-GeneIDs<-unique(rbind(getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "external_synonym", "hgnc_symbol"),
-                            filters = c("external_gene_name"),
-                            values = unique(c(DepMap_MCF7$Gene1_name, DepMap_MCF7$Gene2_name, DepMap_K562$Gene1_name, DepMap_K562$Gene2_name)),
-                            mart = ensembl_current), 
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "external_synonym", "hgnc_symbol"),
-                            filters = c("external_synonym"),
-                            values = unique(c(DepMap_MCF7$Gene1_name, DepMap_MCF7$Gene2_name, DepMap_K562$Gene1_name, DepMap_K562$Gene2_name)),
-                            mart = ensembl_current), 
-                      getBM(attributes = c("external_gene_name", "ensembl_gene_id", "ensembl_gene_id_version", "external_synonym", "hgnc_symbol"),
-                            filters = c("hgnc_symbol"),
-                            values = unique(c(DepMap_MCF7$Gene1_name, DepMap_MCF7$Gene2_name, DepMap_K562$Gene1_name, DepMap_K562$Gene2_name)),
-                            mart = ensembl_current)))
+depmap_symbols <- unique(c(DepMap_MCF7$Gene1_name, DepMap_MCF7$Gene2_name,
+                           DepMap_K562$Gene1_name, DepMap_K562$Gene2_name))
+depmap_check <- checkGeneSymbols(depmap_symbols, species = "human") %>%
+  mutate(Suggested.Symbol = coalesce(Suggested.Symbol, x))
+
+GeneIDs <- ensembldb::select(ensembldbv110,
+                             keys = unique(c(depmap_symbols, depmap_check$Suggested.Symbol)),
+                             keytype = "SYMBOL",
+                             columns = c("SYMBOL", "GENEID", "SEQNAME")) %>%
+  dplyr::filter(SEQNAME %in% c(1:22, "X", "Y", "M", "MT"), !grepl("^LRG_", GENEID)) %>%
+  dplyr::rename(external_gene_name = SYMBOL, ensembl_gene_id = GENEID) %>%
+  dplyr::select(external_gene_name, ensembl_gene_id) %>%
+  dplyr::left_join(depmap_check %>%
+                     dplyr::select(external_synonym = x, Suggested.Symbol) %>%
+                     dplyr::filter(external_synonym != Suggested.Symbol),
+                   by = c("external_gene_name" = "Suggested.Symbol")) %>%
+  unique()
 
 GeneIDs_long <- GeneIDs %>%
   pivot_longer(cols = c(external_gene_name, external_synonym), 

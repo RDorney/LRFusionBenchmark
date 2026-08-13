@@ -20,6 +20,6 @@ OUTPUT_DIR=~/JAFL_H7_g43
 JAFFA_DIR=/opt/JAFFA-version-2.3
 
 ${JAFFA_DIR}/tools/bin/bpipe run -p genome=hg38 -p annotation=genCode44 -p exclude="NoSupport" \
--p jaffa_output="${OUTPUT_DIR}/JAFFAL_Huh7_genCode43" \
+-p jaffa_output="${OUTPUT_DIR}/JAFFAL_Huh7_genCode43/" \
 ${JAFFA_DIR}/JAFFAL.groovy \
  ~/Nano_reads/Nano*fastq.gz ~/PacBio_reads/*fastq.gz

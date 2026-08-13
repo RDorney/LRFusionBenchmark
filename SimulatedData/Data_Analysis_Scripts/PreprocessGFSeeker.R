@@ -14,11 +14,12 @@ GFSeeker_SIM<- bind_rows(
   }))
 
 GFSeeker_SIM <- GFSeeker_SIM  %>%
-  filter("support num" >= 2)%>%
+  filter(`support num` >= 2)%>%
   rename(gene1_name = "#gene1 name")%>%
   rename(gene2_name = "gene2 name")%>%
   separate("break points", into = c("Breakpoint1", "Breakpoint2"), ";", remove=TRUE) %>% 
   separate(Breakpoint1, into = c("chrom1", "base1"), ":", remove=FALSE)%>%
+  mutate(Breakpoint2 = gsub("^ " , "", Breakpoint2))%>%
   separate(Breakpoint2, into = c("chrom2", "base2"), ":", remove=FALSE)%>%
   mutate(Algorithm = "GFSeeker") 
 
@@ -89,7 +90,7 @@ get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gen
       strand != target_strand      # opposite strand
     ) %>%
     dplyr::distinct(
-      gene_name, gene_id, gene_type,
+      target_gene_id, gene_name, gene_id, gene_type,
       seqnames, start, end, strand
     ) 
 }
@@ -115,7 +116,9 @@ GFSeeker_antisense_df$query_gene <- genes_to_check[as.integer(GFSeeker_antisense
 GFSeeker_antisense_df$query_gene_index <- NULL
 
 antisense_pairs <- GFSeeker_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
+  dplyr::mutate(target_gene_id = sub("\\..*$", "", target_gene_id),
+                gene_id        = sub("\\..*$", "", gene_id)) %>%
+  dplyr::select(target_gene_id, gene_id) %>%
   distinct()
 
 # Annotate
@@ -123,7 +126,7 @@ gene_info <- ensembldb::select(ensembldbv110,
                                keys = unique(c(GFSeeker_SIM$gene1_name, GFSeeker_SIM$gene2_name)), 
                                keytype = "SYMBOL", 
                                columns = c("GENEID", "SYMBOL","SEQNAME"))%>%
-  dplyr::filter(SEQNAME %in% standard_chrs)%>%
+  dplyr::filter(SEQNAME %in% c(1:22, "X", "Y", "M", "MT"))%>%
   distinct(SYMBOL, .keep_all = TRUE) %>%
   dplyr::rename("external_gene_name" = "SYMBOL", 
                 "ensembl_gene_id"="GENEID")
@@ -159,15 +162,15 @@ Annot_GFSeeker_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1, chr
       matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))]
       return(paste0("chromosomal_misalignment:", matching_row[1])) 
       #check for false fusions
-    } else if ((grepl("chrM:", chr1, ignore.case = TRUE) & !grepl("chrM:", chr2, ignore.case = TRUE)) | (!grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE))){
+    } else if ((grepl("chrM", chr1, ignore.case = TRUE) & !grepl("chrM", chr2, ignore.case = TRUE)) | (!grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE))){
       return("false_fusion:mitochondrial_genomic") 
-    }else if (grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE)){
+    }else if (grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE)){
       return("false_fusion:mitochondrial") 
     }else if ((gene_name1 == gene_name2) & (chr1 != chr2)){
       return("false_fusion:self_misalignment") 
-    }else if (paste(g1, g2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+    }else if (paste(g1, g2) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)
               | 
-              paste(g2, g1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
+              paste(g2, g1) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)){
       return("false_fusion:Sense-Antisense") 
     }else {
       return("false_fusion")

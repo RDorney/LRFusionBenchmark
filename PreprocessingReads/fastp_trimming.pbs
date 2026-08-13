@@ -1,0 +1,42 @@
+#!/bin/bash
+#PBS -j oe
+#PBS -m ae
+#PBS -N fastp_trimming
+#PBS -M ryley.dorney@my.jcu.edu.au
+#PBS -l walltime=12:00:00
+#PBS -l select=1:ncpus=5:mem=30gb
+
+cd $PBS_O_WORKDIR
+shopt -s expand_aliases
+source /etc/profile.d/modules.sh
+echo "Modules initialized."
+module avail
+
+echo "Job identifier is $PBS_JOBID"
+echo "Working directory is $PBS_O_WORKDIR"
+module load fastp/0.23.4
+
+for index in "B2_E1_22T7FFLT3_ACGGTCAGGA-CGGCCTCGTT" ; do #"B1_E1_22T7FFLT3_CATTAGTGCG-TGACTACATA"
+    for lane in L005 L006 L007 L008; do
+
+        R1_name="Huh-7_p9_8-7-24_${index}_${lane}_R1"
+        R2_name="Huh-7_p9_8-7-24_${index}_${lane}_R2"
+        R1_FASTQ="../Huh-7_p9_8-7-24_${index}_${lane}_R1.fastq.gz"
+        R2_FASTQ="../Huh-7_p9_8-7-24_${index}_${lane}_R2.fastq.gz"
+
+        fastp -i $R1_FASTQ -I $R2_FASTQ \
+            --dont_overwrite \
+            -o fastp.${R1_name}.fastq.gz -O fastp.${R2_name}.fastq.gz \
+            --unpaired1 unpaired.${R1_name}.fastq.gz --unpaired2 unpaired.${R2_name}.fastq.gz \
+            -h "Huh-7_p9_8-7-24_${index}_${lane}_fastp.html" \
+            -j "Huh-7_p9_8-7-24_${index}_${lane}_fastp.json" \
+            -l 36 --trim_poly_g \
+            --adapter_sequence=CTGTCTCTTATACACATCT --adapter_sequence_r2=CTGTCTCTTATACACATCT 
+        
+    done 
+done 
+
+module load fastqc/0.12.1  
+fastqc *.fastq.gz
+module load multiqc/1.18 
+multiqc ../* ./*

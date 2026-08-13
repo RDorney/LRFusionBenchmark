@@ -1,5 +1,5 @@
 #!/bin/bash
-fastp/0.23.4
+module load fastp/0.23.4
 
 for index in "B2_E1_22T7FFLT3_ACGGTCAGGA-CGGCCTCGTT" "B1_E1_22T7FFLT3_CATTAGTGCG-TGACTACATA"; do 
     for lane in L005 L006 L007 L008; do
@@ -21,6 +21,8 @@ for index in "B2_E1_22T7FFLT3_ACGGTCAGGA-CGGCCTCGTT" "B1_E1_22T7FFLT3_CATTAGTGCG
     done
 done
 
-fastqc/0.12.1
+module load fastqc/0.12.1
 fastqc *.fastq.gz
-multiqc/1.18
+
+module load multiqc/1.18
+multiqc ../* ./*

@@ -97,19 +97,20 @@ multiqc /bioinformatics/ryley/Library_Benchmark/
 
 ```{bash}
 # Create an read lengths data file
-echo -e "file\tread_length\tcount" > ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/library_read_length_summary.tsv
+echo -e "file\tread_length\tcount" > ReadLengths/library_read_length_summary.tsv
 
 # Loop through each *.stats file and extract RL lines
 for file in /bioinformatics/ryley/Library_Benchmark/bam_and_sam_files/*stats*; do
   grep "^RL" "$file" | cut -f 2- | while read -r length count; do
     file_prefix=$(basename "$file" .stats )
-    echo -e "${file_prefix}\t${length}\t${count}" >> ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/library_read_length_summary.tsv
+    echo -e "${file_prefix}\t${length}\t${count}" >> ReadLengths/library_read_length_summary.tsv
   done
 done
 ```
 
 ```{r}
-Longlibrary_read_lengths <- read.delim("library_read_length_summary.tsv", header = TRUE)%>% 
+library(dplyr)
+Longlibrary_read_lengths <- read.delim("ReadLengths/library_read_length_summary.tsv", header = TRUE)%>%
   mutate(library_type = case_when(grepl('FBA22517|FBA22660', file)  ~ "direct_RNA", 
                                   grepl('FBA62655|FBA43334', file)  ~ "direct_cDNA", 
                                   grepl('FAZ|FLNCcDNA', file)  ~ "PCR_cDNA"), 
@@ -128,7 +129,7 @@ Find fusions in the long read Huh-7 Data, and use JAFFA_direct to find fusions i
 bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/runtools/RunJAFFAL.sh
 bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/runtools/Run_JAFFAdirect.sh
 
-~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/runtools/Run_GFSLGF.sh
+bash ~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/runtools/Run_GFSLGF.sh
 ```
 
 Pre-process Fusion Data
@@ -147,7 +148,7 @@ Labelled Fusions can be found in /bioinformatics/ryley/Gencode44/Huh7_Library/
 Check Known Fusion
 ```{r}
 #make space by clearing the heavier objects
-rm(c(JAFFAL_mitocheck_annotated, JAFFAL_mitocheck, JAFFAL_sensecheck_annotated, Huh7_JAFFAL_ensemblID, Huh7_JAFFAL))
+rm(JAFFAL_mitocheck_annotated, JAFFAL_mitocheck, JAFFAL_sensecheck_annotated, Huh7_JAFFAL_ensemblID, Huh7_JAFFAL)
 gc()
 
 source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/CheckKnownFusions.R")
@@ -155,8 +156,7 @@ source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/lab
 
 Prepare Dataframes for plotting
 ```{r}
-source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/recoverandreadenvironment.R")
+# source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/recoverandreadenvironment.R")
 source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/PrepareDataframeforPlotting.R")
-source("~/LibraryBenchmarkAnalysis/LibraryBenchmarkAnalysis_RProject/Fusions/label_fusions/PrepareCollapsedDataframeforPlotting.R")
 ```
 

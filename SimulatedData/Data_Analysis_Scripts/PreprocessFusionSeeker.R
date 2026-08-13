@@ -44,7 +44,9 @@ FusionSeeker_antisense_df$query_gene <- genes_to_check[as.integer(FusionSeeker_a
 FusionSeeker_antisense_df$query_gene_index <- NULL
 
 antisense_pairs <- FusionSeeker_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
+  dplyr::mutate(target_gene_id = sub("\\..*$", "", target_gene_id),
+                gene_id        = sub("\\..*$", "", gene_id)) %>%
+  dplyr::select(target_gene_id, gene_id) %>%
   distinct()
 
 #############################################################
@@ -80,9 +82,9 @@ Annot_FusionSeeker_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1,
       return("false_fusion:mitochondrial") 
     }else if (((g1 == g2)) & (chr1 != chr2)){
       return("false_fusion:self_misalignment") 
-    }else if (paste(g1, g2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+    }else if (paste(g1, g2) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)
               | 
-              paste(g2, g1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
+              paste(g2, g1) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)){
       return("false_fusion:Sense-Antisense") 
     }else {
       return("false_fusion")

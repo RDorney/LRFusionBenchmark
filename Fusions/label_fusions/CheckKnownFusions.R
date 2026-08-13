@@ -29,8 +29,8 @@ Annot_CTATLR_Huh7_RevKnown <-  Annot_CTATLR_Huh7_Known[idx,] %>%
             by = c("ensembl_gene_id.x" = "GENEID.y", "ensembl_gene_id.y" = "GENEID.x")) %>%
     mutate(Discovery = "Reverse Known") 
 
-Annot_CTATLR_Huh7_Discovery <- left_join(Annot_CTATLR_Huh7, Annot_CTATLR_Huh7_Known) %>% 
-  full_join(Annot_CTATLR_Huh7_RevKnown) %>%
+Annot_CTATLR_Huh7_Discovery <- rbind(Annot_CTATLR_Huh7_RevKnown, Annot_CTATLR_Huh7_Known) %>%
+  filter(!is.na(Discovery)) %>% right_join(Annot_CTATLR_Huh7) %>%
   unique()
 nrow(Annot_CTATLR_Huh7_Discovery)
 idx <- which(is.na(Annot_CTATLR_Huh7_Discovery$Discovery) | Annot_CTATLR_Huh7_Discovery$Discovery == "")# Check if the discovery is empty
@@ -77,7 +77,7 @@ Annot_JAFFAL_Huh7_RevKnown <-  Annot_JAFFAL_Huh7_Known[idx,] %>%
               by = c("ensembl_gene_id.x" = "GENEID.y", "ensembl_gene_id.y" = "GENEID.x")) %>%
   rename("Gene1"="Gene1.x","Gene2"="Gene2.x")%>% 
   mutate(Discovery = "Reverse Known") 
-idx <- !which(is.na(Annot_JAFFAL_Huh7_Known$Discovery) | Annot_JAFFAL_Huh7_Known$Discovery == "")# Check if the discovery is empty
+idx <- !(is.na(Annot_JAFFAL_Huh7_Known$Discovery) | Annot_JAFFAL_Huh7_Known$Discovery == "")# Check if the discovery is empty
 
 Annot_JAFFAL_Huh7_Discovery <- rbind(Annot_JAFFAL_Huh7_RevKnown, Annot_JAFFAL_Huh7_Known) %>%
   filter(!is.na(Discovery)) %>% right_join(Annot_JAFFAL_Huh7)%>%
@@ -266,7 +266,7 @@ Annot_STARFusion_Huh7_Discovery_collapsed <- Annot_STARFusion_Huh7_Discovery %>%
                            "chrom1" , "chrom2",
                            "Cell_Line","Algorithm",
                            "RNA_sample","library_type","Platform",
-                           "fusionType","full_label"
+                           "fusionType","full_label", "Discovery"
   ))) %>%
   dplyr::summarise(tot_span_pairs = sum(SpanningFragCount), tot_span_read = sum(JunctionReadCount), .groups = "drop")  
 
@@ -307,7 +307,7 @@ Annot_Arriba_Huh7_Discovery_collapsed <- Annot_Arriba_Huh7_Discovery %>%
                            "chrom1" , "chrom2",
                            "Cell_Line","Algorithm",
                            "RNA_sample","library_type","Platform",
-                           "fusionType","full_label"
+                           "fusionType","full_label", "Discovery"
   ))) %>%
   dplyr::summarise(tot_span_pairs = sum(discordant_mates), tot_span_read = sum((split_reads1 + split_reads2)), .groups = "drop")  
 
@@ -376,27 +376,27 @@ Genion_Huh7_RevKnown <-  Genion_Huh7_Known_check[idx,] %>%
 Genion_Huh7_check<- right_join(rbind(Genion_Huh7_Known, Genion_Huh7_RevKnown), Annot_Genion_Huh7)
 idx <- which(is.na(Genion_Huh7_check$Discovery) | Genion_Huh7_check$Discovery == "")# Check if the discovery is empty
 
-Genion_Huh7_multi_Known12  <-  Genion_Huh7_check[idx,] %>% 
+Genion_Huh7_multi_Known12  <-  Genion_Huh7_check[idx,] %>%
   unique() %>%
   filter(chr3 != "")%>%
   select(where(~ !all(is.na(.x)))) %>%
-  inner_join(huh7fusions_manualannot, 
-             by = c("V1.1" = "GENEID.y", "V1.2" = "GENEID.x")) %>%
-  mutate(Discovery = "contains Known 1.2") 
+  inner_join(huh7fusions_manualannot,
+             by = c("V1.1" = "GENEID.x", "V1.2" = "GENEID.y")) %>%
+  mutate(Discovery = "contains Known 1.2")
 
-Genion_Huh7_multi_Known23 <-  Genion_Huh7_check[idx,] %>% 
+Genion_Huh7_multi_Known23 <-  Genion_Huh7_check[idx,] %>%
   unique() %>%
   filter(chr3 != "")%>%
-  select(where(~ !all(is.na(.x)))) %>% 
-  inner_join(huh7fusions_manualannot, 
-             by = c("V1.2" = "GENEID.y", "V1.3" = "GENEID.x")) %>%
-  mutate(Discovery = "contains Known 2.3") 
-Genion_Huh7_multi_Known34 <-  Genion_Huh7_check[idx,] %>% 
-  unique() %>% 
+  select(where(~ !all(is.na(.x)))) %>%
+  inner_join(huh7fusions_manualannot,
+             by = c("V1.2" = "GENEID.x", "V1.3" = "GENEID.y")) %>%
+  mutate(Discovery = "contains Known 2.3")
+Genion_Huh7_multi_Known34 <-  Genion_Huh7_check[idx,] %>%
+  unique() %>%
   filter(chr4 != "")%>%
   select(where(~ !all(is.na(.x)))) %>%
-  inner_join(huh7fusions_manualannot, 
-             by = c("V1.3" = "GENEID.y", "V1.4" = "GENEID.x")) %>%
+  inner_join(huh7fusions_manualannot,
+             by = c("V1.3" = "GENEID.x", "V1.4" = "GENEID.y")) %>%
   mutate(Discovery = "contains Known 3.4")
 
 # no recall in the multi gene fusions

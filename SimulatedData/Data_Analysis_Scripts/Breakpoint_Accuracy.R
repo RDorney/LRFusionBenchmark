@@ -27,7 +27,7 @@ JB2 <- as.numeric(J$base2) - SB2
 
 list(c(gene1, gene2) , c(SB1, SB2) , c(JB1, JB2))
 
-nrow(distinct(Breakpoint_Accuracy))
+#nrow(distinct(Breakpoint_Accuracy))
 
 Genion_BreakPoint <- Annot_Genion_Sim[c(1:27, 37, 44:46)] %>% 
   distinct() %>% 

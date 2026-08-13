@@ -1,5 +1,5 @@
 #Look at read lengths for each library
-Longlibrary_read_lengths <- read.delim("library_read_length_summary.tsv", header = TRUE)%>% 
+Longlibrary_read_lengths <- read.delim("ReadLengths/library_read_length_summary.tsv", header = TRUE)%>%
   mutate(library_type = case_when(grepl('FBA22517|FBA22660', file)  ~ "direct_RNA", 
                                   grepl('FBA62655|FBA43334', file)  ~ "direct_cDNA", 
                                   grepl('FAZ|FLNCcDNA', file)  ~ "PCR_cDNA"), 
@@ -35,31 +35,3 @@ Longlibrary_read_lengths$Alignment <- factor(
   Longlibrary_read_lengths$Alignment,
   levels = c("stranded_genome", "genome", "transcriptome"))
 
-# Define colors for other platforms
-platform_colors <- c(
-  "Illumina.PCR_cDNA.B1" = "#FFA500",
-  "Illumina.PCR_cDNA.B2" = "#CC8400",
-  "PacBio.PCR_cDNA.B1"   = "#C80972",
-  "PacBio.PCR_cDNA.B2"   = "#8B064F",
-  "ONT.direct_cDNA.B1" = "#009ACD",
-  "ONT.direct_cDNA.B2" = "#00688B",
-  "ONT.direct_RNA.B1"  = "#00CDCD",
-  "ONT.direct_RNA.B2"  = "#008B8B",
-  "ONT.PCR_cDNA.B1" = "#1f77b4",
-  "ONT.PCR_cDNA.B2" = "#15496e"
-)
-# Merge colors
-color_map <- c(platform_colors)
-
-#Plot the read length distribution for each library
-ggplot(filter(Longlibrary_read_lengths,  Alignment == "genome"), aes(x=read_length, y =count, colour= fill_id, linetype = RNA_sample))+
-  geom_line()+
-  scale_colour_manual(values = color_map) +
-  scale_x_log10()+
-  facet_wrap(~library_type)
-
-ggplot(filter(Longlibrary_read_lengths), aes(x=read_length, y =count, colour= fill_id, linetype = RNA_sample))+
-  geom_line()+
-  scale_colour_manual(values = color_map) +
-  scale_x_log10()+
-  facet_grid(Alignment~library_type)

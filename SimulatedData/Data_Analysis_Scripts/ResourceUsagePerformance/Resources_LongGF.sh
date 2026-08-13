@@ -123,9 +123,9 @@ for depth in 1G 10G 100G; do
     for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*${seqid}.fastq.gz; do
       output_prefix=$(basename "$input_fastq" .fastq.gz)
       input_nbam="${ALIGNED_DIR}/${output_prefix}.name.sorted.bam"
-      stdout_log="${LOGDIR}/longgf.${output_prefix}.out.log"
-      stderr_log="${LOGDIR}/longgf.${output_prefix}.err.log"
-      time_log="${LOGDIR}/longgf.${output_prefix}.time.log"
+      stdout_log="${LOGDIR}/longgf.${output_prefix}.${threads}.out.log"
+      stderr_log="${LOGDIR}/longgf.${output_prefix}.${threads}.err.log"
+      time_log="${LOGDIR}/longgf.${output_prefix}.${threads}.time.log"
       output_dir="longgf_results_${output_prefix}"
 
       [[ -f "$input_nbam" ]] || { echo "Missing BAM: $input_nbam"; continue; }

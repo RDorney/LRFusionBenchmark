@@ -1,5 +1,10 @@
 # Pipeline internals
 .bpipe/
+doc/
+
+# Per-tool Huh7 discovery tables. Intermediates rebuilt by
+# Fusions/label_fusions/CheckKnownFusions.R; one exceeds the GitHub file size limit.
+Fusions/Discovery/
 # Sequencing data
 *.fastq
 *.fastq.gz
@@ -22,11 +27,24 @@
 .RData
 .Ruserdata
 
+.*.sw[a-p]
+
 Reference_Files/
-*.fastq
-*.fastq.gz
-*.bam
-*.fa
 *.fa.gz
 *.gtf
 
+
+# Figure output. Exploratory plots written by the analysis scripts are not tracked.
+*.png
+*.pdf
+*.jpeg
+*.jpg
+*.svg
+*.tiff
+
+# The manuscript figures are the exception: vector SVG is tracked, the 600 dpi PNG
+# preview is not, since it is regenerated from the same script.
+!Figures/FigureFiles/output/**/*.svg
+
+# Internal audit notes, not for distribution
+AUDIT_FIX_LOG.md

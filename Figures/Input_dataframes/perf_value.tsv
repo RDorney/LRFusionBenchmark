@@ -1,0 +1,7 @@
+tool	user_min_1gb	user_min_10gb	ram_gb_1gb	ram_gb_10gb	f1_10gb
+CTAT-LR-Fusion	86.1	836.4	9.3	9.7	0.242
+FusionSeeker	7.0	15.6	18.5	18.5	0.127
+GFSeeker	112.0	1176.3	18.3	18.3	0.092
+Genion	4.9	38.6	1.2	1.6	0.018
+JAFFAL	26.8	282.6	18.98	18.98	0.145
+LongGF	1.6	8.0	1.2	3.8	0.034

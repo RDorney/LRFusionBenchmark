@@ -12,7 +12,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 CURRENT_DIR=$(pwd)
 DATA_DIR=/bioinformatics/ryley/Algorithm_Benchmark
 INPUT_DIR=${DATA_DIR}/Adapter_porechop_trimmed
-LOGDIR="resource_logs"
+LOGDIR="${CURRENT_DIR}/resource_logs"
 mkdir -p "$LOGDIR"
 
 SINGLE_DIR="JAF_SINGLE"
@@ -125,7 +125,7 @@ init_metrics_csv
 # Loop over files
 ############################
 for threads in 1 10 ; do
-cd CURRENT_DIR
+cd "$CURRENT_DIR"
   if [[ "$threads" -eq 10 ]]; then
     cd "$MULTI_DIR"
   else
@@ -136,19 +136,20 @@ cd CURRENT_DIR
     for seqid in Q85 Q90 Q95; do
       for input_fastq in ${INPUT_DIR}/fastq_files/porechoptrimmed*${depth}*${seqid}.fastq.gz; do
         output_prefix=$(basename "$input_fastq" .fastq.gz)
-        stdout_log="${LOGDIR}/jaffal.${output_prefix}.out.log"
-        stderr_log="${LOGDIR}/jaffal.${output_prefix}.err.log"
-        time_log="${LOGDIR}/jaffal.${output_prefix}.time.log"
-        output_dir="jaffal_results_${output_prefix}"
-  
+        stdout_log="${LOGDIR}/jaffal.${output_prefix}.${threads}.out.log"
+        stderr_log="${LOGDIR}/jaffal.${output_prefix}.${threads}.err.log"
+        time_log="${LOGDIR}/jaffal.${output_prefix}.${threads}.time.log"
+        jaffa_out_tag="jaffal_$(printf '%s' "$output_prefix" | md5sum | cut -c1-8)"
+        output_dir="$jaffa_out_tag"
+
         [[ -f "$input_fastq" ]] || { echo "Missing: $input_fastq"; continue; }
-        
+
         echo "[$(date)] Running Jaffal on $output_prefix"
         /usr/bin/time -v -o "$time_log" /opt/JAFFA-version-2.3/tools/bin/bpipe run -n "$threads" \
         -p genome=hg38 \
         -p annotation=genCode43 \
         -p exclude=NoSupport \
-        -p jaffa_output="jaffal_results_${output_prefix}" \
+        -p jaffa_output="$jaffa_out_tag" \
         /opt/JAFFA-version-2.3/JAFFAL.groovy \
         "$input_fastq" \
         > "$stdout_log" 2> "$stderr_log"

@@ -25,34 +25,19 @@ library(patchwork)
 library(ggforce)
 library(ggpubr)
 library(infer)
+library(ggsci)
 ```
 
 Identify resource usage of each tool :)
 
 ```{bash}
-#bash ~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/ResourceUsage.sh
+#bash ~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/ResourceUsagePerformance/ResourceUsage.sh
 ```
 
 ```{r}
 Analysis_output_folder <- "/bioinformatics/ryley/Algorithm_Benchmark/benchmark_data_analysis/Analysis/benchmark_fusion_results/"
 
 standard_chrs <- paste0("chr", c(1:22, "X", "Y", "M"))
-#load relevant gtf file
-gencodev44gtf <- import("/bioinformatics/ryley/Gencode44/reference_v44/gencode.v44.annotation.gtf")
-
-########################################
-# Make function to find antisense genes
-########################################
-genes <- gencodev44gtf %>%
-  as.data.frame() %>%
-  filter(type == "gene") %>%
-  makeGRangesFromDataFrame(
-    seqnames.field = "seqnames",
-    start.field = "start",
-    end.field = "end",
-    strand.field = "strand",
-    keep.extra.columns = TRUE
-  )
 
 ################################################################
 # Prepare dictionary
@@ -66,12 +51,6 @@ ensembldbv109 <- ah[["AH109606"]]
 
 The 'biomarRt' package is used to help identify corresponding gene ids to gene names and vice versa.
 
-```{r}
-ensembl_current <-  useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl")
-#the below ensembl versions best correlate to gencode version 43 and 44
-ensemblv109 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 109)
-ensemblv110 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl", version = 110)
-```
 
 Here we read in the data table containing information about the fusions generated with Fusim to be spiked in. We then modify the table to have separate columns for partner genes. We then use biomart to find the corresponding gene names/ids. This helps find potential alternative names/ids for gene fusions recalled.
 
@@ -174,10 +153,16 @@ BiomaRt is then used to find the corresponding gene names/ids for fusions called
 
 ```{r}
 #gets ensembl gene ID and check it matches the putative chromosome 
-Gene_Name<-rbind (getBM(attributes = c("external_gene_name", "ensembl_gene_id", "chromosome_name"),
-                             filters = "external_gene_name",
-                             values = unique(c(LongGF_Sim$Gene1, LongGF_Sim$Gene2)),
-                             mart = ensemblv110)) %>% unique()
+symbol_to_ensembl <- function(symbols, edb) {
+  ensembldb::select(edb, keys = unique(as.character(symbols)), keytype = "SYMBOL",
+                    columns = c("SYMBOL", "GENEID", "SEQNAME")) %>%
+    dplyr::filter(!grepl("^LRG_", GENEID), SEQNAME %in% c(1:22, "X", "Y", "M", "MT")) %>%
+    dplyr::rename(external_gene_name = SYMBOL, ensembl_gene_id = GENEID,
+                  chromosome_name = SEQNAME) %>%
+    unique()
+}
+
+Gene_Name<-symbol_to_ensembl(c(LongGF_Sim$Gene1, LongGF_Sim$Gene2), ensembldbv110)
 Gene_Name$chromosome_name <- paste0("chr", Gene_Name$chromosome_name)
 
   
@@ -281,7 +266,7 @@ get_antisense_overlaps <- function(gene, genes_gr, id_type = c("gene_name", "gen
       strand != target_strand      # opposite strand
     ) %>%
     dplyr::distinct(
-      gene_name, gene_id, gene_type,
+      target_gene_id, gene_name, gene_id, gene_type,
       seqnames, start, end, strand
     ) 
 }
@@ -302,7 +287,9 @@ LongGF_antisense_df$query_gene <- genes_to_check[as.integer(LongGF_antisense_df$
 LongGF_antisense_df$query_gene_index <- NULL
 
 antisense_pairs <- LongGF_antisense_df %>%
-  dplyr::select(query_gene, gene_name) %>%
+  dplyr::mutate(target_gene_id = sub("\\..*$", "", target_gene_id),
+                gene_id        = sub("\\..*$", "", gene_id)) %>%
+  dplyr::select(target_gene_id, gene_id) %>%
   distinct()
 
 Annot_LongGF_Sim <- Annot_LongGF_Sim %>%
@@ -339,15 +326,15 @@ Annot_LongGF_Sim$fusionType <- mapply(function(g1, g2, current_type, chr1, chr2,
        matching_row <- subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$fusionType[which(str_detect(subset(Simulated_Fusion_Info_2, fusionType != "tri_fusion")$original.fusion.gene.id, paste0(g1, ":", g2)))]
       return(paste0("chromosomal_misalignment:", matching_row[1])) 
        #check for false fusions
-    } else if ((grepl("chrM:", chr1, ignore.case = TRUE) & !grepl("chrM:", chr2, ignore.case = TRUE)) | (!grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE))){
+    } else if ((grepl("chrM", chr1, ignore.case = TRUE) & !grepl("chrM", chr2, ignore.case = TRUE)) | (!grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE))){
       return("false_fusion:mitochondrial_genomic") 
-    }else if (grepl("chrM:", chr1, ignore.case = TRUE) & grepl("chrM:", chr2, ignore.case = TRUE)){
+    }else if (grepl("chrM", chr1, ignore.case = TRUE) & grepl("chrM", chr2, ignore.case = TRUE)){
       return("false_fusion:mitochondrial") 
     }else if ((gene_name1 == gene_name2) & (chr1 != chr2)){
       return("false_fusion:self_misalignment") 
-    }else if (paste(gene_name1, gene_name2) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)
+    }else if (paste(g1, g2) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)
       | 
-        paste(gene_name2, gene_name1) %in% paste(antisense_pairs$query_gene, antisense_pairs$gene_name)){
+        paste(g2, g1) %in% paste(antisense_pairs$target_gene_id, antisense_pairs$gene_id)){
       return("false_fusion:Sense-Antisense") 
     }else {
       return("false_fusion")
@@ -400,8 +387,6 @@ Label fusions as False Calls, Partial Real and True Recall in Genion and JAFFAL 
 
 ```{r}
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/AlgorithmRecallCategory.R")
-
-supp_Figure15
 ```
 
 Consolidate fusion caller outputs into one dataframe to more easily compare
@@ -412,15 +397,6 @@ write combined_data.tsv and combined_data_annotation.tsv
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/Consolidate_df.R")
 ```
 
-Check number of false, partial and true calls. Generate Supplementary Figure 2
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/ColouredGridStats.R")
-# Display the combined plot
-Supplementary_Figure2
-ggsave("~/LongReadFusionCallerBenchmark/Figures/Supplementary_Figure2.png", Supplementary_Figure2, width = 210, height = 210, units = "mm")
-```
-
 Calculate Recall vs Precision, and F1 score.
 
 Also write stat_summary.tsv and readsupp_filtering.tsv
@@ -428,18 +404,6 @@ Also write stat_summary.tsv and readsupp_filtering.tsv
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/Precision_Recall_ReadSupp_stats.R") 
 
-```
-
-Generate Supplementary Figures 8-10
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Readsupport_vs_Precision-F1.R")
-```
-
-Make Figure 3A
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/F1_RecPrec_subset.R")
 ```
 
 Check the effect of removing obvious false chimeras from the fusion calls to see if they greatly influence precision. There visually appears to be minimal/negligible influence. also export manual_readsupp_filtering.tsv
@@ -454,106 +418,16 @@ Create a summary of the number of false, partial and true calls in every simulat
 source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/FusionProfile_StatSummary.R")
 ```
 
-Make Supplementary Figure 1 and 4
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Fusion_Profile_Grid.R")
-```
-
-Make Figure 1 part D-G
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Figure1.R")
-```
-
-Make Supplementary Figure 5
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Make_supFig5.R")
-```
-
-Create Supplementary Figure 6
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Make_supFig6.R")
-```
-
-Make Supplementary Figure 7
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Make_supFig7.R")
-```
-
-Make Figure 2
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Figure2.R")
-```
-
 FusionSeeker and some other fusion callers will produce duplicate calls the same fusion multiple times with different read support because of breakpoint differences. We need to consolidate these for ease in comparing how read support for the same fusion will differ by fusion caller tool. Export fusions_in_all_algorithms.tsv
-
-#this will be empty because GFSeeker have no overlap with all fusions. use fusions_in_n_algorithms.tsv instead
 
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/ReadSupport_Consolidation.R")
-```
-
-Make Figure 3B: comparing read support for the same fusions as called by all algorithms
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/ReadSuppComp.R")
-```
-
-Make Compound Figure 3
-
-```{r}
-Figure3<- (Figure3A / Figure3B) + plot_annotation(tag_levels = list(c("A", "", "", "B")))
-#ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure3_paper.png", plot = Figure3, width = 210, height = 297, units = "mm")  
-        ##see Figure 3B  
 ```
 
 identify fusions in more than one algorithm, and export fusions_in_n_algorithms.tsv
 
 ```{r}
 source("~/LongReadFusionCallerBenchmark/SimulatedData/Data_Analysis_Scripts/FusionMultiAlg.R")
-```
-
-Supplementary Figure 11.
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Make_SupFig11.R")
-```
-
-Generate upset plots to see the total number of overlapping fusions between fusion callers Make Figure 1H: True Calls Overlap
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/TrueCalls_Overlap.R")
-```
-
-Create Compound Figure 1:
-
-```{r}
-Figure1_paper <- (Figure1D | Figure1E)/
-                  (Figure1F | Figure1G)/
-                  (True_overlap) +   
-  plot_annotation(tag_levels = list(c("D", "E", "F", "G", "H")), 
-                  theme = theme(plot.title = element_text(size = 14, face = "bold")                                ))
-ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure1_paper.pdf", plot = Figure1_paper, width = 300, height = 430, units = "mm", limitsize = FALSE)
-ggsave("~/LongReadFusionCallerBenchmark/Figures/Figure1_paper.png", plot = Figure1_paper, width = 300, height = 430, units = "mm", limitsize = FALSE)
-```
-
-Make Supplementary Figure 3
-
-```{r}
-#Supplementary Figure 3A
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/FusionTypesOverlap_Upset.R")
-supp_Figure3
-```
-
-Repeat analysis with removed obvious false chimeras to see if they have any influence. Any differences observed are negligible
-
-```{r}
-source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Overlap_ManualFiltering.R")
 ```
 
 Calculate the breakpoint accuracy. Write absolute_Breakpoint_Accuracy.tsv

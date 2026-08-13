@@ -108,5 +108,10 @@ Check how many fusions were found by more than one algorithm
 source("~/LongReadFusionCallerBenchmark/CellLineData/SGNex_Overlap_Fusions.R")
 ```
 
+Summarise the SGNex calls at fusion level and at library level
+```{r}
+source("~/LongReadFusionCallerBenchmark/Figures/SCRIPTS/Make_superSGNexsummary_fusion-level.R")
+```
+
 
 
