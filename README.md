@@ -1,6 +1,6 @@
-# LRS-FusionBench
+# LRFusionBenchmark
 
-**LRS-FusionBench** is a collection of scripts, datasets, and analysis workflows used to benchmark long-read RNA sequencing fusion detection tools. The repository contains code for preprocessing sequencing data, standardising fusion caller outputs, benchmarking discovery performance, evaluating known fusions, analysing computational resource usage, and generating publication-quality figures.
+**LRFusionBenchmark** is a collection of scripts, datasets, and analysis workflows used to benchmark long-read RNA sequencing fusion detection tools. The repository contains code for preprocessing sequencing data, standardising fusion caller outputs, benchmarking discovery performance, evaluating known fusions, analysing computational resource usage, and generating publication-quality figures.
 
 This repository accompanies ongoing work benchmarking long-read fusion detection algorithms using both simulated datasets and real sequencing data, including Huh7 hepatocellular carcinoma (HCC) cell line datasets.
 
