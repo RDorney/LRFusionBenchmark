@@ -31,21 +31,42 @@ KEYS = ['Platform', 'library_type', 'Algorithm', 'RNA_sample']
 ALL_TOOL_COLORS = {**TOOL_COLORS, **SHORT_READ_COLORS}
 
 
+def _oriented(fid):
+    """Oriented gene-pair key, 5' partner first. Order is preserved, because the
+    5' and 3' partners define different transcripts. What this collapses is one
+    directed pair reported repeatedly, once per alternative breakpoint or
+    isoform. Each point here is a single caller, so the orientation it reports is
+    its own claim; the figures that pool calls across callers merge the two
+    orientations instead. Unparseable identifiers keep their raw string."""
+    if not isinstance(fid, str) or not fid:
+        return None
+    parts = fid.replace('::', ':').split(':')
+    return '::'.join(parts) if len(parts) >= 2 and all(parts) else fid
+
+
+df['fusion_key'] = df['fusion.ens.gene.id'].map(_oriented)
+
+
 def per_count(sub, name):
-    return sub.groupby(KEYS).size().reset_index(name=name)
+    """Distinct oriented fusions per (library, tool, replicate). Counting rows
+    would confound how many fusions a library recovers with how verbosely each
+    caller writes its output, which differs by up to 2.6-fold between libraries
+    in this figure."""
+    return (sub.dropna(subset=['fusion_key'])
+              .groupby(KEYS)['fusion_key'].nunique().reset_index(name=name))
 
 
 # One row per (library, tool, replicate) with total / known / novel counts.
 merged = (per_count(df, 'total')
           .merge(per_count(df[df.Discovery.isin(KNOWN_TYPES)], 'known'), how='left')
-          .merge(per_count(df[df.Discovery == 'Putative Novel'], 'novel'), how='left')
+          .merge(per_count(df[~df.Discovery.isin(KNOWN_TYPES)], 'novel'), how='left')
           .fillna({'known': 0.0, 'novel': 0.0}))
 
 # (column, panel label, y-scale, ylim)
 PANELS = [
-    ('total', 'Total fusions',     'log',    (0.7, 3e6)),
+    ('total', 'Total fusions',     'log',    (0.7, 2e6)),
     ('known', 'Known DB recovery', 'linear', (0,   40)),
-    ('novel', 'Putative novel',    'log',    (0.7, 3e6)),
+    ('novel', 'Putative novel',    'log',    (0.7, 2e6)),
 ]
 
 

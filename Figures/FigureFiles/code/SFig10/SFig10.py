@@ -1,10 +1,29 @@
 """Supplementary Figure 10. Huh7 fusion calls by fusion type across libraries.
 
-Five stacked panels, one per fusion type. In each panel the x-axis is the five
-Huh7 libraries and the box shows the spread of call counts across tools and
-replicates, with individual tool values overlaid as dots. Panels use independent
-y-scales because per-type counts span several orders of magnitude. Calls are
-filtered to a minimum read support of two.
+Six stacked panels, one per fusion type. In each panel the x-axis is the five
+Huh7 libraries and the box shows the spread across tools and replicates of the
+number of DISTINCT fusions of that type, with individual tool values overlaid as
+dots. Panels use independent y-scales because per-type counts span several
+orders of magnitude. Calls are filtered to a minimum read support of two.
+
+A fusion is an ORIENTED Ensembl gene-ID pair. The 5' and 3' partners define
+different transcripts with different reading frames, so A::B and B::A are
+counted separately; what is collapsed is the repeated reporting of one directed
+pair, which a caller emits once per alternative breakpoint or isoform. Counting
+rows instead would confound how many fusions a library recovers with how
+verbosely each caller writes its output, and that differs by up to fivefold
+within a single panel (CTAT-LR-Fusion reports 3,682 sense-antisense rows for 575
+distinct pairs in ONT direct cDNA).
+
+The figures that pool calls across callers (Figure 4C to 4E, Supplementary
+Figures 9 and 11B) merge the two orientations instead, because callers disagree
+on which partner they place first for the same underlying event. That does not
+apply here: each point is a single caller, so the orientation it reports is its
+own claim and is preserved. Within one caller, library and replicate the two
+choices are almost identical anyway, differing by 0 to 58 pairs for every
+long-read caller. The exception is JAFFA-direct, which reports both orientations
+for 230,664 gene pairs in the Illumina libraries; those reciprocal calls are
+shown rather than merged away.
 """
 
 import numpy as np
@@ -23,6 +42,23 @@ set_style()
 
 df = load()  # minimum read support of two
 
+
+def _oriented(fid):
+    """Oriented gene-pair key, 5' partner first. Order is deliberately preserved.
+    75 Arriba rows carry a half-empty id such as 'ENSG0000...::' because one
+    partner did not map to an Ensembl gene, and no fallback column is populated
+    for them. Those keep the raw string as their key rather than being dropped,
+    so the call still counts once and identical strings still merge."""
+    if not isinstance(fid, str) or not fid:
+        return None
+    parts = fid.replace('::', ':').split(':')
+    if len(parts) == 2 and all(parts):
+        return '::'.join(parts)
+    return fid
+
+
+df['fusion_key'] = df['fusion.ens.gene.id'].map(_oriented)
+
 KEYS = ['Platform', 'library_type', 'Algorithm', 'RNA_sample']
 # Every tool x library x replicate that produced at least one call. Per-type
 # counts are zero-filled over this set so a tool that calls none of a type shows
@@ -34,21 +70,31 @@ base = df[KEYS].drop_duplicates()
 # which reads as LongGF (also grey) in the Illumina column.
 ALL_TOOL_COLORS = {**TOOL_COLORS, **SHORT_READ_COLORS}
 
-# (fusionType value, panel label, y-scale, ylim). Only the five biological
-# biological types; artefact classes (mito, self-misalignment, SAGe) are
-# excluded here.
+# (fusionType value, panel label, y-scale, ylim), ordered by call volume.
+# SAGe is included: cis-splicing between adjacent genes is a recognised
+# transcript class rather than an obvious artefact, it is discussed in the
+# accompanying text, and it appears in no other figure. The obvious-artefact
+# classes (Mitochondrial:Genomic, Mitochondrial:Mitochondrial,
+# Self-Misalignment) remain in Supplementary Figure 11, which is dedicated to
+# them, and tetra-fusion is too sparse to plot.
 PANELS = [
-    ('inter-chromosomal', 'Inter-chromosomal', 'log',    (0.7, 3e6)),
-    ('intra-chromosomal', 'Intra-chromosomal', 'log',    (0.7, 3e5)),
-    ('Sense-Antisense',   'Sense-antisense',   'log',    (0.7, 1e4)),
+    ('inter-chromosomal', 'Inter-chromosomal', 'log',    (0.7, 2e6)),
+    ('intra-chromosomal', 'Intra-chromosomal', 'log',    (0.7, 1e5)),
+    ('Sense-Antisense',   'Sense-antisense',   'log',    (0.7, 2e3)),
     ('read-through',      'Read-through',      'log',    (0.7, 1e3)),
+    ('SAGe',              'SAGe',              'log',    (0.7, 2e2)),
     ('tri-fusion',        'Tri-fusion',        'linear', (0,   28)),
 ]
 
 
 def type_counts(ftype):
-    """Per (library, tool, replicate) count of one fusion type, zero-filled."""
-    cnt = df[df.fusionType == ftype].groupby(KEYS).size().reset_index(name='count')
+    """Per (library, tool, replicate) count of distinct oriented fusions of one
+    type, zero-filled over every tool x library x replicate that produced any
+    call."""
+    cnt = (df[df.fusionType == ftype]
+             .dropna(subset=['fusion_key'])
+             .groupby(KEYS)['fusion_key'].nunique()
+             .reset_index(name='count'))
     return base.merge(cnt, how='left').fillna({'count': 0.0})
 
 
@@ -56,13 +102,21 @@ def type_counts(ftype):
 n_panels = len(PANELS)
 n_libs = len(LIB_ORDER)
 
-fig = plt.figure(figsize=(10.6, 12.6))
+# The layout is written in inches and converted to figure fractions, so adding
+# a panel grows the canvas instead of squeezing the existing panels or
+# stretching the title block. At five panels these values reproduce the previous
+# 10.6 x 12.6 in layout exactly.
+PANEL_IN, GAP_IN, HEAD_IN, FOOT_IN = 1.75, 0.48, 1.11, 0.82
+FIG_W = 10.6
+FIG_H = HEAD_IN + n_panels * PANEL_IN + (n_panels - 1) * GAP_IN + FOOT_IN
+
+fig = plt.figure(figsize=(FIG_W, FIG_H))
 fig.patch.set_facecolor('white')
 
 LEFT, RIGHT = 0.100, 0.975
-TOP, BOT = 0.912, 0.065
-GAP = 0.038
-PANEL_H = (TOP - BOT - GAP * (n_panels - 1)) / n_panels
+TOP, BOT = 1 - HEAD_IN / FIG_H, FOOT_IN / FIG_H
+GAP = GAP_IN / FIG_H
+PANEL_H = PANEL_IN / FIG_H
 
 
 for pi, (ftype, label, scale, ylim) in enumerate(PANELS):
@@ -119,13 +173,14 @@ for pi, (ftype, label, scale, ylim) in enumerate(PANELS):
         ax.set_xticklabels([])
     ax.tick_params(axis='x', length=0)
 
-    unit = 'calls, log' if scale == 'log' else 'calls'
+    unit = 'fusions, log' if scale == 'log' else 'fusions'
     ax.set_ylabel(f'{label}\n({unit})', fontsize=10.2, fontweight='bold',
                   color=NEUTRAL['ink'], labelpad=4)
 
 
 # ---------- Title + tool legend ----------
-fig.text(0.035, 0.975, 'Huh7 fusion calls by fusion type across libraries',
+fig.text(0.035, 1 - 0.315 / FIG_H,
+         'Distinct Huh7 fusions by fusion type across libraries',
          ha='left', va='top', fontsize=12.8, fontweight='semibold',
          color=NEUTRAL['ink'])
 
@@ -135,7 +190,7 @@ TOOL_LEG = [t for t in ['CTAT-LR-Fusion', 'JAFFAL', 'Genion', 'FusionSeeker',
 ax_leg = fig.add_axes([0, 0, 1, 1])
 ax_leg.set_axis_off()
 ax_leg.set_xlim(0, 1); ax_leg.set_ylim(0, 1)
-leg_y = 0.945
+leg_y = 1 - 0.693 / FIG_H
 leg_left, leg_right = 0.040, 0.965
 spacing = (leg_right - leg_left) / len(TOOL_LEG)
 for i, tool in enumerate(TOOL_LEG):

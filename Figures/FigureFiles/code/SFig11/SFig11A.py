@@ -18,26 +18,13 @@ from pathlib import Path as _Path
 _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
 from _paths import FUSIONS, OUT
 OUTDIR = OUT / 'SFig11'
+from _data import load, _fusion_key as _canon
 from palette import TOOL_COLORS, NEUTRAL, set_style, save_figure
 
 set_style()
 
-df = pd.read_csv(FUSIONS / 'fusions_readsupport_Huh7_discovery.tsv.gz',
-                 sep='\t', low_memory=False)
-reads = pd.to_numeric(df['spanning.reads'], errors='coerce').fillna(0)
-pairs = pd.to_numeric(df['spanning.pairs'], errors='coerce').fillna(0)
-df = df[(reads >= 2) | (pairs >= 2)]
-
-
-def _canon(fid):
-    """Canonical gene-pair id (A::B and B::A collapse to one); None if the id is
-    missing or empty. The discovery table is not collapsed, so it carries duplicate
-    rows; counting unique canonical ids rather than rows keeps duplicates from
-    inflating the count."""
-    if not isinstance(fid, str):
-        return None
-    parts = fid.replace('::', ':').split(':')
-    return '::'.join(sorted(parts)) if len(parts) >= 2 and all(parts) else None
+# load() applies the read-support convention and drops degenerate calls.
+df = load()
 
 
 # FusionSeeker's fusion.ens.gene.id is NA for ~all its rows (an upstream bug in

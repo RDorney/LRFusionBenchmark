@@ -17,13 +17,14 @@ Source list: KnownHuh7Fusion_ah.csv, curated and Ensembl v110 annotated.
 import numpy as np
 import pandas as pd
 
+from _data import KNOWN_TYPES
 from _paths import REPO, FUSIONS
 
 AH_CSV    = REPO / 'Known_Fusions' / 'KnownHuh7Fusion_ah.csv'
 DISCOVERY = FUSIONS / 'fusions_readsupport_Huh7_discovery.tsv.gz'
 
 # Pipeline flags marking a call as a known fusion.
-KNOWN_TYPES = ['Known', 'Reverse Known', 'contains Known 1.2', 'contains Known 2.3']
+# Known-fusion definition is shared; see _data.KNOWN_TYPES.
 
 # Upset rows (library types), top to bottom.
 LIBRARY_ROWS = [
@@ -52,20 +53,28 @@ def _modern(vname, orig):
 
 
 def _parse_ens_pair(s):
-    """Parse fusion.ens.gene.id into the frozenset of its two Ensembl gene IDs.
+    """Parse fusion.ens.gene.id into the ORDERED tuple of its Ensembl gene IDs.
 
-    Order and version agnostic: ENSG_A::ENSG_B equals ENSG_B::ENSG_A, and a
-    trailing version suffix is stripped. Returns None when fewer than two
-    distinct ENSG tokens are present.
+    Order is significant. The 5' and 3' partners define different transcripts,
+    so ENSG_A::ENSG_B and ENSG_B::ENSG_A are two different fusions and are
+    matched separately against the curated list. Version suffixes are
+    stripped. Returns None when fewer than two Ensembl tokens are present.
     """
     if not isinstance(s, str):
         return None
-    ids = set()
-    for tok in s.replace('::', ':').split(':'):
-        tok = tok.strip().split('.')[0]
-        if tok.startswith('ENSG'):
-            ids.add(tok)
-    return frozenset(ids) if len(ids) >= 2 else None
+    ids = [tok.strip().split('.')[0] for tok in s.replace('::', ':').split(':')
+           if tok.strip().split('.')[0].startswith('ENSG')]
+    return tuple(ids) if len(ids) >= 2 else None
+
+
+def _is_degenerate(s):
+    """True for a multi-segment call that repeats a gene, such as B::A::B.
+    Excluded outright rather than folded into the two-gene pair."""
+    if not isinstance(s, str):
+        return False
+    ids = [t.split('.')[0] for t in s.replace('::', ':').split(':')
+           if t.startswith('ENSG')]
+    return len(ids) >= 3 and len(set(ids)) < len(ids)
 
 
 def load_known_fusions():
@@ -87,14 +96,19 @@ def load_known_fusions():
             'label':     f'{mx}::{my}',
             'orig_name': _clean(r['Known_Gene_Fusion']),
             'category':  _CATEGORY.get(_clean(r['Sample']), _clean(r['Sample'])),
-            'key':       frozenset({gx, gy}) if valid else None,
+            'key':       (gx, gy) if valid else None,
         })
     return pd.DataFrame(recs)
 
 
 def _dedup_by_key(kf):
-    """Collapse rows that share a gene-ID key (reversed orientation or synonym),
-    keeping the first occurrence. Rows without a key are left untouched."""
+    """Collapse rows that share a gene-ID key, keeping the first occurrence.
+
+    Keys are ordered, so a pair curated in both orientations stays as two
+    entries: they are two different fusions. Only an exact repeat of the same
+    directed pair, from a symbol synonym, is collapsed. Rows without a key are
+    left untouched.
+    """
     seen, rows = set(), []
     for _, r in kf.iterrows():
         k = r['key']
@@ -154,6 +168,7 @@ def prepare(read_support=None, restrict_known=False, detected_only=True,
     usecols = ['Platform', 'library_type', 'fusion.ens.gene.id',
                'Discovery', 'spanning.reads', 'spanning.pairs']
     disc = pd.read_csv(DISCOVERY, sep='\t', usecols=usecols, low_memory=False)
+    disc = disc[~disc['fusion.ens.gene.id'].map(_is_degenerate)]
 
     if read_support:
         reads = pd.to_numeric(disc['spanning.reads'], errors='coerce').fillna(0)

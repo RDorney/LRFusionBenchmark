@@ -15,12 +15,13 @@ import matplotlib.pyplot as plt
 from scipy.cluster.hierarchy import linkage, dendrogram, leaves_list
 from scipy.spatial.distance import squareform
 
+from _data import KNOWN_TYPES, load, _fusion_key as _canon
 from palette import F1_CMAP, NEUTRAL, set_style, save_figure
 from _paths import FUSIONS, OUT
 
 DATA = FUSIONS / 'fusions_readsupport_Huh7_discovery.tsv.gz'
 OUTDIR = OUT
-KNOWN_TYPES = ['Known', 'Reverse Known', 'contains Known 1.2', 'contains Known 2.3']
+# Known-fusion definition is shared; see _data.KNOWN_TYPES.
 
 # Short, readable prep names for the axis labels.
 _LIB_SHORT = {'direct_RNA': 'dRNA', 'direct_cDNA': 'dcDNA', 'PCR_cDNA': 'PCR-cDNA'}
@@ -33,16 +34,6 @@ def _library_label(row):
     return f"{row['Platform']} {lib} {row['RNA_sample']}"
 
 
-def _canon(fid):
-    """Canonical gene-pair id: sort A:B so A::B and B::A collapse to one."""
-    if not isinstance(fid, str):
-        return None
-    parts = fid.replace('::', ':').split(':')
-    if len(parts) < 2:
-        return None
-    return ':'.join(sorted(parts))
-
-
 def render_similarity(*, fusion_filter, basename, title, outdir=OUTDIR):
     """Render one Jaccard-similarity heatmap.
 
@@ -50,15 +41,13 @@ def render_similarity(*, fusion_filter, basename, title, outdir=OUTDIR):
     used before building the per-replicate fusion sets.
     """
     set_style()
-    df = pd.read_csv(DATA, sep='\t', low_memory=False)
-    df['spanning.reads'] = pd.to_numeric(df['spanning.reads'], errors='coerce').fillna(0)
-    df['spanning.pairs'] = pd.to_numeric(df['spanning.pairs'], errors='coerce').fillna(0)
-    df = df[(df['spanning.reads'] >= 2) | (df['spanning.pairs'] >= 2)]
+    # load() applies the read-support convention and drops degenerate calls.
+    df = load()
 
     if fusion_filter == 'known':
         df = df[df.Discovery.isin(KNOWN_TYPES)]
     elif fusion_filter == 'novel':
-        df = df[df.Discovery == 'Putative Novel']
+        df = df[~df.Discovery.isin(KNOWN_TYPES)]
     elif fusion_filter != 'all':
         raise ValueError(f"unknown fusion_filter {fusion_filter!r}")
 

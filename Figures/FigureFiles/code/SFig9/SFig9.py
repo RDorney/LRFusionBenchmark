@@ -18,21 +18,11 @@ _sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
 from _paths import OUT
 OUTDIR = OUT / 'SFig9'
 from palette import F1_CMAP, NEUTRAL, set_style, save_figure
-from _data import load, LIB_ORDER, KNOWN_TYPES
+from _data import load, LIB_ORDER, KNOWN_TYPES, _fusion_key as _canon
 
 set_style()
 
 df = load()
-
-
-def _canon(fid):
-    """Canonical gene-pair id: sort A:B so A::B and B::A collapse to one."""
-    if not isinstance(fid, str):
-        return None
-    parts = fid.replace('::', ':').split(':')
-    if len(parts) < 2:
-        return None
-    return ':'.join(sorted(parts))
 
 
 def _fids(sub):

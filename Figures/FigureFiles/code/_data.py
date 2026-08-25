@@ -13,7 +13,13 @@ LIB_ORDER = [
     ('PacBio',   'PCR_cDNA',    'PacBio\nPCR cDNA'),
     ('Illumina', 'PCR_cDNA',    'Illumina\nPCR cDNA'),
 ]
-KNOWN_TYPES = ['Known', 'Reverse Known', 'contains Known 1.2', 'contains Known 2.3']
+# A call counts as a known-fusion recovery only when the gene order matches the
+# literature. 'Reverse Known' has the same pair with the 5' and 3' partners
+# swapped, which is a different transcript with a different reading frame, so it
+# is deliberately absent here and falls on the novel side of the split. The
+# 'contains Known' labels only ever applied to degenerate B::A::B calls, which
+# are now excluded upstream, so they are gone too.
+KNOWN_TYPES = ['Known']
 
 
 def load(min_read_support=2):
@@ -23,24 +29,50 @@ def load(min_read_support=2):
     pairs = pd.to_numeric(df['spanning.pairs'], errors='coerce').fillna(0)
     df['spanning.reads'] = pd.to_numeric(df['spanning.reads'], errors='coerce')
     df = df[(reads >= min_read_support) | (pairs >= min_read_support)]
+    # Degenerate multi-segment calls such as B::A::B are excluded outright.
+    df = df[~df['fusion.ens.gene.id'].map(is_degenerate)]
     return df
 
 
-def _canon(fid):
-    """Canonical gene-pair id: sort A:B so A::B and B::A collapse to one."""
+def _fusion_key(fid):
+    """Identity of a fusion: its Ensembl gene IDs in the order reported.
+
+    Orientation is PRESERVED. The 5' and 3' partners define different
+    transcripts with different reading frames, so A::B and B::A are two
+    different fusions and are never merged. A key does collapse one directed
+    pair reported repeatedly, once per alternative breakpoint or isoform.
+    Version suffixes are stripped. An identifier that does not yield two
+    Ensembl IDs, such as the half-empty '::ENSG00000084674' that Arriba and
+    JAFFA-direct emit when one partner fails to map, keeps its raw string so
+    the call is keyed rather than dropped.
+    """
+    if not isinstance(fid, str) or not fid:
+        return None
+    ids = [t.split('.')[0] for t in fid.replace('::', ':').split(':')
+           if t.startswith('ENSG')]
+    return '::'.join(ids) if len(ids) >= 2 else fid
+
+
+def is_degenerate(fid):
+    """True for a multi-segment call that repeats a gene, such as B::A::B.
+
+    That is not a genuine multi-gene fusion, it is one gene pair written three
+    times over, so it is excluded from every figure rather than folded into
+    the two-gene pair. A real three-gene fusion A::B::C keeps three distinct
+    IDs and is retained.
+    """
     if not isinstance(fid, str):
-        return None
-    parts = fid.replace('::', ':').split(':')
-    if len(parts) < 2:
-        return None
-    return ':'.join(sorted(parts))
+        return False
+    ids = [t.split('.')[0] for t in fid.replace('::', ':').split(':')
+           if t.startswith('ENSG')]
+    return len(ids) >= 3 and len(set(ids)) < len(ids)
 
 
 def _canon_set(series):
-    """Apply canonical normalisation and return the unique set."""
+    """Unique fusion keys in a slice, orientation preserved."""
     s = set()
     for v in series.dropna():
-        c = _canon(v)
+        c = _fusion_key(v)
         if c is not None:
             s.add(c)
     return s

@@ -48,3 +48,7 @@ Reference_Files/
 
 # Internal audit notes, not for distribution
 AUDIT_FIX_LOG.md
+
+# Python bytecode cache
+__pycache__/
+*.py[cod]
