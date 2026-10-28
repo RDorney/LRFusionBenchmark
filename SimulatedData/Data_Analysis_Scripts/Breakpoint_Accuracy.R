@@ -3,6 +3,24 @@
 ###############################################
 Simulated_BreakPoint <- Simulated_Fusion_Info_3 
 
+# Simulated junction coordinate of one fusion partner, as it appears in the simulated reads.
+# FUSIM lists exons in ascending genomic order, and reverse-complements each minus-strand exon
+# on its own without reversing the exon order (FusionGene.java; FUSIM issue #5). The junction is
+# therefore at the last exon end (+) or last exon start (-) of the 5' partner, and at the first
+# exon start (+) or first exon end (-) of the 3' partner. exonStarts are 1 bp past the GENCODE
+# start because of FUSIM's GTF converter (FUSIM issue #3); the reads carry the same shift.
+simulated_junction <- function(SB, gene, side) {
+  partner <- subset(SB, alternative_ID == gene)
+  exonStarts <- as.integer(str_split(partner$exonStarts, ",")[[1]])
+  exonEnds <- as.integer(str_split(partner$exonEnds, ",")[[1]])
+  minus <- partner$strand[1] == "-"
+  if (side == "5prime") {
+    if (minus) tail(exonStarts, 1) else tail(exonEnds, 1)
+  } else {
+    if (minus) head(exonEnds, 1) else head(exonStarts, 1)
+  }
+}
+
 ################################################################
 # Testing the code on one fusion gene to check expected output #
 ################################################################
@@ -19,8 +37,8 @@ gene_names <- str_split("ENSG00000009830:ENSG00000087258", pattern = ":")[[1]]
 gene1 <- gene_names[1]
 gene2 <- gene_names[2]
 
-SB1 <- as.integer(tail(str_split(subset(SB, alternative_ID == gene1)$exonEnds, ",")[[1]], 1))
-SB2 <- as.integer(head(str_split(subset(SB, alternative_ID == gene2)$exonStarts, ",")[[1]],1))
+SB1 <- simulated_junction(SB, gene1, "5prime")
+SB2 <- simulated_junction(SB, gene2, "3prime")
 
 JB1 <- as.numeric(J$base1) - SB1
 JB2 <- as.numeric(J$base2) - SB2
@@ -86,8 +104,8 @@ for (seq_depth in c('1GB' , '10GB' , '100GB')) {
       gene1 <- gene_names[1]
       gene2 <- gene_names[2]
       
-      SB1 <- as.integer(tail(str_split(subset(SB, alternative_ID == gene1)$exonEnds, ",")[[1]], 1))
-      SB2 <- as.integer(head(str_split(subset(SB, alternative_ID == gene2)$exonStarts, ",")[[1]],1))
+      SB1 <- simulated_junction(SB, gene1, "5prime")
+      SB2 <- simulated_junction(SB, gene2, "3prime")
       
       gene3 <- gene_names[3]
       SB3 <- NA
@@ -122,6 +140,8 @@ for (seq_depth in c('1GB' , '10GB' , '100GB')) {
       gene1 <- gene_names[1]
       gene2 <- gene_names[2]
       
+      # Genion reports the aligned span of each partner, not a junction coordinate, so it
+      # keeps the span-edge comparison (last exon end of gene 1, first exon start of gene 2).
       SB1 <- as.integer(tail(str_split(subset(SB, alternative_ID == gene1)$exonEnds, ",")[[1]], 1))
       SB2 <- as.integer(head(str_split(subset(SB, alternative_ID == gene2)$exonStarts, ",")[[1]],1))
       
@@ -166,8 +186,8 @@ for (seq_depth in c('1GB' , '10GB' , '100GB')) {
       gene1 <- gene_names[1]
       gene2 <- gene_names[2]
       
-      SB1 <- as.integer(tail(str_split(subset(SB, alternative_ID == gene1)$exonEnds, ",")[[1]], 1))
-      SB2 <- as.integer(head(str_split(subset(SB, alternative_ID == gene2)$exonStarts, ",")[[1]],1))
+      SB1 <- simulated_junction(SB, gene1, "5prime")
+      SB2 <- simulated_junction(SB, gene2, "3prime")
       
       gene3 <- gene_names[3]
       SB3 <- NA
@@ -202,8 +222,8 @@ for (seq_depth in c('1GB' , '10GB' , '100GB')) {
       gene1 <- gene_names[1]
       gene2 <- gene_names[2]
       
-      SB1 <- as.integer(tail(str_split(subset(SB, alternative_ID == gene1)$exonEnds, ",")[[1]], 1))
-      SB2 <- as.integer(head(str_split(subset(SB, alternative_ID == gene2)$exonStarts, ",")[[1]],1))
+      SB1 <- simulated_junction(SB, gene1, "5prime")
+      SB2 <- simulated_junction(SB, gene2, "3prime")
       
       gene3 <- gene_names[3]
       SB3 <- NA
@@ -239,8 +259,8 @@ for (seq_depth in c('1GB' , '10GB', '100GB' )) {# , '100GB'
       gene1 <- gene_names[1]
       gene2 <- gene_names[2]
       
-      SB1 <- as.integer(tail(str_split(subset(SB, alternative_ID == gene1)$exonEnds, ",")[[1]], 1))
-      SB2 <- as.integer(head(str_split(subset(SB, alternative_ID == gene2)$exonStarts, ",")[[1]],1))
+      SB1 <- simulated_junction(SB, gene1, "5prime")
+      SB2 <- simulated_junction(SB, gene2, "3prime")
       
       gene3 <- gene_names[3]
       SB3 <- NA
@@ -275,8 +295,8 @@ for (seq_depth in c('1GB' , '10GB' , '100GB')) {
       gene1 <- gene_names[1]
       gene2 <- gene_names[2]
       
-      SB1 <- as.integer(tail(str_split(subset(SB, alternative_ID == gene1)$exonEnds, ",")[[1]], 1))
-      SB2 <- as.integer(head(str_split(subset(SB, alternative_ID == gene2)$exonStarts, ",")[[1]],1))
+      SB1 <- simulated_junction(SB, gene1, "5prime")
+      SB2 <- simulated_junction(SB, gene2, "3prime")
       
       gene3 <- gene_names[3]
       SB3 <- NA
